@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Basic Handshake</title>
+</head>
+<body>
+NodeWars Handshake
+
+<script>
+'use strict';
+const versionNum = '0.0.0.1';
+const versionTag = 'NodeWars:' + versionNum;
+const confirmationPhrase = 'Welcome to NodeWars';
+let versionConf = false;
+
+const handshake = (ws) => {
+	console.log('>', versionTag)
+	ws.send(versionTag)
+}
+
+const ws = new WebSocket('ws://' + window.location.host + '/ws');
+
+// Send handshake once socket is open
+ws.addEventListener('open', () => {
+	handshake(ws)
+});
+
+// Debugging purposes
+ws.addEventListener('message', (e) => {
+	console.log('<', e.data)
+});
+
+// Confirm receipt of correct version number (one time listener)
+ws.addEventListener('message', (e)=>{
+	if (e.data == confirmationPhrase)
+		console.log('> Handshake succesful <')
+		return
+	console.log('Server said:', e.data)
+	throw "Error: failed to negotiate handshake with server"
+	ws.close()
+}, { once: true });
+
+
+
+
+
+</script>
+</body>
+</html>
