@@ -10,18 +10,20 @@ import (
 )
 
 // Handshake related constants
-var versionNumber = "0.0.0.1"
-var versionTag = "NodeWars:" + versionNumber
+const versionNumber = "0.0.0.1"
+const versionTag = "NodeWars:" + versionNumber
+
 var players = make(map[*websocket.Conn]*Player) // connected players
 var broadcast = make(chan Message)
+var teams = makeDummyTeams()
 
 var upgrader = websocket.Upgrader{}
 
 // Message is our basic message struct
 type Message struct {
-	Email    string `json:"email"`
-	Username string `json:"username"`
-	Message  string `json:"message"`
+	Type   string `json:"type"`
+	Sender string `json:"sender"`
+	Data   string `json:"data"`
 }
 
 // Ask about reduntant error messaging...
@@ -50,6 +52,8 @@ func doHandshake(ws *websocket.Conn) error {
 	return nil
 }
 
+var tInc int
+
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Upgrade GET to a websocket
@@ -70,8 +74,11 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Assuming we're all good, register client
 	thisPlayer := registerPlayer(ws)
-	fmt.Println(thisPlayer)
-	fmt.Println("Player is Registered")
+	// teams[tInc%2].addPlayer(thisPlayer)
+	// fmt.Printf("Assigning %v to team %v\n", thisPlayer.Name, thisPlayer.Team.Name)
+	assignToTeam(thisPlayer, &teams[tInc%2])
+	tInc++
+	// fmt.Println(thisPlayer)
 
 	// Handle socket stream
 	for {
@@ -80,26 +87,50 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("error: %v", err)
-			delete(players, ws)
+
+			// Remove player from team on socket close
+			scrubPlayerSocket(ws)
 			break
 		}
-		// Assuming sucess, pipe message to broadcast channel
-		broadcast <- msg
+		messageHandler(&msg, thisPlayer)
+		fmt.Printf("message from %v\n", thisPlayer.Name)
 	}
 }
 
-func handleMessages() {
-	for {
-		msg := <-broadcast
-		log.Println("New message, broadcasting...")
-		for client := range players {
-			err := client.WriteJSON(msg)
-			if err != nil {
-				log.Printf("error: %v", err)
-				client.Close()
-				delete(players, client)
+func assignToTeam(p *Player, t *Team) {
+	t.addPlayer(p)
+	p.Socket.WriteJSON(Message{
+		Type:   "teamAssign",
+		Sender: "",
+		Data:   t.Name,
+	})
+}
+
+func messageHandler(msg *Message, sender *Player) {
+	switch msg.Type {
+	case "chat":
+		// Attach sendersocket's name
+		msg.Sender = sender.Name
+		sender.Team.Channel <- *msg
+	default:
+	}
+}
+
+func scrubPlayerSocket(ws *websocket.Conn) {
+	ws.Close()
+	players[ws].Team.removePlayer(players[ws])
+	delete(players, ws)
+}
+
+func teamChatHandler() {
+	fmt.Printf("Teams: %v\n", teams)
+	for _, team := range teams {
+		go func(t Team) {
+			for {
+				msg := <-t.Channel
+				t.broadcast(msg)
 			}
-		}
+		}(team)
 	}
 }
 
@@ -107,15 +138,13 @@ func main() {
 	// So it doesn't complain about fmt
 	fmt.Println("Starting " + versionTag + " server...")
 
-	// teams := makeDummyTeams()
-	// fmt.Println(teams[0])
-
 	// Set up log file
 	f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//defer to close when you're done with it, not because you think it's idiomatic!
+
+	//Close log file when we're done
 	defer f.Close()
 	//set output of logs to f
 	log.SetOutput(f)
@@ -125,8 +154,8 @@ func main() {
 	http.Handle("/", fs)
 	http.HandleFunc("/ws", handleConnections)
 
-	// Goroutine for parsing/dispatching messages
-	go handleMessages()
+	// Goroutine for dispatching chat messages
+	teamChatHandler()
 
 	log.Println("Starting server on port 8080...")
 	err = http.ListenAndServe(":8080", nil)

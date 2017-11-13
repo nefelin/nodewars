@@ -67,3 +67,392 @@
 2017/11/13 10:52:18 Starting server on port 8080...
 2017/11/13 10:56:21 Starting server on port 8080...
 2017/11/13 10:59:47 Starting server on port 8080...
+2017/11/13 11:09:53 Starting server on port 8080...
+2017/11/13 11:10:03 error: websocket: close 1001 (going away)
+2017/11/13 11:10:06 error: websocket: close 1001 (going away)
+2017/11/13 11:11:44 Starting server on port 8080...
+2017/11/13 11:11:49 error: websocket: close 1001 (going away)
+2017/11/13 11:11:53 error: websocket: close 1001 (going away)
+2017/11/13 11:11:55 error: websocket: close 1001 (going away)
+2017/11/13 11:11:56 error: websocket: close 1001 (going away)
+2017/11/13 11:11:58 error: websocket: close 1001 (going away)
+2017/11/13 11:12:00 error: websocket: close 1001 (going away)
+2017/11/13 11:12:02 error: websocket: close 1001 (going away)
+2017/11/13 11:12:04 error: websocket: close 1001 (going away)
+2017/11/13 11:12:06 error: websocket: close 1001 (going away)
+2017/11/13 11:12:08 error: websocket: close 1001 (going away)
+2017/11/13 11:15:05 Starting server on port 8080...
+2017/11/13 11:16:10 Starting server on port 8080...
+2017/11/13 11:16:13 http: panic serving [::1]:58595: assignment to entry in nil map
+goroutine 8 [running]:
+net/http.(*conn).serve.func1(0xc420082960)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f760, 0x1317ba0)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc4201060e0, 0xc420104200)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f5fc0, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420079110, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420082960, 0x1432940, 0xc420056400)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 11:16:18 http: panic serving [::1]:58616: assignment to entry in nil map
+goroutine 11 [running]:
+net/http.(*conn).serve.func1(0xc420082aa0)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f760, 0x1317ba0)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc4201062a0, 0xc420104400)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f5fc0, 0x1432480, 0xc4201062a0, 0xc420104400)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201062a0, 0xc420104400)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420079110, 0x1432480, 0xc4201062a0, 0xc420104400)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420082aa0, 0x1432940, 0xc4200565c0)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 11:16:41 Starting server on port 8080...
+2017/11/13 11:16:48 http: panic serving [::1]:58750: assignment to entry in nil map
+goroutine 4 [running]:
+net/http.(*conn).serve.func1(0xc420128000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f7c0, 0x1317c10)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc42011c0e0, 0xc42012c000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f6030, 0x1432480, 0xc42011c0e0, 0xc42012c000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc42011c0e0, 0xc42012c000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc42007cdd0, 0x1432480, 0xc42011c0e0, 0xc42012c000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420128000, 0x1432940, 0xc420056080)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 11:16:50 http: panic serving [::1]:58759: assignment to entry in nil map
+goroutine 5 [running]:
+net/http.(*conn).serve.func1(0xc4201280a0)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f7c0, 0x1317c10)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc420150000, 0xc42012c100)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f6030, 0x1432480, 0xc420150000, 0xc42012c100)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc420150000, 0xc42012c100)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc42007cdd0, 0x1432480, 0xc420150000, 0xc42012c100)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc4201280a0, 0x1432940, 0xc4200561c0)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 11:17:19 Starting server on port 8080...
+2017/11/13 12:15:31 Starting server on port 8080...
+2017/11/13 12:16:19 Starting server on port 8080...
+2017/11/13 12:16:22 http: panic serving [::1]:56981: assignment to entry in nil map
+goroutine 18 [running]:
+net/http.(*conn).serve.func1(0xc420116000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f7c0, 0x1317c10)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc4201060e0, 0xc420124000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f6030, 0x1432480, 0xc4201060e0, 0xc420124000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201060e0, 0xc420124000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420078d00, 0x1432480, 0xc4201060e0, 0xc420124000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420116000, 0x1432940, 0xc42011c040)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:17:19 http: panic serving [::1]:57213: assignment to entry in nil map
+goroutine 10 [running]:
+net/http.(*conn).serve.func1(0xc420082960)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f7c0, 0x1317c10)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25
+main.handleConnections(0x1432480, 0xc4201062a0, 0xc420104300)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x22e
+net/http.HandlerFunc.ServeHTTP(0x12f6030, 0x1432480, 0xc4201062a0, 0xc420104300)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201062a0, 0xc420104300)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420078d00, 0x1432480, 0xc4201062a0, 0xc420104300)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420082960, 0x1432940, 0xc4200564c0)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:18:05 Starting server on port 8080...
+2017/11/13 12:18:07 http: panic serving [::1]:57449: assignment to entry in nil map
+goroutine 18 [running]:
+net/http.(*conn).serve.func1(0xc420116000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f860, 0x1317ce0)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(0x12e28ba, 0x4, 0x12e293a, 0x4, 0x0, 0xc420072180, 0xc4200da3a0)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:26 +0xd6
+main.handleConnections(0x1432480, 0xc420138000, 0xc420122000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x1eb
+net/http.HandlerFunc.ServeHTTP(0x12f60d8, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420078ea0, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420116000, 0x1432940, 0xc42010a080)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:18:27 Starting server on port 8080...
+2017/11/13 12:18:29 http: panic serving [::1]:57537: assignment to entry in nil map
+goroutine 18 [running]:
+net/http.(*conn).serve.func1(0xc420116000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f860, 0x1317ce0)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(0x12e28ba, 0x4, 0x12e293a, 0x4, 0x0, 0xc420072180, 0xc4200da3a0)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25 +0x8c
+main.handleConnections(0x1432480, 0xc420138000, 0xc420122000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x1eb
+net/http.HandlerFunc.ServeHTTP(0x12f60d8, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420078f70, 0x1432480, 0xc420138000, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420116000, 0x1432940, 0xc42010a080)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:19:22 Starting server on port 8080...
+2017/11/13 12:19:26 http: panic serving [::1]:57787: assignment to entry in nil map
+goroutine 8 [running]:
+net/http.(*conn).serve.func1(0xc420082960)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f880, 0x1317d00)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.Team.addPlayer(0x12e28da, 0x4, 0x12e295a, 0x4, 0x0, 0xc420072180, 0xc42011a000)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25 +0x99
+main.handleConnections(0x1432480, 0xc4201060e0, 0xc420104200)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x1eb
+net/http.HandlerFunc.ServeHTTP(0x12f60f8, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420078f70, 0x1432480, 0xc4201060e0, 0xc420104200)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420082960, 0x1432940, 0xc420056400)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:20:21 Starting server on port 8080...
+2017/11/13 12:20:24 http: panic serving [::1]:58025: assignment to entry in nil map
+goroutine 18 [running]:
+net/http.(*conn).serve.func1(0xc420116000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f800, 0x1317c40)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.(*Team).addPlayer(0xc42005e120, 0xc42012a000)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25 +0x49
+main.handleConnections(0x1432480, 0xc4201060e0, 0xc420122000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x1d4
+net/http.HandlerFunc.ServeHTTP(0x12f6058, 0x1432480, 0xc4201060e0, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc4201060e0, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420079040, 0x1432480, 0xc4201060e0, 0xc420122000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420116000, 0x1432940, 0xc42010a080)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:23:19 http: panic serving [::1]:58749: assignment to entry in nil map
+goroutine 34 [running]:
+net/http.(*conn).serve.func1(0xc42015e000)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x128f800, 0x1317c40)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.(*Team).addPlayer(0xc42005e120, 0xc42012a080)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:25 +0x49
+main.handleConnections(0x1432480, 0xc42018e000, 0xc420178000)
+	/Users/nefelin/Sites/nodewars/src/main.go:75 +0x1d4
+net/http.HandlerFunc.ServeHTTP(0x12f6058, 0x1432480, 0xc42018e000, 0xc420178000)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1466400, 0x1432480, 0xc42018e000, 0xc420178000)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc420079040, 0x1432480, 0xc42018e000, 0xc420178000)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc42015e000, 0x1432940, 0xc420172040)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/13 12:23:24 Starting server on port 8080...
+2017/11/13 12:33:21 Starting server on port 8080...
+2017/11/13 12:36:00 Starting server on port 8080...
+2017/11/13 12:38:16 error: websocket: close 1001 (going away)
+2017/11/13 12:38:18 error: websocket: close 1001 (going away)
+2017/11/13 12:43:16 Starting server on port 8080...
+2017/11/13 12:43:21 error: websocket: close 1001 (going away)
+2017/11/13 12:43:23 error: websocket: close 1001 (going away)
+2017/11/13 12:43:24 error: websocket: close 1001 (going away)
+2017/11/13 12:44:25 Starting server on port 8080...
+2017/11/13 12:44:32 error: websocket: close 1001 (going away)
+2017/11/13 12:47:18 Starting server on port 8080...
+2017/11/13 12:47:22 error: websocket: close 1001 (going away)
+2017/11/13 12:49:34 Starting server on port 8080...
+2017/11/13 12:49:41 error: websocket: close 1001 (going away)
+2017/11/13 12:49:43 error: websocket: close 1001 (going away)
+2017/11/13 12:50:21 Starting server on port 8080...
+2017/11/13 12:50:40 error: websocket: close 1001 (going away)
+2017/11/13 13:15:26 Starting server on port 8080...
+2017/11/13 13:15:36 error: websocket: close 1001 (going away)
+2017/11/13 13:22:00 error: websocket: close 1001 (going away)
+2017/11/13 13:22:10 error: websocket: close 1001 (going away)
+2017/11/13 13:22:15 error: invalid character 'o' looking for beginning of value
+2017/11/13 13:23:41 Starting server on port 8080...
+2017/11/13 13:24:16 error: invalid character 'o' looking for beginning of value
+2017/11/13 13:25:21 error: invalid character 'o' looking for beginning of value
+2017/11/13 13:25:44 error: invalid character 'e' in literal true (expecting 'r')
+2017/11/13 13:26:58 error: websocket: close 1001 (going away)
+2017/11/13 13:27:13 error: websocket: close 1001 (going away)
+2017/11/13 13:27:18 New message, broadcasting...
+2017/11/13 13:27:42 New message, broadcasting...
+2017/11/13 13:27:43 New message, broadcasting...
+2017/11/13 13:28:32 Starting server on port 8080...
+2017/11/13 13:28:49 Starting server on port 8080...
+2017/11/13 13:28:56 New message, broadcasting...
+2017/11/13 13:28:59 New message, broadcasting...
+2017/11/13 13:29:25 New message, broadcasting...
+2017/11/13 13:31:34 Starting server on port 8080...
+2017/11/13 13:32:01 New message, broadcasting...
+2017/11/13 13:33:32 Starting server on port 8080...
+2017/11/13 13:33:54 New message, broadcasting...
+2017/11/13 13:35:05 Starting server on port 8080...
+2017/11/13 13:35:21 New message, broadcasting...
+2017/11/13 13:47:15 Starting server on port 8080...
+2017/11/13 13:47:38 New message, broadcasting...
+2017/11/13 13:48:45 New message, broadcasting...
+2017/11/13 13:49:17 New message, broadcasting...
+2017/11/13 13:51:43 Starting server on port 8080...
+2017/11/13 13:52:45 Starting server on port 8080...
+2017/11/13 13:53:26 New message, broadcasting...
+2017/11/13 13:56:20 Starting server on port 8080...
+2017/11/13 13:56:45 New message, broadcasting...
+2017/11/13 13:56:54 New message, broadcasting...
+2017/11/13 14:03:19 New message, broadcasting...
+2017/11/13 14:23:35 Starting server on port 8080...
+2017/11/13 16:02:30 Starting server on port 8080...
+2017/11/13 16:06:58 Starting server on port 8080...
+2017/11/13 16:09:18 Starting server on port 8080...
+2017/11/13 16:10:24 Starting server on port 8080...
+2017/11/13 16:11:01 Starting server on port 8080...
+2017/11/13 16:20:06 Starting server on port 8080...
+2017/11/13 16:21:39 Starting server on port 8080...
+2017/11/13 16:23:17 Starting server on port 8080...
+2017/11/13 16:24:01 Starting server on port 8080...
+2017/11/13 16:24:22 Starting server on port 8080...
+2017/11/13 16:24:34 Starting server on port 8080...
+2017/11/13 16:26:57 Starting server on port 8080...
+2017/11/13 16:28:45 Starting server on port 8080...
+2017/11/13 16:32:10 Starting server on port 8080...
+2017/11/13 16:32:36 Starting server on port 8080...
+2017/11/13 17:51:43 Starting server on port 8080...
+2017/11/13 17:52:05 Starting server on port 8080...
+2017/11/13 17:52:17 Starting server on port 8080...
+2017/11/13 17:52:37 Starting server on port 8080...
+2017/11/13 17:54:54 Starting server on port 8080...
+2017/11/13 17:57:21 error: websocket: close 1001 (going away)
+2017/11/13 17:57:53 error: websocket: close 1001 (going away)
+2017/11/13 17:57:57 error: json: cannot unmarshal object into Go struct field Message.data of type string
+2017/11/13 17:58:17 error: json: cannot unmarshal object into Go struct field Message.data of type string
+2017/11/13 18:00:14 error: websocket: close 1001 (going away)
+2017/11/13 18:00:34 error: websocket: close 1001 (going away)
+2017/11/13 18:00:59 error: websocket: close 1001 (going away)
+2017/11/13 18:01:32 error: websocket: close 1001 (going away)
+2017/11/13 18:02:11 error: websocket: close 1001 (going away)
+2017/11/13 18:02:20 error: websocket: close 1001 (going away)
+2017/11/13 18:02:56 error: websocket: close 1001 (going away)
+2017/11/13 18:05:05 error: websocket: close 1001 (going away)
+2017/11/13 18:05:31 error: websocket: close 1001 (going away)
+2017/11/13 18:06:44 error: websocket: close 1001 (going away)
+2017/11/13 18:08:21 error: websocket: close 1001 (going away)
+2017/11/13 18:08:40 error: websocket: close 1001 (going away)
+2017/11/13 18:09:40 error: websocket: close 1001 (going away)
+2017/11/13 18:12:22 error: websocket: close 1001 (going away)
+2017/11/13 18:12:24 error: websocket: close 1001 (going away)
+2017/11/13 18:13:47 error: websocket: close 1001 (going away)
+2017/11/13 18:14:04 error: websocket: close 1001 (going away)
+2017/11/13 18:14:27 error: websocket: close 1001 (going away)
+2017/11/13 18:15:26 error: websocket: close 1001 (going away)
+2017/11/13 18:23:20 error: websocket: close 1001 (going away)
+2017/11/13 18:23:33 error: websocket: close 1001 (going away)
+2017/11/13 18:24:18 error: websocket: close 1001 (going away)
+2017/11/13 18:24:25 error: websocket: close 1001 (going away)
+2017/11/13 18:28:34 error: websocket: close 1001 (going away)
+2017/11/13 18:28:52 error: websocket: close 1001 (going away)
+2017/11/13 18:29:37 error: websocket: close 1001 (going away)
+2017/11/13 18:30:03 error: websocket: close 1001 (going away)
+2017/11/13 18:30:45 error: websocket: close 1001 (going away)
+2017/11/13 18:30:55 error: websocket: close 1001 (going away)
+2017/11/13 18:31:26 error: websocket: close 1001 (going away)
+2017/11/13 18:32:22 error: websocket: close 1001 (going away)
+2017/11/13 18:32:34 error: websocket: close 1001 (going away)
+2017/11/13 18:32:37 error: websocket: close 1001 (going away)
+2017/11/13 18:32:38 error: websocket: close 1001 (going away)
+2017/11/13 18:33:04 error: websocket: close 1001 (going away)
+2017/11/13 18:33:30 error: websocket: close 1001 (going away)
+2017/11/13 18:33:48 error: websocket: close 1001 (going away)
+2017/11/13 18:34:07 error: websocket: close 1001 (going away)
+2017/11/13 18:34:31 error: websocket: close 1001 (going away)
+2017/11/13 18:35:07 error: websocket: close 1001 (going away)
+2017/11/13 18:35:29 error: websocket: close 1001 (going away)
+2017/11/13 18:37:05 error: websocket: close 1001 (going away)
+2017/11/13 18:37:25 error: websocket: close 1001 (going away)
+2017/11/13 18:37:30 error: websocket: close 1001 (going away)
+2017/11/13 18:37:44 error: websocket: close 1001 (going away)
+2017/11/13 18:37:45 error: websocket: close 1001 (going away)
+2017/11/13 18:37:46 error: websocket: close 1001 (going away)
+2017/11/13 18:37:47 error: websocket: close 1001 (going away)
+2017/11/13 18:37:48 error: websocket: close 1001 (going away)
+2017/11/13 18:37:48 error: websocket: close 1001 (going away)
+2017/11/13 18:37:49 error: websocket: close 1001 (going away)
+2017/11/13 18:37:50 error: websocket: close 1001 (going away)
+2017/11/13 18:38:54 error: websocket: close 1001 (going away)
+2017/11/13 18:39:39 error: websocket: close 1001 (going away)
+2017/11/13 18:40:58 error: websocket: close 1001 (going away)
+2017/11/13 18:41:19 error: websocket: close 1001 (going away)
+2017/11/13 18:41:38 error: websocket: close 1001 (going away)
+2017/11/13 18:41:59 error: websocket: close 1001 (going away)
+2017/11/13 18:43:29 error: websocket: close 1001 (going away)
+2017/11/13 18:43:40 error: websocket: close 1001 (going away)
+2017/11/13 18:43:42 error: websocket: close 1001 (going away)
+2017/11/13 18:43:54 error: websocket: close 1001 (going away)
+2017/11/13 18:43:55 error: websocket: close 1001 (going away)
+2017/11/13 18:43:57 error: websocket: close 1001 (going away)
+2017/11/13 18:44:13 error: websocket: close 1001 (going away)
+2017/11/13 18:44:33 error: websocket: close 1001 (going away)
