@@ -77,7 +77,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	thisPlayer := registerPlayer(ws)
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
-	go messageDispatcher(thisPlayer)
+	go outgoingRelay(thisPlayer)
 
 	// Handle socket stream
 	for {
@@ -91,13 +91,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 			scrubPlayerSocket(ws)
 			break
 		}
-		messageHandler(&msg, thisPlayer)
-		fmt.Printf("message from %v\n", thisPlayer.Name)
+		incomingHandler(&msg, thisPlayer)
 	}
 }
 
 // Should this do socket scrubbing on error? Is that redundant? TODO
-func messageDispatcher(p *Player) {
+func outgoingRelay(p *Player) {
 	for {
 		msg := <-p.Outgoing
 		if err := p.Socket.WriteJSON(msg); err != nil {
@@ -108,27 +107,21 @@ func messageDispatcher(p *Player) {
 	}
 }
 
-func messageHandler(msg *Message, p *Player) {
+func incomingHandler(msg *Message, p *Player) {
 	switch msg.Type {
 	case "teamChat":
+		//HANDLE chat by unassigned player, maybe make an Observer team by default?
+
 		// Attach sendersocket's name since its relevant for chats
 		msg.Sender = p.Name
 		go p.Team.broadcast(*msg)
 	case "teamJoin":
-		if p.Team == nil {
-			if team, ok := teams[msg.Data]; ok {
-				if team.Open {
-					team.addPlayer(p)
-				} else {
-					// tell player team is full, TODO centralize control messages
-					p.Outgoing <- Message{"teamFull", "server", team.Name}
-				}
-			} else {
-				p.Outgoing <- Message{"error", "server", "team " + msg.Data + " does not exist"}
-			}
+		if team, ok := teams[msg.Data]; ok {
+			p.joinTeam(&team)
 		} else {
-			p.Outgoing <- Message{"error", "server", "you are already a member of " + p.Team.Name}
+			p.Outgoing <- Message{"error", "server", "team " + msg.Data + " does not exist"}
 		}
+
 	default:
 	}
 }

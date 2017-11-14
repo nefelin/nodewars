@@ -10,7 +10,7 @@ import (
 type Team struct {
 	Name    string // Names are only colors for now
 	Players map[*Player]bool
-	Open    bool
+	MaxSize int
 }
 
 // Player ...
@@ -23,7 +23,14 @@ type Player struct {
 
 // NewTeam creates a new team with color/name color
 func NewTeam(color string) Team {
-	return Team{color, make(map[*Player]bool), true}
+	return Team{color, make(map[*Player]bool), 2}
+}
+
+func (t Team) isFull() bool {
+	if len(t.Players) < t.MaxSize {
+		return false
+	}
+	return true
 }
 
 func (t *Team) broadcast(msg Message) {
@@ -33,12 +40,12 @@ func (t *Team) broadcast(msg Message) {
 	}
 }
 
-// Does it matter if player joins team or team adds player?
+// Team-received Methods
 func (t *Team) addPlayer(p *Player) {
 	t.Players[p] = true
 	p.Team = t
 
-	// Tell player they've joined
+	// Tell client they've joined
 	p.Outgoing <- Message{
 		Type:   "teamAssign",
 		Sender: "server",
@@ -49,6 +56,12 @@ func (t *Team) addPlayer(p *Player) {
 func (t *Team) removePlayer(p *Player) {
 	delete(t.Players, p)
 	p.Team = nil
+	// Notify client
+	p.Outgoing <- Message{
+		Type:   "teamUnassign",
+		Sender: "server",
+		Data:   t.Name,
+	}
 }
 
 func (t Team) String() string {
@@ -59,8 +72,23 @@ func (t Team) String() string {
 	return fmt.Sprintf("<Team> (Name: %v, Players:%v)", t.Name, playerList)
 }
 
+// Player-received methods
+
+func (p *Player) joinTeam(t *Team) {
+	if p.Team == nil {
+		if !t.isFull() {
+			t.addPlayer(p)
+		} else {
+			// tell player team is full, TODO centralize control messages
+			p.Outgoing <- Message{"teamFull", "server", t.Name}
+		}
+	} else {
+		p.Outgoing <- Message{"error", "server", "you are already a member of " + p.Team.Name}
+	}
+}
+
 func (p Player) String() string {
-	return fmt.Sprintf("Player Name: %v\nTeam: %v", p.Name, p.Team)
+	return fmt.Sprintf("<Player> Name: %v, Team: %v", p.Name, p.Team)
 }
 
 // func (p Player)
