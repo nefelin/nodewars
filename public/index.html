@@ -8,9 +8,14 @@
 <p style="margin: 10px">
 	NodeWars Handshake
 </p>
-<div id="app">
-	<input autofocus="true" v-model="message" @keyup.enter="sendMsg" style="margin:10px">
-	<div v-bind:style="{ width: '30px', height:'30px', margin: '10px', border:'2px solid black', backgroundColor: teamColor }">
+<div id="app" style="margin:10px">
+	<input autofocus="true" id="msgBox" v-model="message" @keyup.enter="sendMsg" >
+	<select v-model="msgType" size="3" @click="reFocus">
+		<option value="teamChat">teamChat</option>
+		<option value="teamJoin">teamJoin</option>
+		<option value="nodeConnect">nodeConnect</option>
+	</select>
+	<div v-bind:style="{ width: '30px', height:'30px', border:'2px solid black', backgroundColor: teamColor }">
 	</div>
 
 </div>
@@ -30,6 +35,7 @@ new Vue({
 	data: function() {
 		return {
 			message: '',
+			msgType: 'teamChat',
 			ws: null,
 			teamColor: 'white'
 		}
@@ -38,7 +44,7 @@ new Vue({
 	methods: {
 		sendMsg: function () {
 			const message = JSON.stringify({
-				type: "chat",
+				type: this.msgType,
 				data: this.message
 			})
 			this.message = ''
@@ -49,11 +55,14 @@ new Vue({
 		handshake: function() {
 			console.log('>', versionTag)
 			this.ws.send(versionTag)
+		},
+
+		reFocus: function() {
+			msgBox.focus()
 		}
 	},
 
-	created: function () {
-
+	created: function () {		
 		this.ws = new WebSocket('ws://' + window.location.host + '/ws');
 
 		// Send handshake once socket is open

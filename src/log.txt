@@ -501,3 +501,26 @@ created by net/http.(*Server).Serve
 2017/11/14 10:50:25 Starting server on port 8080...
 2017/11/14 10:51:37 error: websocket: close 1001 (going away)
 2017/11/14 10:52:55 Starting server on port 8080...
+2017/11/14 10:56:56 Starting server on port 8080...
+2017/11/14 10:57:24 error: websocket: close 1001 (going away)
+2017/11/14 11:00:39 error: websocket: close 1001 (going away)
+2017/11/14 11:00:56 error: websocket: close 1001 (going away)
+2017/11/14 11:01:04 error: websocket: close 1001 (going away)
+2017/11/14 11:01:18 error: websocket: close 1001 (going away)
+2017/11/14 11:01:48 error: websocket: close 1001 (going away)
+2017/11/14 11:01:59 error: websocket: close 1001 (going away)
+2017/11/14 11:02:10 error: websocket: close 1001 (going away)
+2017/11/14 11:02:25 error: websocket: close 1001 (going away)
+2017/11/14 11:03:55 error: websocket: close 1001 (going away)
+2017/11/14 11:07:23 error: websocket: close 1001 (going away)
+2017/11/14 11:08:03 error: websocket: close 1001 (going away)
+2017/11/14 11:08:34 error: websocket: close 1001 (going away)
+2017/11/14 11:08:49 error: websocket: close 1001 (going away)
+2017/11/14 11:09:12 error: websocket: close 1001 (going away)
+2017/11/14 11:11:59 error: websocket: close 1001 (going away)
+2017/11/14 11:12:11 error: websocket: close 1001 (going away)
+2017/11/14 11:12:31 error: websocket: close 1001 (going away)
+2017/11/14 11:12:43 error: websocket: close 1001 (going away)
+2017/11/14 11:13:02 error: websocket: close 1001 (going away)
+2017/11/14 11:38:15 Starting server on port 8080...
+2017/11/14 11:44:33 Starting server on port 8080...

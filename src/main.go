@@ -55,8 +55,6 @@ func doHandshake(ws *websocket.Conn) error {
 	return nil
 }
 
-var tInc int
-
 func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Upgrade GET to a websocket
@@ -77,9 +75,6 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Assuming we're all good, register client
 	thisPlayer := registerPlayer(ws)
-	assignToTeam(thisPlayer, &teams[tInc%2])
-	// sendWorldState(thisPlayer)
-	tInc++
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	go messageDispatcher(thisPlayer)
@@ -113,42 +108,37 @@ func messageDispatcher(p *Player) {
 	}
 }
 
-func messageHandler(msg *Message, sender *Player) {
+func messageHandler(msg *Message, p *Player) {
 	switch msg.Type {
-	case "chat":
+	case "teamChat":
 		// Attach sendersocket's name since its relevant for chats
-		msg.Sender = sender.Name
-		go sender.Team.broadcast(*msg)
+		msg.Sender = p.Name
+		go p.Team.broadcast(*msg)
+	case "teamJoin":
+		if p.Team == nil {
+			if team, ok := teams[msg.Data]; ok {
+				if team.Open {
+					team.addPlayer(p)
+				} else {
+					// tell player team is full, TODO centralize control messages
+					p.Outgoing <- Message{"teamFull", "server", team.Name}
+				}
+			} else {
+				p.Outgoing <- Message{"error", "server", "team " + msg.Data + " does not exist"}
+			}
+		} else {
+			p.Outgoing <- Message{"error", "server", "you are already a member of " + p.Team.Name}
+		}
 	default:
 	}
 }
 
 // func sendWorldState(p *Player)
 
-func assignToTeam(p *Player, t *Team) {
-	t.addPlayer(p)
-	p.Socket.WriteJSON(Message{
-		Type:   "teamAssign",
-		Sender: "",
-		Data:   t.Name,
-	})
-}
-
 func scrubPlayerSocket(ws *websocket.Conn) {
 	ws.Close()
 	players[ws].Team.removePlayer(players[ws])
 	delete(players, ws)
-}
-
-func teamChatHandler() {
-	for _, team := range teams {
-		go func(t Team) {
-			for {
-				msg := <-t.Channel
-				t.broadcast(msg)
-			}
-		}(team)
-	}
 }
 
 func main() {
@@ -170,9 +160,6 @@ func main() {
 	fs := http.FileServer(http.Dir("../public"))
 	http.Handle("/", fs)
 	http.HandleFunc("/ws", handleConnections)
-
-	// Goroutine for dispatching chat messages
-	teamChatHandler()
 
 	log.Println("Starting server on port 8080...")
 	err = http.ListenAndServe(":8080", nil)

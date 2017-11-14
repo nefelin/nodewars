@@ -2,17 +2,15 @@ package main
 
 import (
 	"fmt"
-	"math/rand"
-
 	"github.com/gorilla/websocket"
+	"math/rand"
 )
 
 // Team ...
 type Team struct {
-	Name    string
-	Color   string
+	Name    string // Names are only colors for now
 	Players map[*Player]bool
-	Channel chan Message
+	Open    bool
 }
 
 // Player ...
@@ -23,8 +21,9 @@ type Player struct {
 	Outgoing chan Message
 }
 
-func NewTeam(name, color string) Team {
-	return Team{name, color, make(map[*Player]bool), make(chan Message)}
+// NewTeam creates a new team with color/name color
+func NewTeam(color string) Team {
+	return Team{color, make(map[*Player]bool), true}
 }
 
 func (t *Team) broadcast(msg Message) {
@@ -38,6 +37,13 @@ func (t *Team) broadcast(msg Message) {
 func (t *Team) addPlayer(p *Player) {
 	t.Players[p] = true
 	p.Team = t
+
+	// Tell player they've joined
+	p.Outgoing <- Message{
+		Type:   "teamAssign",
+		Sender: "server",
+		Data:   t.Name,
+	}
 }
 
 func (t *Team) removePlayer(p *Player) {
@@ -50,7 +56,7 @@ func (t Team) String() string {
 	for player := range t.Players {
 		playerList = append(playerList, player.Name)
 	}
-	return fmt.Sprintf("<Team> (Name:%v, Color:%v, Players:%v)", t.Name, t.Color, playerList)
+	return fmt.Sprintf("<Team> (Name: %v, Players:%v)", t.Name, playerList)
 }
 
 func (p Player) String() string {
@@ -59,10 +65,10 @@ func (p Player) String() string {
 
 // func (p Player)
 
-func makeDummyTeams() []Team {
-	var teams []Team
-	teams = append(teams, NewTeam("Blue", "blue"))
-	teams = append(teams, NewTeam("Red", "red"))
+func makeDummyTeams() map[string]Team {
+	teams := make(map[string]Team)
+	teams["red"] = NewTeam("red")
+	teams["blue"] = NewTeam("blue")
 
 	return teams
 }
