@@ -456,3 +456,4 @@ created by net/http.(*Server).Serve
 2017/11/13 18:43:57 error: websocket: close 1001 (going away)
 2017/11/13 18:44:13 error: websocket: close 1001 (going away)
 2017/11/13 18:44:33 error: websocket: close 1001 (going away)
+2017/11/13 21:23:36 Starting server on port 8080...

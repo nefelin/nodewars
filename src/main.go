@@ -3,10 +3,11 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gorilla/websocket"
 )
 
 // Handshake related constants
@@ -16,6 +17,7 @@ const versionTag = "NodeWars:" + versionNumber
 var players = make(map[*websocket.Conn]*Player) // connected players
 var broadcast = make(chan Message)
 var teams = makeDummyTeams()
+var gameMap = NewDefaultMap()
 
 var upgrader = websocket.Upgrader{}
 
