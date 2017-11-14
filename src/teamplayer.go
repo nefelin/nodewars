@@ -34,7 +34,6 @@ func (t Team) isFull() bool {
 }
 
 func (t *Team) broadcast(msg Message) {
-	fmt.Printf("message, %v\n", msg)
 	for player := range t.Players {
 		player.Outgoing <- msg
 	}
@@ -90,8 +89,6 @@ func (p *Player) joinTeam(t *Team) {
 func (p Player) String() string {
 	return fmt.Sprintf("<Player> Name: %v, Team: %v", p.Name, p.Team)
 }
-
-// func (p Player)
 
 func makeDummyTeams() map[string]Team {
 	teams := make(map[string]Team)

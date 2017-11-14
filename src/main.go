@@ -1,13 +1,13 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
 	"os"
-
-	"github.com/gorilla/websocket"
 )
 
 // Handshake related constants
@@ -17,7 +17,6 @@ const versionTag = "NodeWars:" + versionNumber
 var players = make(map[*websocket.Conn]*Player) // connected players
 var broadcast = make(chan Message)
 var teams = makeDummyTeams()
-
 var gameMap = NewDefaultMap()
 
 var upgrader = websocket.Upgrader{}
@@ -60,21 +59,23 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	// Upgrade GET to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Fatal(err)
+		log.Println(err)
+		return
 	}
 
 	// Close this socket when we're done
-	defer ws.Close()
 
 	// Attempt handshake
 	err = doHandshake(ws)
 	if err != nil {
 		log.Printf("Handshake error: %v", err)
+		ws.Close()
 		return
 	}
 
 	// Assuming we're all good, register client
 	thisPlayer := registerPlayer(ws)
+	defer scrubPlayerSocket(ws)
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	go outgoingRelay(thisPlayer)
@@ -86,12 +87,20 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("error: %v", err)
-
-			// Remove player from team on socket close
-			scrubPlayerSocket(ws)
 			break
 		}
 		incomingHandler(&msg, thisPlayer)
+	}
+}
+
+func calcStateMsgForPlayer() Message {
+	currentState := GameState{*gameMap, make([]GameEvent, 0)}
+	stateMsg, _ := json.Marshal(currentState)
+
+	return Message{
+		Type:   "gameState",
+		Sender: "server",
+		Data:   string(stateMsg), // string(stateMsg),
 	}
 }
 
@@ -101,40 +110,54 @@ func outgoingRelay(p *Player) {
 		msg := <-p.Outgoing
 		if err := p.Socket.WriteJSON(msg); err != nil {
 			log.Printf("error dispatching message to %v", p.Name)
-			scrubPlayerSocket(p.Socket)
 			return
 		}
 	}
 }
 
 func incomingHandler(msg *Message, p *Player) {
+	// Tie message with player name
+	msg.Sender = p.Name
 	switch msg.Type {
+	case "allChat":
+		for _, player := range players {
+			player.Outgoing <- Message{"allChat", p.Name, msg.Data}
+		}
+
 	case "teamChat":
 		//HANDLE chat by unassigned player, maybe make an Observer team by default?
+		if p.Team != nil {
+			go p.Team.broadcast(*msg)
+		} else {
+			p.Outgoing <- Message{"error", "server", "unable to teamChat without team assignment"}
+		}
 
 		// Attach sendersocket's name since its relevant for chats
-		msg.Sender = p.Name
-		go p.Team.broadcast(*msg)
 	case "teamJoin":
 		if team, ok := teams[msg.Data]; ok {
 			p.joinTeam(&team)
 		} else {
-			p.Outgoing <- Message{"error", "server", "team " + msg.Data + " does not exist"}
+			p.Outgoing <- Message{"error", "server", "team '" + msg.Data + "' does not exist"}
 		}
 
+	case "stateRequest":
+		p.Outgoing <- calcStateMsgForPlayer()
+
 	default:
+		p.Outgoing <- Message{"error", "server", "uknown message type"}
 	}
 }
 
 // func sendWorldState(p *Player)
 
 func scrubPlayerSocket(ws *websocket.Conn) {
-	ws.Close()
 	players[ws].Team.removePlayer(players[ws])
 	delete(players, ws)
+	ws.Close()
 }
 
 func main() {
+
 	// So it doesn't complain about fmt
 	fmt.Println("Starting " + versionTag + " server...")
 

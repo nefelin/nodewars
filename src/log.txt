@@ -526,3 +526,77 @@ created by net/http.(*Server).Serve
 2017/11/14 11:44:33 Starting server on port 8080...
 2017/11/14 12:48:33 Starting server on port 8080...
 2017/11/14 12:49:50 Starting server on port 8080...
+2017/11/14 13:05:44 Starting server on port 8080...
+2017/11/14 13:18:58 Starting server on port 8080...
+2017/11/14 13:22:33 Starting server on port 8080...
+2017/11/14 13:24:27 Starting server on port 8080...
+2017/11/14 13:39:08 error: websocket: close 1001 (going away)
+2017/11/14 13:39:08 error dispatching message to yjrga
+2017/11/14 13:47:10 Starting server on port 8080...
+2017/11/14 13:47:40 error: websocket: close 1001 (going away)
+2017/11/14 13:47:40 error dispatching message to yjrga
+2017/11/14 13:48:30 Starting server on port 8080...
+2017/11/14 13:50:24 Starting server on port 8080...
+2017/11/14 13:52:37 Starting server on port 8080...
+2017/11/14 13:54:56 Starting server on port 8080...
+2017/11/14 14:12:33 Starting server on port 8080...
+2017/11/14 15:21:19 Starting server on port 8080...
+2017/11/14 15:23:33 Starting server on port 8080...
+2017/11/14 15:31:33 error: websocket: close 1001 (going away)
+2017/11/14 15:31:33 error dispatching message to yjrga
+2017/11/14 15:32:05 Starting server on port 8080...
+2017/11/14 15:34:09 error: websocket: close 1001 (going away)
+2017/11/14 15:34:09 error dispatching message to yjrga
+2017/11/14 15:46:08 Starting server on port 8080...
+2017/11/14 15:46:20 error: websocket: close 1001 (going away)
+2017/11/14 15:46:20 error dispatching message to yjrga
+2017/11/14 15:48:31 error: websocket: close 1001 (going away)
+2017/11/14 15:48:31 error dispatching message to ronas
+2017/11/14 15:55:15 Starting server on port 8080...
+2017/11/14 15:55:43 error: websocket: close 1001 (going away)
+2017/11/14 15:55:43 http: panic serving [::1]:57391: runtime error: invalid memory address or nil pointer dereference
+goroutine 7 [running]:
+net/http.(*conn).serve.func1(0xc420084aa0)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x1290d80, 0x145e500)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.(*Team).removePlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:56
+main.scrubPlayerSocket(0xc4200ac280)
+	/Users/nefelin/Sites/nodewars/src/main.go:154 +0x90
+main.handleConnections(0x1434480, 0xc4201042a0, 0xc420102400)
+	/Users/nefelin/Sites/nodewars/src/main.go:94 +0x29c
+net/http.HandlerFunc.ServeHTTP(0x12f7e68, 0x1434480, 0xc4201042a0, 0xc420102400)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1468400, 0x1434480, 0xc4201042a0, 0xc420102400)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc42007ed00, 0x1434480, 0xc4201042a0, 0xc420102400)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420084aa0, 0x1434940, 0xc420059300)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288
+2017/11/14 15:55:56 error dispatching message to yjrga
+2017/11/14 15:56:28 error: websocket: close 1001 (going away)
+2017/11/14 15:56:28 http: panic serving [::1]:57477: runtime error: invalid memory address or nil pointer dereference
+goroutine 11 [running]:
+net/http.(*conn).serve.func1(0xc420084b40)
+	/usr/local/go/src/net/http/server.go:1697 +0xd0
+panic(0x1290d80, 0x145e500)
+	/usr/local/go/src/runtime/panic.go:491 +0x283
+main.(*Team).removePlayer(...)
+	/Users/nefelin/Sites/nodewars/src/teamplayer.go:56
+main.scrubPlayerSocket(0xc4200ac3c0)
+	/Users/nefelin/Sites/nodewars/src/main.go:154 +0x90
+main.handleConnections(0x1434480, 0xc420258000, 0xc420102500)
+	/Users/nefelin/Sites/nodewars/src/main.go:94 +0x29c
+net/http.HandlerFunc.ServeHTTP(0x12f7e68, 0x1434480, 0xc420258000, 0xc420102500)
+	/usr/local/go/src/net/http/server.go:1918 +0x44
+net/http.(*ServeMux).ServeHTTP(0x1468400, 0x1434480, 0xc420258000, 0xc420102500)
+	/usr/local/go/src/net/http/server.go:2254 +0x130
+net/http.serverHandler.ServeHTTP(0xc42007ed00, 0x1434480, 0xc420258000, 0xc420102500)
+	/usr/local/go/src/net/http/server.go:2619 +0xb4
+net/http.(*conn).serve(0xc420084b40, 0x1434940, 0xc4200594c0)
+	/usr/local/go/src/net/http/server.go:1801 +0x71d
+created by net/http.(*Server).Serve
+	/usr/local/go/src/net/http/server.go:2720 +0x288

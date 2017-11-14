@@ -10,10 +10,12 @@
 </p>
 <div id="app" style="margin:10px">
 	<input autofocus="true" id="msgBox" v-model="message" @keyup.enter="sendMsg" >
-	<select v-model="msgType" size="3" @click="reFocus">
+	<select v-model="msgType" size="5" @click="reFocus">
 		<option value="teamChat">teamChat</option>
+		<option value="allChat">allChat</option>
 		<option value="teamJoin">teamJoin</option>
 		<option value="nodeConnect">nodeConnect</option>
+		<option value="stateRequest">stateRequest</option>
 	</select>
 	<div v-bind:style="{ width: '30px', height:'30px', border:'2px solid black', backgroundColor: teamColor }">
 	</div>
@@ -35,9 +37,11 @@ new Vue({
 	data: function() {
 		return {
 			message: '',
-			msgType: 'teamChat',
+			msgType: 'teamJoin',
 			ws: null,
-			teamColor: 'white'
+			teamColor: 'white',
+			gameState: null
+
 		}
 	},
 
@@ -59,6 +63,33 @@ new Vue({
 
 		reFocus: function() {
 			msgBox.focus()
+		},
+
+		updateState: function(newState) {
+			this.gameState=newState;
+			console.log("> State updated <", this.gameState);
+		},
+
+		parseServerMessages: function(e) {
+			const message = JSON.parse(e.data);
+			switch (message.type) {
+				case "teamAssign":
+					this.teamColor = message.data
+					break
+				case "teamChat":
+					console.log("("+this.teamColor+")", message.sender + ":", message.data)
+					break
+				case "allChat":
+					console.log("(all)", message.sender + ":", message.data)
+					break
+				case "error":
+					console.log("> server error < \n", message.data)
+					break
+				case "gameState":
+					this.updateState(JSON.parse(message.data))
+					break
+
+			}
 		}
 	},
 
@@ -72,24 +103,16 @@ new Vue({
 
 		// Debugging purposes
 		this.ws.addEventListener('message', (e) => {
-			console.log('<', e.data)
+			// console.log('<', e.data)
 		});
 
-		const parseServerMessages = (e) => {
-			const message = JSON.parse(e.data);
-			switch (message.type) {
-				case "teamAssign":
-					this.teamColor = message.data
-					break
-			}
-		} 
 		// Confirm receipt of correct version number (one time listener)
 		this.ws.addEventListener('message', (e)=>{
 			if (e.data == confirmationPhrase)
 				console.log('> Handshake succesful <')
 
 				// turn on normal message parsing
-				this.ws.addEventListener('message', parseServerMessages);
+				this.ws.addEventListener('message', this.parseServerMessages);
 				return
 			console.log('Server said:', e.data)
 			throw "Error: failed to negotiate handshake with server"

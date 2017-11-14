@@ -1,16 +1,16 @@
 package main
 
-import "strconv"
+// import "strconv"
 
 var nodeID int
 
 // Node ...
 type Node struct {
-	ID          string  `json:"id"`
-	Connections []*Node `json:"connections"`
-	Owner       *Team   `json:"owner"`
-	Contested   bool    `json:"contested"`
-	Ice         []Ice   `json:"ice"`
+	ID          int   `json:"id"`
+	Connections []int `json:"connections"`
+	// Owner       *Team   `json:"owner"`
+	// Contested   bool    `json:"contested"`
+	// Ice []Ice `json:"ice"`
 }
 
 // Ice ...
@@ -20,21 +20,18 @@ type Ice struct {
 }
 
 // NewNode ...
-func NewNode(name string) *Node {
-	id := name
-	if name == "" {
-		id = strconv.Itoa(nodeID)
-		nodeID++
-	}
+func NewNode() *Node {
+	id := nodeID
+	nodeID++
 
-	connections := make([]*Node, 0)
-	ice := make([]Ice, 0)
+	connections := make([]int, 0)
+	// ice := make([]Ice, 0)
 
-	return &Node{id, connections, nil, false, ice}
+	return &Node{id, connections}
 }
 
 func (n *Node) addConnection(m *Node) {
-	n.Connections = append(n.Connections, m)
+	n.Connections = append(n.Connections, m.ID)
 }
 
 // check for contested status and set flag (and owner?)
