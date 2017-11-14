@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
-	"log"
 	"math/rand"
+
+	"github.com/gorilla/websocket"
 )
 
 // Team ...
@@ -15,18 +15,22 @@ type Team struct {
 	Channel chan Message
 }
 
-func newTeam(name, color string) Team {
+// Player ...
+type Player struct {
+	Name     string
+	Team     *Team
+	Socket   *websocket.Conn
+	Outgoing chan Message
+}
+
+func NewTeam(name, color string) Team {
 	return Team{name, color, make(map[*Player]bool), make(chan Message)}
 }
 
-func (t Team) broadcast(msg Message) {
+func (t *Team) broadcast(msg Message) {
+	fmt.Printf("message, %v\n", msg)
 	for player := range t.Players {
-		ws := player.Socket
-		err := ws.WriteJSON(msg)
-		if err != nil {
-			log.Printf("error: %v", err)
-			scrubPlayerSocket(ws)
-		}
+		player.Outgoing <- msg
 	}
 }
 
@@ -49,13 +53,6 @@ func (t Team) String() string {
 	return fmt.Sprintf("<Team> (Name:%v, Color:%v, Players:%v)", t.Name, t.Color, playerList)
 }
 
-// Player ...
-type Player struct {
-	Name   string
-	Team   *Team
-	Socket *websocket.Conn
-}
-
 func (p Player) String() string {
 	return fmt.Sprintf("Player Name: %v\nTeam: %v", p.Name, p.Team)
 }
@@ -64,14 +61,14 @@ func (p Player) String() string {
 
 func makeDummyTeams() []Team {
 	var teams []Team
-	teams = append(teams, newTeam("Blue", "blue"))
-	teams = append(teams, newTeam("Red", "red"))
+	teams = append(teams, NewTeam("Blue", "blue"))
+	teams = append(teams, NewTeam("Red", "red"))
 
 	return teams
 }
 
 func registerPlayer(ws *websocket.Conn) *Player {
-	newPlayer := Player{randStringBytes(5), nil, ws}
+	newPlayer := Player{randStringBytes(5), nil, ws, make(chan Message)}
 	players[ws] = &newPlayer
 	return &newPlayer
 }

@@ -5,10 +5,12 @@
 	<script src="https://unpkg.com/vue"></script>
 </head>
 <body>
-NodeWars Handshake
+<p style="margin: 10px">
+	NodeWars Handshake
+</p>
 <div id="app">
-	<input v-model="message" @keyup.enter="sendMsg" style="margin:10px">
-	<div id="teamColorBox" style="width:30px;height:30px;border:2px solid black">
+	<input autofocus="true" v-model="message" @keyup.enter="sendMsg" style="margin:10px">
+	<div v-bind:style="{ width: '30px', height:'30px', margin: '10px', border:'2px solid black', backgroundColor: teamColor }">
 	</div>
 
 </div>
@@ -18,47 +20,7 @@ NodeWars Handshake
 const versionNum = '0.0.0.1';
 const versionTag = 'NodeWars:' + versionNum;
 const confirmationPhrase = 'Welcome to NodeWars';
-const teamColorBox = document.getElementById('teamColorBox');
-let versionConf = false;
 
-const handshake = (ws) => {
-	console.log('>', versionTag)
-	ws.send(versionTag)
-}
-
-const ws = new WebSocket('ws://' + window.location.host + '/ws');
-
-// Send handshake once socket is open
-ws.addEventListener('open', () => {
-	handshake(ws)
-});
-
-// Debugging purposes
-ws.addEventListener('message', (e) => {
-	console.log('<', e.data)
-});
-
-const parseServerMessages = (e) => {
-	const message = JSON.parse(e.data);
-	switch (message.type) {
-		case "teamAssign":
-			document.getElementById('teamColorBox').style.backgroundColor = message.data
-			break
-	}
-} 
-
-// Confirm receipt of correct version number (one time listener)
-ws.addEventListener('message', (e)=>{
-	if (e.data == confirmationPhrase)
-		console.log('> Handshake succesful <')
-
-		// turn on normal message parsing
-		ws.addEventListener('message', parseServerMessages);
-		return
-	console.log('Server said:', e.data)
-	throw "Error: failed to negotiate handshake with server"
-	ws.close()
-}, { once: true });
 
 
 // Minimal Vue Stuff
@@ -68,26 +30,63 @@ new Vue({
 	data: function() {
 		return {
 			message: '',
-			socket: ws,
-			teamFlag: '',
+			ws: null,
+			teamColor: 'white'
 		}
 	},
 
 	methods: {
 		sendMsg: function () {
-			console.log(this)
 			const message = JSON.stringify({
 				type: "chat",
 				data: this.message
 			})
 			this.message = ''
 			// console.log("sending", message, "to socket:", ws)
-			ws.send(message)
+			this.ws.send(message)
+		},
+
+		handshake: function() {
+			console.log('>', versionTag)
+			this.ws.send(versionTag)
 		}
 	},
 
-	// init: () => {console.log('starting vue app')}
+	created: function () {
 
+		this.ws = new WebSocket('ws://' + window.location.host + '/ws');
+
+		// Send handshake once socket is open
+		this.ws.addEventListener('open', () => {
+			this.handshake()
+		});
+
+		// Debugging purposes
+		this.ws.addEventListener('message', (e) => {
+			console.log('<', e.data)
+		});
+
+		const parseServerMessages = (e) => {
+			const message = JSON.parse(e.data);
+			switch (message.type) {
+				case "teamAssign":
+					this.teamColor = message.data
+					break
+			}
+		} 
+		// Confirm receipt of correct version number (one time listener)
+		this.ws.addEventListener('message', (e)=>{
+			if (e.data == confirmationPhrase)
+				console.log('> Handshake succesful <')
+
+				// turn on normal message parsing
+				this.ws.addEventListener('message', parseServerMessages);
+				return
+			console.log('Server said:', e.data)
+			throw "Error: failed to negotiate handshake with server"
+			this.ws.close()
+		}, { once: true });
+	}
 })
 
 

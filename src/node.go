@@ -2,8 +2,9 @@ package main
 
 import "strconv"
 
-var NodeID int = 0
+var nodeID int
 
+// Node ...
 type Node struct {
 	ID          string  `json:"id"`
 	Connections []*Node `json:"connections"`
@@ -12,16 +13,18 @@ type Node struct {
 	Ice         []Ice   `json:"ice"`
 }
 
+// Ice ...
 type Ice struct {
 	TestID string `json:"test_id"`
 	Owner  Team   `json:"owner"`
 }
 
+// NewNode ...
 func NewNode(name string) *Node {
 	id := name
 	if name == "" {
-		NodeID++
-		id = strconv.Itoa(NodeID)
+		id = strconv.Itoa(nodeID)
+		nodeID++
 	}
 
 	connections := make([]*Node, 0)

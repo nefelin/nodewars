@@ -17,6 +17,7 @@ const versionTag = "NodeWars:" + versionNumber
 var players = make(map[*websocket.Conn]*Player) // connected players
 var broadcast = make(chan Message)
 var teams = makeDummyTeams()
+
 var gameMap = NewDefaultMap()
 
 var upgrader = websocket.Upgrader{}
@@ -76,11 +77,12 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Assuming we're all good, register client
 	thisPlayer := registerPlayer(ws)
-	// teams[tInc%2].addPlayer(thisPlayer)
-	// fmt.Printf("Assigning %v to team %v\n", thisPlayer.Name, thisPlayer.Team.Name)
 	assignToTeam(thisPlayer, &teams[tInc%2])
+	// sendWorldState(thisPlayer)
 	tInc++
-	// fmt.Println(thisPlayer)
+
+	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
+	go messageDispatcher(thisPlayer)
 
 	// Handle socket stream
 	for {
@@ -99,6 +101,30 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Should this do socket scrubbing on error? Is that redundant? TODO
+func messageDispatcher(p *Player) {
+	for {
+		msg := <-p.Outgoing
+		if err := p.Socket.WriteJSON(msg); err != nil {
+			log.Printf("error dispatching message to %v", p.Name)
+			scrubPlayerSocket(p.Socket)
+			return
+		}
+	}
+}
+
+func messageHandler(msg *Message, sender *Player) {
+	switch msg.Type {
+	case "chat":
+		// Attach sendersocket's name since its relevant for chats
+		msg.Sender = sender.Name
+		go sender.Team.broadcast(*msg)
+	default:
+	}
+}
+
+// func sendWorldState(p *Player)
+
 func assignToTeam(p *Player, t *Team) {
 	t.addPlayer(p)
 	p.Socket.WriteJSON(Message{
@@ -108,16 +134,6 @@ func assignToTeam(p *Player, t *Team) {
 	})
 }
 
-func messageHandler(msg *Message, sender *Player) {
-	switch msg.Type {
-	case "chat":
-		// Attach sendersocket's name
-		msg.Sender = sender.Name
-		sender.Team.Channel <- *msg
-	default:
-	}
-}
-
 func scrubPlayerSocket(ws *websocket.Conn) {
 	ws.Close()
 	players[ws].Team.removePlayer(players[ws])
@@ -125,7 +141,6 @@ func scrubPlayerSocket(ws *websocket.Conn) {
 }
 
 func teamChatHandler() {
-	fmt.Printf("Teams: %v\n", teams)
 	for _, team := range teams {
 		go func(t Team) {
 			for {
