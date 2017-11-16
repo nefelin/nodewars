@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Cyto Start</title>
+  <script src="cytoscape.js"></script>
+  <!-- <script src="https://unpkg.com/vue"></script> -->
+  <style>
+  	#cy {
+	  width: 640px;
+	  height: 480px;
+	  display: block;
+	}
+  </style>
+</head>
+<body>
+<div style="border: 2px solid black;width:640px">
+	<div id="cy"></div>
+</div>
+Show Traffic:
+<select id="showTraffic" style="margin-top:20px">
+	<option value="red">red</option>
+	<option value="blue">blue</option>
+	<option value="green">green</option>
+	<option value="none">none</option>
+</select>
+
+
+
+<script>
+
+'use strict';
+
+const cy = cytoscape({
+	container: document.getElementById('cy'),
+	style: [ // the stylesheet for the graph
+    {
+      selector: 'node',
+      style: {
+        // 'border-color': 'data(status)',
+        'border-color': 'black',
+        'border-width': 2,
+        'background-color': 'white',
+        'label': 'data(id)'
+      }
+    },
+    {
+      selector: 'edge',
+      style: {
+        'width': 1.5,
+        'line-color': '#000',
+        'target-arrow-color': '#ccc',
+        'target-arrow-shape': 'triangle',
+        // 'label': 'data(id)'
+      }
+    }
+    ],
+});
+const NODECOUNT = 9
+for (let i = 0;i < NODECOUNT; i++){
+	cy.add({
+	    group: "nodes",
+	    data: {id:i},
+	});
+}
+
+// for (let i = 0;i < NODECOUNT; i++){
+// 	const target = i < NODECOUNT-1 ? i+1 : 0
+// 	cy.add({
+// 	    group: "edges",
+// 	    data: {id:'e'+i, source:i, target:target},
+// 	});
+// }
+
+for (let i = 0;i < NODECOUNT; i++){
+	const target1 = i < NODECOUNT-3 ? i+3 : null
+	const target2 = i % 3 < 2 ? i+1 : null
+	if (target1) cy.add({
+	    group: "edges",
+	    data: {id:'e'+i, source:i, target:target1},
+	});
+	if (target2) cy.add({
+	    group: "edges",
+	    data: {id:'e'+i+'e2', source:i, target:target2},
+	});
+}
+
+
+
+const layout = cy.layout({
+		name: 'grid',
+		rows: NODECOUNT/3
+	})
+
+layout.run()
+
+console.log('ran')
+cy.on('click',  function(e) {
+	const target = e.target;
+	cy.$(':selected').unselect();
+	if (target === cy) {
+		cy.animate({
+			fit: {
+			    eles: [],
+			    padding: 40
+			}
+			}, {
+			  duration: 300
+		});
+	} else if (target.isEdge()){
+		if (!target.animated())
+			edgePulse(target)
+		else 
+			target.stop()
+	} else {
+		cy.animate({
+			fit: {
+			    eles: target,
+			    padding: 40
+			}
+			}, {
+			  duration: 600
+		});
+		target.select()
+	}
+	console.log(cy.$(':selected'));
+})
+
+const edgePulse = (edge, thisCycleRate, color = 'black',) => {
+	edge.animate({
+		style: {
+			'width':3,
+			'line-color': color
+		}
+	}, 
+	{ duration: thisCycleRate/2 })
+
+	.animate({
+		style: {
+			'width':2,
+			'line-color': color
+		}
+	}, { duration: thisCycleRate/2 })
+}
+
+const globalCycleRate = 1000
+let showTrafficColor = 'none'
+function pulseDispatcher(restart=false) {
+	cy.edges().forEach(edge => {
+		if (restart) // restart animations from beginning
+			edge.stop()
+		if ( edge.data("traffic").length > 0 && !edge.animated()) {
+			let edgeColor = 'black'
+			// console.log('traffic data:', edge.data("traffic"), "redult of indexOf",edge.data("traffic").indexOf(showTrafficColor));
+			if (edge.data("traffic").indexOf(showTrafficColor)>-1)
+				edgeColor = showTrafficColor
+
+			edgePulse(edge, globalCycleRate-100, edgeColor);
+		}
+	})
+}
+
+// Seperate pulse from color TODO
+
+let trafficTimer = null
+function startTrafficAnimations() {
+	if (!trafficTimer) {
+		pulseDispatcher()
+		trafficTimer = window.setInterval(pulseDispatcher, globalCycleRate)
+	} else {
+		window.clearInterval(trafficTimer)
+		pulseDispatcher(true)
+		trafficTimer = window.setInterval(pulseDispatcher, globalCycleRate)
+	}
+}
+
+const showTrafficSelect = document.getElementById('showTraffic')
+function parseShowTraffic(e) {
+	// console.log(e.target.value)
+	showTrafficColor = e.target.value
+	startTrafficAnimations()
+
+}
+showTrafficSelect.addEventListener('change', parseShowTraffic)
+
+</script>
+</body>
+</html>

@@ -1,14 +1,28 @@
 <!DOCTYPE html>
 <html>
 <head>
-	<title>Basic Handshake</title>
+	<title>NodeWars SuperMegaAlpha</title>
 	<script src="https://unpkg.com/vue"></script>
+	  <script src="cytoscape.js"></script>
+  <style>
+  	#cy {
+	  width: 640px;
+	  height: 480px;
+	  display: block;
+	}
+  </style>
 </head>
 <body>
 <p style="margin: 10px">
-	NodeWars Handshake
+	NodeWars Protype
 </p>
+
+
+
+<!-- Vue app -->
 <div id="app" style="margin:10px">
+	<div v-bind:style="{ width: '30px', height:'30px', border:'2px solid black', backgroundColor: teamColor }">
+	</div>
 	<input autofocus="true" id="msgBox" v-model="message" @keyup.enter="sendMsg" >
 	<select v-model="msgType" size="5" @click="reFocus">
 		<option value="teamChat">teamChat</option>
@@ -17,10 +31,22 @@
 		<option value="nodeConnect">nodeConnect</option>
 		<option value="stateRequest">stateRequest</option>
 	</select>
-	<div v-bind:style="{ width: '30px', height:'30px', border:'2px solid black', backgroundColor: teamColor }">
-	</div>
+	
 
 </div>
+
+<!-- Cytoscape -->
+Show Traffic:
+<select id="showTraffic" style="margin-top:20px">
+	<option value="red">red</option>
+	<option value="orange">orange</option>
+	<option value="green">green</option>
+	<option value="none">none</option>
+</select>
+<div style="border: 2px solid black;height:480px">
+	<div id="cy"></div>
+</div>
+
 
 <script>
 'use strict';
@@ -121,7 +147,175 @@ new Vue({
 	}
 })
 
+// Cytoscape stuff!
 
+const cy = cytoscape({
+	container: document.getElementById('cy'),
+
+	elements: [
+		{
+			data: { id: 'a', status: 'green', label: 'BaseBlue'}
+		},
+		{
+			data: { id: 'b', status: 'green', label: '' }
+		},
+		{
+			data: { id: 'c', status: 'red', label: 'BaseRed' }
+		},
+		{ // edge ab
+	      data: { id: 'ab', source: 'a', target: 'b', traffic: ['green']}
+	    },
+	    { // edge ab
+	      data: { id: 'bc', source: 'b', target: 'c', traffic: ['green'] }
+	    },
+	    {
+			data: { id: 'd', status: 'green', label: '', traffic: [] }
+		},
+		{
+			data: { id: 'e', status: 'green', label: '', traffic: ['green', 'red'] }
+		},
+		{
+			data: { id: 'f', status: 'red', label: '', traffic: [] }
+		},
+		{ // edge ab
+	      data: { id: 'dc', source: 'd', target: 'c', traffic: ['green', 'red', 'orange'] }
+	    },
+	    { // edge ab
+	      data: { id: 'fd', source: 'f', target: 'd', traffic: ['green', 'red', 'orange'] }
+	    },
+	    { // edge ab
+	      data: { id: 'ea', source: 'e', target: 'a', traffic: [] }
+	    },
+	    { // edge ab
+	      data: { id: 'ec', source: 'e', target: 'c', traffic: [] }
+	    },
+	    { // edge ab
+	      data: { id: 'fa', source: 'f', target: 'a', traffic: [] }
+	    },
+	    { // edge ab
+	      data: { id: 'af', source: 'a', target: 'f', traffic: [] }
+	    },
+	],
+
+	style: [ // the stylesheet for the graph
+    {
+      selector: 'node',
+      style: {
+        // 'border-color': 'data(status)',
+        'border-color': 'black',
+        'border-width': 2,
+        'background-color': 'white',
+        'label': 'data(id)'
+      }
+    },
+
+    {
+      selector: 'edge',
+      style: {
+        'width': 1.5,
+        'line-color': '#000',
+        'target-arrow-color': '#ccc',
+        'target-arrow-shape': 'triangle',
+        // 'label': 'data(id)'
+      }
+    }
+  ],
+
+	layout: {
+		name: 'cose',
+		rows: 3
+	},
+
+});
+
+
+cy.on('click',  function(e) {
+	const target = e.target;
+	cy.$(':selected').unselect();
+	if (target === cy) {
+		cy.animate({
+			fit: {
+			    eles: [],
+			    padding: 40
+			}
+			}, {
+			  duration: 300
+		});
+	} else if (target.isEdge()){
+		if (!target.animated())
+			edgePulse(target)
+		else 
+			target.stop()
+	} else {
+		cy.animate({
+			fit: {
+			    eles: target,
+			    padding: 40
+			}
+			}, {
+			  duration: 600
+		});
+		target.select()
+	}
+	console.log(cy.$(':selected'));
+})
+
+const edgePulse = (edge, thisCycleRate, color = 'black',) => {
+	edge.animate({
+		style: {
+			'width':3,
+			'line-color': color
+		}
+	}, 
+	{ duration: thisCycleRate/2 })
+
+	.animate({
+		style: {
+			'width':2,
+			'line-color': color
+		}
+	}, { duration: thisCycleRate/2 })
+}
+
+const globalCycleRate = 1000
+let showTrafficColor = 'none'
+function pulseDispatcher(restart=false) {
+	cy.edges().forEach(edge => {
+		if (restart) // restart animations from beginning
+			edge.stop()
+		if ( edge.data("traffic").length > 0 && !edge.animated()) {
+			let edgeColor = 'black'
+			// console.log('traffic data:', edge.data("traffic"), "redult of indexOf",edge.data("traffic").indexOf(showTrafficColor));
+			if (edge.data("traffic").indexOf(showTrafficColor)>-1)
+				edgeColor = showTrafficColor
+
+			edgePulse(edge, globalCycleRate-100, edgeColor);
+		}
+	})
+}
+
+// Seperate pulse from color TODO
+
+let trafficTimer = null
+function startTrafficAnimations() {
+	if (!trafficTimer) {
+		pulseDispatcher()
+		trafficTimer = window.setInterval(pulseDispatcher, globalCycleRate)
+	} else {
+		window.clearInterval(trafficTimer)
+		pulseDispatcher(true)
+		trafficTimer = window.setInterval(pulseDispatcher, globalCycleRate)
+	}
+}
+
+const showTrafficSelect = document.getElementById('showTraffic')
+function parseShowTraffic(e) {
+	console.log(e.target.value)
+	showTrafficColor = e.target.value
+	startTrafficAnimations()
+
+}
+showTrafficSelect.addEventListener('change', parseShowTraffic)
 </script>
 </body>
 </html>
