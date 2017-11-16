@@ -1,6 +1,8 @@
 package main
 
-type NodeMap = map[int]*Node
+type NodeMap struct {
+	Nodes map[nodeID]*Node
+}
 
 type GameState struct {
 	Map        NodeMap     `json:"node_map"`
@@ -13,26 +15,39 @@ type GameEvent struct {
 	Where Node   `json:"where"`
 }
 
+// NodeMap functions
+
 func NewNodeMap() NodeMap {
-	return make(map[int]*Node)
+	return NodeMap{make(map[int]*Node)}
 }
 
-func (s *GameState) addEvent(e GameEvent) {
-	s.SeenEvents = append(s.SeenEvents, e)
+func (m *NodeMap) addNode(node *Node) {
+	m.Nodes[node.ID] = node
+}
+
+func (m *NodeMap) addNodes(ns []*Node) {
+	for _, node := range ns {
+		m.Nodes[node.ID] = node
+	}
+}
+
+// Deal with redundant edges on the front end TODO
+func (m NodeMap) edges() []Edge {
+	edges := make([]Edge, 0)
+	for _, node := range m.Nodes {
+		for _, connection := range node.Connections {
+			edges = append(edges, Edge{node.ID, connection})
+		}
+	}
+	return edges
 }
 
 func NewGameState(n NodeMap) GameState {
 	return GameState{n, []GameEvent{}}
 }
 
-func addNodeTo(m NodeMap, node *Node) {
-	m[node.ID] = node
-}
-
-func addNodesTo(m NodeMap, ns []*Node) {
-	for _, node := range ns {
-		m[node.ID] = node
-	}
+func (s *GameState) addEvent(e GameEvent) {
+	s.SeenEvents = append(s.SeenEvents, e)
 }
 
 func NewDefaultMap() *NodeMap {
@@ -43,7 +58,7 @@ func NewDefaultMap() *NodeMap {
 	redHome.addConnection(blueHome)
 
 	newMap := NewNodeMap()
-	addNodesTo(newMap, []*Node{blueHome, redHome})
+	newMap.addNodes([]*Node{blueHome, redHome})
 
 	return &newMap
 }

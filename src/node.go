@@ -1,33 +1,39 @@
 package main
 
-// import "strconv"
+type nodeID = int
 
-var nodeID int
+var nodeIDCounter int
 
 // Node ...
 type Node struct {
-	ID          int   `json:"id"`
-	Connections []int `json:"connections"`
-	// Owner       *Team   `json:"owner"`
-	// Contested   bool    `json:"contested"`
-	// Ice []Ice `json:"ice"`
+	ID          int      `json:"id"`
+	Connections []nodeID `json:"connections"`
+	Modules     []Module `json:"modules"`
 }
 
-// Ice ...
-type Ice struct {
-	TestID string `json:"test_id"`
-	Owner  Team   `json:"owner"`
+// Edge ...
+type Edge struct {
+	Source nodeID
+	Target nodeID
+}
+
+// Module ...
+type Module struct {
+	TestID     string  `json:"testId"`
+	LanguageID string  `json:"languageId"`
+	Owner      *Team   `json:"owner"`
+	Builder    *Player `json:"builder"`
 }
 
 // NewNode ...
 func NewNode() *Node {
-	id := nodeID
-	nodeID++
+	id := nodeIDCounter
+	nodeIDCounter++
 
 	connections := make([]int, 0)
-	// ice := make([]Ice, 0)
+	modules := make([]Module, 0)
 
-	return &Node{id, connections}
+	return &Node{id, connections, modules}
 }
 
 func (n *Node) addConnection(m *Node) {
