@@ -2,28 +2,33 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/websocket"
+	"log"
 	"math/rand"
+
+	"github.com/gorilla/websocket"
 )
+
+type colorName = string
 
 // Team ...
 type Team struct {
-	Name    string // Names are only colors for now
-	Players map[*Player]bool
+	Name    colorName        // Names are only colors for now
+	Players map[*Player]bool //THESE create circular JSON problem, decide on org scheme and fix, TODO
 	MaxSize int
 }
 
 // Player ...
 type Player struct {
-	Name     string
-	Team     *Team
-	Socket   *websocket.Conn
-	Outgoing chan Message
+	Name         string
+	Team         *Team //THESE create circular JSON problem, decide on org scheme and fix, TODO
+	PointOfEntry nodeID
+	Socket       *websocket.Conn
+	Outgoing     chan Message
 }
 
 // NewTeam creates a new team with color/name color
-func NewTeam(color string) Team {
-	return Team{color, make(map[*Player]bool), 2}
+func NewTeam(n colorName) Team {
+	return Team{n, make(map[*Player]bool), 2}
 }
 
 func (t Team) isFull() bool {
@@ -86,12 +91,21 @@ func (p *Player) joinTeam(t *Team) {
 	}
 }
 
+// right now player can only connect to adjacent nodes
+func (p *Player) connectToNode(n nodeID) bool {
+	log.Printf("Player %v attempting to connect to node %v from POE %v", p.Name, n, p.PointOfEntry)
+	if gameMap.Nodes[p.PointOfEntry].connectsTo(n) {
+		return true
+	}
+	return false
+}
+
 func (p Player) String() string {
 	return fmt.Sprintf("<Player> Name: %v, Team: %v", p.Name, p.Team)
 }
 
 func makeDummyTeams() map[string]Team {
-	teams := make(map[string]Team)
+	teams := make(map[colorName]Team)
 	teams["red"] = NewTeam("red")
 	teams["blue"] = NewTeam("blue")
 
@@ -99,7 +113,7 @@ func makeDummyTeams() map[string]Team {
 }
 
 func registerPlayer(ws *websocket.Conn) *Player {
-	newPlayer := Player{randStringBytes(5), nil, ws, make(chan Message)}
+	newPlayer := Player{randStringBytes(5), nil, -1, ws, make(chan Message)}
 	players[ws] = &newPlayer
 	return &newPlayer
 }

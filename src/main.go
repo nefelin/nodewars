@@ -3,11 +3,11 @@ package main
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
-	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"os"
+	"strconv"
+
+	"github.com/gorilla/websocket"
 )
 
 // Handshake related constants
@@ -17,7 +17,7 @@ const versionTag = "NodeWars:" + versionNumber
 var players = make(map[*websocket.Conn]*Player) // connected players
 var broadcast = make(chan Message)
 var teams = makeDummyTeams()
-var gameMap = NewDefaultMap()
+var gameMap = newDefaultMap()
 
 var upgrader = websocket.Upgrader{}
 
@@ -94,7 +94,7 @@ func handleConnections(w http.ResponseWriter, r *http.Request) {
 }
 
 func calcStateMsgForPlayer() Message {
-	currentState := GameState{*gameMap, make([]GameEvent, 0)}
+	currentState := gameState{*gameMap, make([]gameEvent, 0)}
 	stateMsg, _ := json.Marshal(currentState)
 
 	return Message{
@@ -143,6 +143,35 @@ func incomingHandler(msg *Message, p *Player) {
 	case "stateRequest":
 		p.Outgoing <- calcStateMsgForPlayer()
 
+	case "setPOE":
+		newPOE, err := strconv.Atoi(msg.Data)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if newPOE > -1 && newPOE < nodeCount {
+			p.PointOfEntry = newPOE
+			p.Outgoing <- Message{"POEset", "server", msg.Data}
+		} else {
+			p.Outgoing <- Message{"error", "server", "node '" + msg.Data + "' does not exist"}
+		}
+
+	case "connectToNode":
+		targetNode, err := strconv.Atoi(msg.Data)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		if targetNode > -1 && targetNode < nodeCount {
+			if p.connectToNode(targetNode) {
+				p.Outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
+			} else {
+				p.Outgoing <- Message{"connectFail", "pseudoServer", msg.Data}
+			}
+		} else {
+			p.Outgoing <- Message{"error", "server", "node '" + msg.Data + "' does not exist"}
+		}
+
 	default:
 		p.Outgoing <- Message{"error", "server", "uknown message type"}
 	}
@@ -159,18 +188,18 @@ func scrubPlayerSocket(ws *websocket.Conn) {
 func main() {
 
 	// So it doesn't complain about fmt
-	fmt.Println("Starting " + versionTag + " server...")
+	log.Println("Starting " + versionTag + " server...")
 
-	// Set up log file
-	f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-	if err != nil {
-		log.Fatal(err)
-	}
+	// // Set up log file
+	// f, err := os.OpenFile("log.txt", os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	//Close log file when we're done
-	defer f.Close()
-	//set output of logs to f
-	log.SetOutput(f)
+	// //Close log file when we're done
+	// defer f.Close()
+	// //set output of logs to f
+	// log.SetOutput(f)
 
 	// Start Webserver
 	fs := http.FileServer(http.Dir("../public"))
@@ -178,7 +207,7 @@ func main() {
 	http.HandleFunc("/ws", handleConnections)
 
 	log.Println("Starting server on port 8080...")
-	err = http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
