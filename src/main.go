@@ -157,9 +157,11 @@ func incomingHandler(msg *Message, p *Player) {
 		}
 
 	case "connectToNode":
+
 		targetNode, err := strconv.Atoi(msg.Data)
 		if err != nil {
-			log.Fatal(err)
+			log.Printf("connectToNode error: %v", err)
+			return
 		}
 
 		if targetNode > -1 && targetNode < nodeCount {
@@ -206,7 +208,6 @@ func main() {
 	http.Handle("/", fs)
 	http.HandleFunc("/ws", handleConnections)
 
-	log.Println("Starting server on port 8080...")
 	err := http.ListenAndServe(":8080", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)

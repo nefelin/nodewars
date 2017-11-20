@@ -94,7 +94,7 @@ func (p *Player) joinTeam(t *Team) {
 // right now player can only connect to adjacent nodes
 func (p *Player) connectToNode(n nodeID) bool {
 	log.Printf("Player %v attempting to connect to node %v from POE %v", p.Name, n, p.PointOfEntry)
-	if gameMap.Nodes[p.PointOfEntry].connectsTo(n) {
+	if gameMap.routeToNode(gameMap.Nodes[p.PointOfEntry], gameMap.Nodes[n]) != nil {
 		return true
 	}
 	return false
