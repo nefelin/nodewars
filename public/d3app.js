@@ -6,7 +6,7 @@ const colors = d3.scale.category10();
 
 function reveal() {
 	console.log('force layout settled');
-	svg.selectAll("circle, line").transition()
+	svg.selectAll(".nodes, line").transition()
 	   .duration(400)
 	   .style("opacity", 1)
 }
@@ -43,7 +43,7 @@ function initGraphFromNodeMap (nodeMap) {
                      .nodes(nodeMap.nodes)
                      .links(nodeMap.edges)
                      .size([640, 480])
-                     .linkDistance([60])
+                     .linkDistance([40])
                      .charge([-2000])
                      .start()
                      .on('end', reveal)
@@ -57,18 +57,27 @@ function initGraphFromNodeMap (nodeMap) {
 			   .style("stroke-width", 2)
 
 	// DOM elements for nodes
-	nodes = svg.selectAll("circle")
+	nodes = svg.selectAll(".nodes")
 			   .data(nodeMap.nodes)
 			   .enter()
-			   .append("circle")
+			   .append("g")
+			   .attr("class", "nodes")
+			   .call(layout.drag) // Consider non physics trigging dragging TODO
+
+    nodes.append("circle")
 			   .attr("r", 15)
 			   .style("fill", "white")//(d,i) => colors(i))
 			   .style("stroke-width", 4)
 			   .style("stroke", "black")
-			   .call(layout.drag) // Consider non physics trigging dragging TODO
+
+	nodes.append("text")
+		       .attr("dx", 20)
+		       .attr("dy", 20)
+		       .text(function(d) { return d.id });
+					   
 
 	// everything starts hidden
-	svg.selectAll("circle, line")
+	svg.selectAll(".nodes, line")
 	   .style("opacity", 0)
 	
 	// Put these layout movements in the on('end') if you dont want the graph to come swinging into view
@@ -78,8 +87,7 @@ function initGraphFromNodeMap (nodeMap) {
 		     .attr("x2", function(d) { return d.target.x; })
 		     .attr("y2", function(d) { return d.target.y; });
 
-		nodes.attr("cx", function(d) { return d.x; })
-		     .attr("cy", function(d) { return d.y; });
+	     nodes.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
 	});
 	console.log("Calculation Layout...")
 
