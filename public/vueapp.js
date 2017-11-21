@@ -42,7 +42,7 @@ new Vue({
 		updateState: function(newState) {
 			if (!this.graphInitialized) {
 				console.log('Initializing Graph...');
-				initGraphFromNodeMap(newState.nodeMap)
+				initGraph(newState.nodeMap)
 				this.graphInitialized = true;
 			} else { console.log('Updating graph'); }
 			
@@ -66,6 +66,8 @@ new Vue({
 					console.log("> server error < \n", message.data)
 					break
 				case "gameState":
+				
+					console.log(message.data)
 					this.updateState(JSON.parse(message.data))
 					break
 				default:

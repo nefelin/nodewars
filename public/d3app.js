@@ -14,6 +14,8 @@ function reveal() {
 function svgInit() {
 	svg = d3.select('#graph')
 		    .style("border", "1px solid black")
+		    .attr('width', 640)
+		    .attr('height', 480)
 		    .append('svg')
 		    .attr('width', 640)
 		    .attr('height', 480) // TODO dynamically pull values, particularly on resize
@@ -35,7 +37,7 @@ function arrayifyNodeMap (nodeMap) {
 	return {nodes: newNodes, edges: newEdges}
 }
 
-function initGraphFromNodeMap (nodeMap) {
+function initGraph (nodeMap) {
 	nodeMap = arrayifyNodeMap(nodeMap)
 	console.log(nodeMap)
 	// Calculate force layout, only reveal when done

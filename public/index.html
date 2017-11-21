@@ -24,7 +24,7 @@
 	<div v-bind:style="{ width: '30px', height:'30px', border:'2px solid black', backgroundColor: teamColor }">
 	</div>
 	<input autofocus="true" id="msgBox" v-model="message" @keyup.enter="sendMsg" >
-	<select v-model="msgType" size="7" @click="reFocus">
+	<select v-model="msgType" size="8" @click="reFocus">
 		<option value="teamChat">teamChat</option>
 		<option value="allChat">allChat</option>
 		<option value="teamJoin">teamJoin</option>
@@ -32,6 +32,7 @@
 		<option value="stateRequest">stateRequest</option>
 		<option value="setPOE">setPOE</option>
 		<option value="connectToNode">connectToNode</option>
+		<option value="setPlayerName">setPlayerName</option>
 	</select>
 	
 
