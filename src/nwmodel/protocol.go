@@ -99,7 +99,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 // TODO move to a more imperative style of state updating, necessary?
 // this should also take a player as an argument and take into account
 // event visibility when composing state message
-func calcStateMsgForPlayer() Message {
+func calcStateMsgForPlayer(p *Player) Message {
 	gs := newGameState()
 
 	// log.Println(gs)
@@ -178,7 +178,7 @@ func incomingHandler(msg *Message, p *Player) {
 		// team method handles messaging, fix TODO
 
 	case "stateRequest":
-		p.outgoing <- calcStateMsgForPlayer()
+		p.outgoing <- calcStateMsgForPlayer(p)
 
 	case "setPOE":
 		if p.Team == nil {
@@ -190,6 +190,7 @@ func incomingHandler(msg *Message, p *Player) {
 			} else {
 				if res := gm.setPlayerPOE(p, newPOE); res {
 					p.outgoing <- Message{"POEset", "server", msg.Data}
+					gm.broadcastState()
 					// p.outgoing <- calcStateMsgForPlayer()
 				} else {
 					p.outgoing <- Message{"error", "server", "failed to set, '" + msg.Data + "', as POE. Either does not exist or player cannot switch POE"}
