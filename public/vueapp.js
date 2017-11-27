@@ -30,6 +30,34 @@ new Vue({
 			this.ws.send(message)
 		},
 
+		autoLogin: function() {
+			const setName = JSON.stringify({
+				type: "setPlayerName",
+				data: "dumdum"
+			});
+
+			const teamJoin = JSON.stringify({
+				type: "teamJoin",
+				data: "red"
+			});
+
+			const setPOE = JSON.stringify({
+				type: "setPOE",
+				data: "7"
+			});
+
+			const stateReq = JSON.stringify({
+				type: "stateRequest",
+				data: ""
+			});
+
+			this.ws.send(setName)
+			this.ws.send(teamJoin)
+			this.ws.send(setPOE)
+			this.ws.send(stateReq)
+
+		},
+
 		handshake: function() {
 			console.log('>', versionTag)
 			this.ws.send(versionTag)
@@ -40,12 +68,17 @@ new Vue({
 		},
 
 		updateState: function(newState) {
+			console.log('updateState called with state:', newState)
+			// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
+			let nodeMap = arrayifyNodeMap(newState.nodeMap)
+			// console.log("nodeMap after arrayifyNodeMap:", newState.nodeMap)
 			if (!this.graphInitialized) {
-				console.log('Initializing Graph...');
-				initGraph(newState.nodeMap)
+				initGraph(nodeMap)
 				this.graphInitialized = true;
-			} else { console.log('Updating graph'); }
+			} 
+			updateGraph(nodeMap)
 			
+				
 			// update other hud elements
 			
 		},
@@ -67,11 +100,11 @@ new Vue({
 					break
 				case "gameState":
 				
-					console.log(message.data)
+					// console.log(message.data)
 					this.updateState(JSON.parse(message.data))
 					break
 				default:
-					console.log('unknown server respons:');
+					console.log('unhandled server response:');
 					console.log("<", message)
 
 			}
@@ -100,6 +133,7 @@ new Vue({
 
 				// turn on normal message parsing
 				this.ws.addEventListener('message', this.parseServerMessages);
+				this.autoLogin()
 				return
 			console.log('Server said:', e.data)
 			throw "Error: failed to negotiate handshake with server"
