@@ -1,0 +1,61 @@
+We want to take the following submission code:
+
+def helloWorld(in):
+	return "Hello World"
+
+and transform it into:
+
+results = []
+for input, i in inputs.Enum():
+	results.append(helloWorld(input) == outputs[i])
+
+print JSON(results)
+
+non-trivial example:
+
+function should take a string and an integer as an argument, returning the character at that index
+
+funcDesc
+name: indexOfChar
+inputs: [
+	["s", "string"],
+	["i", "int"]
+	]
+outputs: ["string"] // deal with type issues...
+
+testDesc 
+funcDesc: above
+inputs: ["dog", 2], ["monet", 1], ["algebra", 4]
+outputs: g, o, b
+
+in go that would mean we write to prototype for user:
+
+func indexOfChar(s string, i int) string {
+
+}
+
+user submits something like:
+
+func indexOfChar(s string, i int) string {
+	return s[i] // not sure if this works in go
+}
+
+and we translate this into:
+
+import ( // imports will have to be dynamic, taking in whatever imports are written by user
+"fmt"
+)
+
+func indexOfChar(s string, i int) string {
+	return s[i] // not sure if this works in go
+}
+
+func main() {
+	results := make([]bool, 0])
+	for i, input := range inputs {
+		retVal := indexOfChar(input[0],[1]) // This line is dynamic based on number of arguments
+		results = append(results, retVal == outputs[i])
+	
+	testResults, err := json.Marshal(results)
+	fmt.Println(string(testResults))
+}
