@@ -176,6 +176,12 @@ func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
 	return newPlayer
 }
 
+func (gm *GameModel) broadcastState() {
+	for player := range gm.Players {
+		player.outgoing <- calcStateMsgForPlayer(player)
+	}
+}
+
 func (gm *GameModel) setPlayerName(p *Player, n string) error {
 	// check to see if name is in use
 	for player := range gm.Players {
@@ -191,13 +197,13 @@ func (gm *GameModel) setPlayerName(p *Player, n string) error {
 
 func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 	// TODO move this node validity check to a nodeMap method
-	// if nodeID is valid and player has no other POE
-	if n > -1 && n < nodeCount && p.PointOfEntry == -1 {
+	// if nodeID is valid
+	if n > -1 && n < nodeCount {
 
 		// // if player already has POE, clear old POE
-		// if p.PointOfEntry > -1 {
-		// 	gm.Map.Nodes[p.PointOfEntry].removePOE(p)
-		// }
+		if p.PointOfEntry > -1 {
+			gm.Map.Nodes[p.PointOfEntry].removePOE(p)
+		}
 
 		log.Printf("setting %v's poe to %v", p.Name, n)
 
