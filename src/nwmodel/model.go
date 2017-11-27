@@ -33,49 +33,59 @@ type gameEvent struct {
 }
 
 type nodeID = int
-type edgeID = int
+type modID = int
+type edgeID = string
 
 var nodeCount nodeID
-var edgeCount edgeID
+var moduleCount modID
+
+// var edgeCount edgeID
 
 // node ...
+// TODO make a decision about slices vs maps
 type node struct {
-	ID          nodeID   `json:"id"`
-	Connections []nodeID `json:"connections"`
-	Size        int      `json:"size"`
-	Modules     []module `json:"modules"`
+	ID               nodeID           `json:"id"` // keys and ids is redundant TODO
+	Connections      []nodeID         `json:"connections"`
+	Size             int              `json:"size"`
+	Modules          map[modID]module `json:"modules"`
+	Traffic          []*Player        `json:"traffic"`
+	POE              []*Player        `json:"poe"`
+	ConnectedPlayers []*Player        `json:"connectedPlayers"`
 }
 
 // edge ...
 type edge struct {
-	ID     edgeID `json:"id"`
-	Source nodeID `json:"source"`
-	Target nodeID `json:"target"`
-	// Traffic []*Player `json:"traffic"`
+	ID      edgeID    `json:"id"` // keys and ids is redundant TODO
+	Source  nodeID    `json:"source"`
+	Target  nodeID    `json:"target"`
+	Traffic []*Player `json:"traffic"`
 }
 
 // module ...
 type module struct {
-	TestID     string  `json:"testId"`
-	LanguageID string  `json:"languageId"`
-	Owner      *team   `json:"owner"`
-	Builder    *Player `json:"builder"`
+	ID         modID `json:"id"`
+	TestID     int   `json:"testId"`
+	LanguageID int   `json:"languageId"`
+	// Owner      *team   `json:"owner"`
+	Builder *Player `json:"builder"`
 }
 
 type teamName = string
 
 // team ...
 type team struct {
-	Name    teamName         // Names are only colors for now
-	Players map[*Player]bool //THESE create circular JSON problem, decide on org scheme and fix, TODO
-	MaxSize int
+	Name    teamName `json:"name"` // Names are only colors for now
+	players map[*Player]bool
+	MaxSize int `json:"maxSize"`
 }
 
 // Player ...
 type Player struct {
-	Name         string
-	team         *team
-	PointOfEntry nodeID
-	socket       *websocket.Conn
-	outgoing     chan Message
+	Name           string `json:"name"`
+	Team           *team  `json:"team"`
+	PointOfEntry   nodeID `json:"pointOfEntry"`
+	NodeConnection nodeID `json:"nodeConnection"`
+	route          []*node
+	socket         *websocket.Conn
+	outgoing       chan Message
 }

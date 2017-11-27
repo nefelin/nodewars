@@ -101,6 +101,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 // event visibility when composing state message
 func calcStateMsgForPlayer() Message {
 	gs := newGameState()
+
 	// log.Println(gs)
 
 	// for name, teamOb := range gm.Teams {
@@ -115,6 +116,7 @@ func calcStateMsgForPlayer() Message {
 
 	stateMsg, err := json.Marshal(gs)
 
+	// log.Printf("stateMsg: %v", string(stateMsg))
 	if err != nil {
 		log.Println(err)
 	}
@@ -133,11 +135,14 @@ func outgoingRelay(p *Player) {
 		msg := <-p.outgoing
 		if err := p.socket.WriteJSON(msg); err != nil {
 			log.Printf("error dispatching message to %v", p.Name)
+			scrubPlayerSocket(p)
 			return
 		}
 	}
 }
 
+// Response are sometimes handled as imperatives, sometimes only effect state and
+// are visible after entire stateMessage update. Pick a paradigm TODO
 func incomingHandler(msg *Message, p *Player) {
 	// Tie message with player name
 	msg.Sender = p.Name
@@ -153,8 +158,8 @@ func incomingHandler(msg *Message, p *Player) {
 
 	case "teamChat":
 		//HANDLE chat by unassigned player, maybe make an Observer team by default?
-		if p.team != nil {
-			go p.team.broadcast(*msg)
+		if p.Team != nil {
+			go p.Team.broadcast(*msg)
 		} else {
 			p.outgoing <- Message{"error", "server", "unable to teamChat without team assignment"}
 		}
@@ -176,24 +181,24 @@ func incomingHandler(msg *Message, p *Player) {
 		p.outgoing <- calcStateMsgForPlayer()
 
 	case "setPOE":
-		if p.team == nil {
+		if p.Team == nil {
 			p.outgoing <- Message{"error", "server", "you need a team to interact with the map"}
 		} else {
 			newPOE, err := strconv.Atoi(msg.Data)
 			if err != nil {
 				log.Printf("setPOE error: %v", err)
 			} else {
-				if newPOE > -1 && newPOE < nodeCount {
-					p.PointOfEntry = newPOE
+				if res := gm.setPlayerPOE(p, newPOE); res {
 					p.outgoing <- Message{"POEset", "server", msg.Data}
+					// p.outgoing <- calcStateMsgForPlayer()
 				} else {
-					p.outgoing <- Message{"error", "server", "node '" + msg.Data + "' does not exist"}
+					p.outgoing <- Message{"error", "server", "failed to set, '" + msg.Data + "', as POE. Either does not exist or player cannot switch POE"}
 				}
 			}
 		}
 
-	case "connectToNode":
-		if p.team == nil {
+	case "nodeConnect":
+		if p.Team == nil {
 			// if player has no team yet, complain
 			p.outgoing <- Message{"error", "server", "You need a team to interact with the map"}
 		} else {
@@ -204,7 +209,7 @@ func incomingHandler(msg *Message, p *Player) {
 			} else {
 				// if we're all good, try to connect the player to the node
 				if targetNode > -1 && targetNode < nodeCount {
-					if gm.connectPlayerToNode(p, targetNode) {
+					if gm.tryConnectPlayerToNode(p, targetNode) {
 						p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
 					} else {
 						p.outgoing <- Message{"connectFail", "pseudoServer", msg.Data}
@@ -224,13 +229,14 @@ func incomingHandler(msg *Message, p *Player) {
 		}
 
 	default:
-		p.outgoing <- Message{"error", "server", "uknown message type"}
+		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
 	}
 }
 
 // func sendWorldState(p *Player)
 
 func scrubPlayerSocket(p *Player) {
+	log.Printf("Scrubbing player: %v", p.Name)
 	gm.RemovePlayer(p)
 	p.socket.Close()
 }
