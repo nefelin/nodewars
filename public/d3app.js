@@ -57,8 +57,25 @@ function updateGraph (nodeMap) {
 	attachCoords(nodeMap)
 	console.log('updateGraph')
 
-	
+	node.data(nodeMap.nodes)
+		.select("circle")
+		.data(nodeMap.nodes)
+		.attr("class", d => {
+			if (d.poe.length > 0) {
+		 		if (d.poe[0].team != null)
+		 			return "POE"
+		 	}
+		 	
+		})
+		.style("stroke", d => {
+		 	if (d.poe.length > 0) {
+		 		if (d.poe[0].team != null)
+		 			return d.poe[0].team.name
+		 	}
+		 	// return "black"
+		 })
 
+	link.data(nodeMap.edges)
 
 	// Since we are updating the data with new objects,
 	// we need to point our simulation at the new objects 
@@ -67,25 +84,11 @@ function updateGraph (nodeMap) {
 	simulation.force("link")
             .links(nodeMap.edges);
 
-	console.log("d3 node", node)
-	node.data(nodeMap.nodes)
-		.style("fill", d => {
-		 	if (d.poe.length > 0) {
-		 		// console.log("d.poe",d.poe)
-		 		if (d.poe[0].team != null)
-		 			return "red"
-		 			return d.poe[0].team.name
-		 	}
-		 	return "green"
-		 })
-
-	link.data(nodeMap.edges)
-
-// 	// update node and edge traffic
+	// update node and edge traffic
 		 
-// 	// update player POEs and ongoing connections
+	// update player POEs and ongoing connections
 
-// 	// update module contents
+	// update module contents
 
 }
 
@@ -103,25 +106,26 @@ function initGraph (nodeMap) {
             .force("y", d3.forceY(0))
             .force("x", d3.forceX(0))
     
-        link = svg.append("g")
-            .attr("class", "links")
-            .selectAll("line")
-            .data(nodeMap.edges)
+        link = svg.selectAll('.edge')
+        	.data(nodeMap.edges)
             .enter()
             .append("line")
+            .attr("class", "edge")
             .attr("stroke", "black")
-        
-        node = svg.append("g")
-            .attr("class", "nodes")
-            .selectAll("circle")
-            .data(nodeMap.nodes)
-            .enter().append("circle")
-            .attr("r", function(d){  return 10 })
-            // .call(d3.drag()
-            //     .on("start", dragstarted)
-            //     .on("drag", dragged)
-            //     .on("end", dragended));    
-        
+
+        node = svg.selectAll(".node")
+        	.data(nodeMap.nodes)
+        	.enter()
+        	.append("g")
+            .attr("class", d=> {return "node"})
+
+        node.append("circle")
+        	.attr("r", d=>d.connections.length*2+8 )
+
+        node.append("text")
+	       .attr("dx", 15)
+	       .attr("dy", 20)
+	       .text(d=>d.id);
         
         var ticked = function() {
             link
@@ -130,9 +134,7 @@ function initGraph (nodeMap) {
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
     
-            node
-                .attr("cx", function(d) { return d.x; })
-                .attr("cy", function(d) { return d.y; });
+    		node.attr("transform", d => { return "translate(" + d.x + "," + d.y + ")"; })
         }  
         
         simulation
