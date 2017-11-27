@@ -1,4 +1,8 @@
-const width = 640, height = 480
+const width = 640,
+	  height = 480,
+	  nodeBaseRadius = 8,
+	  nodeRadiusMultiplier = nodeBaseRadius/4
+
 let node = null,
 	link = null,
 	svg = null,
@@ -99,9 +103,9 @@ function initGraph (nodeMap) {
 		console.log('Initializing Graph...');
 
 		simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(function(d) { return d.index }))
-            .force("collide",d3.forceCollide( function(d){return d.r + 8 }).iterations(16) )
-            .force("charge", d3.forceManyBody().strength(-200))
+            .force("link", d3.forceLink().id(function(d) { return d.index }).distance(nodeBaseRadius*3))
+            .force("collide",d3.forceCollide( function(d){ return d.r + 8 }).iterations(16) )
+            .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
             .force("y", d3.forceY(0))
             .force("x", d3.forceX(0))
@@ -112,6 +116,7 @@ function initGraph (nodeMap) {
             .append("line")
             .attr("class", "edge")
             .attr("stroke", "black")
+            .attr("stroke-width", nodeBaseRadius/5)
 
         node = svg.selectAll(".node")
         	.data(nodeMap.nodes)
@@ -120,11 +125,11 @@ function initGraph (nodeMap) {
             .attr("class", d=> {return "node"})
 
         node.append("circle")
-        	.attr("r", d=>d.connections.length*2+8 )
+        	.attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier )
 
         node.append("text")
-	       .attr("dx", 15)
-	       .attr("dy", 20)
+	       .attr("dx", nodeBaseRadius*2)
+	       .attr("dy", nodeBaseRadius*2.5)
 	       .text(d=>d.id);
         
         var ticked = function() {
