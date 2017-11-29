@@ -22,29 +22,6 @@ func newModuleBy(p *Player) module {
 	}
 }
 
-// func newGameState() *gameState {
-// 	// make a list of all team names
-// 	teams := make([]string, 0)
-// 	for name := range gm.Teams {
-// 		teams = append(teams, name)
-// 	}
-
-// 	players := make([]*Player, 0)
-// 	for player := range gm.Players {
-// 		// Only add players to the stat object that have names and teams
-// 		if player.hasName() && player.hasTeam() {
-// 			players = append(players, player)
-// 		}
-// 	}
-
-// 	return &gameState{
-// 		Map:           *gm.Map,
-// 		Teams:         teams,
-// 		Players:       players,
-// 		CurrentEvents: make([]gameEvent, 0),
-// 	}
-// }
-
 // NewTeam creates a new team with color/name color
 func NewTeam(n teamName) *team {
 	return &team{n, make(map[*Player]bool), 2}
@@ -68,34 +45,6 @@ func NewNode() *node {
 		// ConnectedPlayers: make([]*Player, 0),
 	}
 }
-
-// // hiLo is a helper function that lets new edge sort node pairs for its ID scheme
-// func hiLo(a, b nodeID) (nodeID, nodeID) {
-// 	if a > b {
-// 		return a, b
-// 	}
-// 	return b, a
-// }
-
-// func newEdge(s, t nodeID) *edge {
-// 	hi, lo := hiLo(s, t)
-
-// 	hiStr := strconv.Itoa(hi)
-// 	// if err != nil {
-// 	// 	log.Fatal(err)
-// 	// }
-
-// 	loStr := strconv.Itoa(lo)
-// 	// if err != nil {
-// 	// 	log.Fatal(err)
-// 	// }
-
-// 	id := hiStr + "e" + loStr
-// 	// id := edgeCount
-// 	// edgeCount++
-
-// 	return &edge{id, s, t, make([]*Player, 0)}
-// }
 
 func newNodeMap() nodeMap {
 	return nodeMap{make([]*node, 0)}
@@ -213,9 +162,8 @@ func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; !ok {
-		return errors.New("player '" + string(p.Name) + "' is not registered")
+		return errors.New("player '" + p.Name + "' is not registered")
 	}
-
 	if p.Team != nil {
 		p.Team.removePlayer(p)
 	}
@@ -234,11 +182,11 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 
 func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 	if team, ok := gm.Teams[tn]; !ok {
-		return errors.New("The team: " + string(tn) + " does not exist")
+		return errors.New("The team: " + tn + " does not exist")
 	} else if p.Team != nil {
-		return errors.New(string(p.Name) + " is alread a member of team: " + string(tn))
+		return errors.New(p.Name + " is alread a member of team: " + tn)
 	} else if team.isFull() {
-		return errors.New("team: " + string(tn) + " is full")
+		return errors.New("team: " + tn + " is full")
 	}
 
 	gm.Teams[tn].addPlayer(p)
@@ -246,12 +194,12 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 }
 
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) bool {
-	log.Printf("player %v attempting to connect to node %v from POE %v", p.Name, n, gm.POEs[p.ID])
+	log.Printf("player %v attempting to connect to node %v from POE %v", p.Name, n, gm.POEs[p.ID].ID)
 
 	// if player is connected elsewhere, break that first, regardless of success of this attempt
-	if gm.Routes[p.ID] != nil {
-		gm.breakConnection(p)
-	}
+	// if gm.Routes[p.ID] != nil {
+	// 	gm.breakConnection(p)
+	// }
 
 	// TODO handle player connecting to own POE
 
@@ -261,6 +209,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) bool {
 	route := gm.Map.routeToNode(p, source, target)
 	if route != nil {
 		log.Println("Successful Connect")
+		log.Printf("Route to target: %v", route)
 		gm.establishConnection(p, route, target) // This should add player traffic to each intermediary and establish a connection on n
 		return true
 	}
@@ -276,8 +225,8 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 }
 
 func (gm *GameModel) breakConnection(p *Player) {
-	if gm.Routes[p.ID] != nil {
-		gm.Routes[p.ID] = nil
+	if _, exists := gm.Routes[p.ID]; exists {
+		delete(gm.Routes, p.ID)
 	}
 }
 
@@ -383,52 +332,66 @@ func (m *nodeMap) nodesTouch(n1, n2 *node) bool {
 }
 
 // routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find node path
+// TODO get code review on this. I think I'm maybe not getting optimal route
 func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 
-	// if we're connecting to our POE, return a route which is only our POE
-	if source == target {
-		if source.allowsRoutingFor(p) {
+	if source.allowsRoutingFor(p) {
+		// if we're connecting to our POE, return a route which is only our POE
+		if source == target {
 			route := make([]*node, 1)
 			route[0] = source
 			return route
 		}
-		log.Println("POE Blocked")
-		return nil
 
-	}
-	unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
-	dist := make(map[*node]int)
-	prev := make(map[*node]*node)
-
-	for _, node := range m.Nodes {
-		// Only consider node if node is friendly to player (i.e. has module from team)
-		if node.allowsRoutingFor(p) {
-			dist[node] = 10000
-			unchecked[node] = true
-		}
-	}
-
-	dist[source] = 0
-
-	for len(unchecked) > 0 {
-		thisNode := getBestNode(unchecked, dist)
-
-		delete(unchecked, thisNode)
-
-		if m.nodesTouch(thisNode, target) {
-			route := constructPath(prev, target)
-			log.Println("Found target!")
-			log.Printf("%v", route)
-			return route
-		}
-
-		for _, cNode := range m.nodesConnections(thisNode) {
-			alt := dist[thisNode] + 1
-			if alt < dist[cNode] {
-				dist[cNode] = alt
-				prev[cNode] = thisNode
+		// if target is in the route we're currently connecting through,
+		// auto succede and just return subset of our current route
+		currentRoute, playerHasRoute := gm.Routes[p.ID]
+		if playerHasRoute {
+			log.Println("New route is subset of current route.")
+			if i, ok := currentRoute.containsNode(target); ok {
+				return currentRoute.Nodes[i+1:]
 			}
 		}
+
+		unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
+		dist := make(map[*node]int)
+		prev := make(map[*node]*node)
+
+		// Route must at least contain source, even if target is immediately adjacent
+		// prev[source] = nil
+
+		for _, node := range m.Nodes {
+			// Only consider node if node is friendly to player (i.e. has module from team)
+			if node.allowsRoutingFor(p) {
+				dist[node] = 10000
+				unchecked[node] = true
+			}
+		}
+
+		dist[source] = 0
+
+		for len(unchecked) > 0 {
+			thisNode := getBestNode(unchecked, dist)
+
+			delete(unchecked, thisNode)
+
+			if m.nodesTouch(thisNode, target) {
+				prev[target] = thisNode
+				route := constructPath(prev, target)
+				log.Println("Found target!")
+				return route
+			}
+
+			for _, cNode := range m.nodesConnections(thisNode) {
+				alt := dist[thisNode] + 1
+				if alt < dist[cNode] {
+					dist[cNode] = alt
+					prev[cNode] = thisNode
+				}
+			}
+		}
+	} else {
+		log.Println("POE Blocked")
 	}
 	log.Println("No possible route")
 	return nil
@@ -437,7 +400,7 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 // helper functions for routeToNode ------------------------------------------------------------
 // constructPath takes the routes discovered via routeToNode and the endpoint (target) and creates a slice of the correct path, note order is still reversed and path contains source but not target node
 func constructPath(prevMap map[*node]*node, t *node) []*node {
-	// log.Println(prevMap)
+	// log.Printf("constructPath working from prev: %v", prevMap)
 
 	route := make([]*node, 0)
 
@@ -490,16 +453,14 @@ func (p Player) hasName() bool {
 }
 
 // route methods --------------------------------------------
-// func (r route) isActive() bool {
-// 	if r.Endpoint == -1 {
-// 		return false
-// 	}
-// 	return true
-// }
-
-// func (r *route) terminate() {
-// 	r.Endpoint = -1
-// }
+func (r route) containsNode(n *node) (int, bool) {
+	for i, node := range r.Nodes {
+		if n == node {
+			return i, true
+		}
+	}
+	return 0, false
+}
 
 // team methods -------------------------------------------------------------------------------
 func (t team) isFull() bool {
@@ -542,7 +503,17 @@ func (t *team) removePlayer(p *Player) {
 // Stringers ----------------------------------------------------------------------------------
 
 func (n node) String() string {
-	return fmt.Sprintf("<(node) ID: %v, Connections:%v, Modules:%v>", n.ID, n.Connections, n.Modules)
+	return fmt.Sprintf("( <node> {ID: %v, Connections:%v, Modules:%v} )", n.ID, n.Connections, n.modIDs())
+}
+
+func (n node) modIDs() []modID {
+	ids := make([]modID, len(n.Modules))
+	i := 0
+	for _, mod := range n.Modules {
+		ids[i] = mod.ID
+		i++
+	}
+	return ids
 }
 
 func (t team) String() string {
@@ -550,9 +521,13 @@ func (t team) String() string {
 	for player := range t.players {
 		playerList = append(playerList, string(player.Name))
 	}
-	return fmt.Sprintf("<team> (Name: %v, Players:%v)", t.Name, playerList)
+	return fmt.Sprintf("( <team> {Name: %v, Players:%v} )", t.Name, playerList)
 }
 
 func (p Player) String() string {
-	return fmt.Sprintf("<player> Name: %v, team: %v", p.Name, p.Team)
+	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.Name, p.Team)
+}
+
+func (m module) String() string {
+	return fmt.Sprintf("( <module> {ID: %v, TestID: %v, LangID: %v, Builder: %v} )", m.ID, m.TestID, m.LanguageID, m.Builder.Name)
 }
