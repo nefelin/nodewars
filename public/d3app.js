@@ -36,19 +36,73 @@ function svgInit() {
 }
 
 // Arrayify turns objects into lists that d3 likes
-function arrayifyNodeMap (nodeMap) {
-	newNodes = []
-	newEdges = []
-	for (key of Object.keys(nodeMap.nodes)){
-		// console.log(nodeMap.nodes[key])
-		newNodes.push(nodeMap.nodes[key])
-	}
-	for (key of Object.keys(nodeMap.edges)){
-		// console.log(nodeMap.nodes[key])
-		newEdges.push(nodeMap.edges[key])
-	}
+// function arrayifyNodeMap (nodeMap) {
+// 	newNodes = []
+// 	newEdges = []
+// 	for (key of Object.keys(nodeMap.nodes)){
+// 		// console.log(nodeMap.nodes[key])
+// 		newNodes.push(nodeMap.nodes[key])
+// 	}
+// 	for (key of Object.keys(nodeMap.edges)){
+// 		// console.log(nodeMap.nodes[key])
+// 		newEdges.push(nodeMap.edges[key])
+// 	}
 
-	return {nodes: newNodes, edges: newEdges}
+// 	return {nodes: newNodes, edges: newEdges}
+// }
+
+
+
+function updateGraph (gameState) {
+	edgify(gameState.map)
+	attachPOEs(gameState)
+	attachCoords(gameState.map)
+	const nodeMap = gameState.map
+	console.log('updateGraph')
+
+	// console.log("state:", gameState)
+	console.log("nodeMap:", nodeMap)
+
+	console.log("ng data before", nodeGroups.select("circle").data())	
+
+	nodeGroups.data(nodeMap.nodes)
+		.select("circle") // select instead of selectAll auto binds to parent data
+		// .attr("class", d => {
+		// 	if (d.poe.length > 0) {
+		//  		if (d.poe[0].team != null)
+		//  			return "POE"
+		//  	}
+		 	
+		// })
+		.style("fill", function(d) {
+		 	if (d.poes.length > 0) {
+		 		if (d.poes[0].team != null)
+		 			return d.poes[0].team.name
+		 	}
+		 	return "white"
+		 })
+		// .classed("player-connected", d => d.connectedPlayers.length>0)
+		// .classed("traffic", d => d.traffic.length>0)
+
+
+
+
+	link.data(nodeMap.edges)
+
+	console.log("ng data after", nodeGroups.data())	
+
+	// // Since we are updating the data with new objects,
+	// // we need to point our simulation at the new objects 
+	// // to ensure continued tracking:
+	simulation.nodes(nodeMap.nodes)
+	simulation.force("link")
+            .links(nodeMap.edges);
+
+	// // update node and edge traffic
+		 
+	// // update player POEs and ongoing connections
+
+	// // update module contents
 }
 
 function attachCoords(nodeMap) {
@@ -62,55 +116,31 @@ function attachCoords(nodeMap) {
 	// console.log('nodeMap.nodes after:', nodeMap.nodes)
 }
 
-function updateGraph (nodeMap) {
-	// attachCoords(nodeMap)
-	// console.log('updateGraph')
 
-	// nodeGroups.data(nodeMap.nodes)
-	// 	.select("circle")
- //        // .data(function(d) {return d}) // TODO fix data binding issues
-	// 	.attr("class", d => {
-	// 		if (d.poe.length > 0) {
-	// 	 		if (d.poe[0].team != null)
-	// 	 			return "POE"
-	// 	 	}
-		 	
-	// 	})
-	// 	.style("fill", d => {
-	// 	 	if (d.poe.length > 0) {
-	// 	 		if (d.poe[0].team != null)
-	// 	 			return d.poe[0].team.name
-	// 	 	}
-	// 	 	return "white"
-	// 	 })
-	// 	.classed("player-connected", d => d.connectedPlayers.length>0)
-	// 	.classed("traffic", d => d.traffic.length>0)
+// Combine all functions that iterate over all nodes into single function to reduce runtime TODO
+function attachPOEs(gameState) {
+	for (let node of gameState.map.nodes) {
+		node.poes = []
+	}
 
-	// link.data(nodeMap.edges)
-	// 	.select('line')
-	// 	.classed("traffic", d => d.traffic.length>0)
+	// console.log("pre attachPoes", gameState.map.nodes)
 
-	// // Since we are updating the data with new objects,
-	// // we need to point our simulation at the new objects 
-	// // to ensure continued tracking:
-	// simulation.nodes(nodeMap.nodes)
-	// simulation.force("link")
- //            .links(nodeMap.edges);
-
-	// // update node and edge traffic
-		 
-	// // update player POEs and ongoing connections
-
-	// // update module contents
+	for (let playerID of Object.keys(gameState.poes)) {
+		const poeID = gameState.poes[playerID].id
+		gameState.map.nodes[poeID].poes.push(gameState.players[playerID])
+	}
+	// console.log("post attachPoes", gameState.map.nodes)
 }
 
 function edgify(nodeMap) {
 
-	console.log('edgifying', nodeMap)
+	// console.log('edgifying', nodeMap)
 	seenEdges = {}
 	nodeMap.edges = []
 
 	for (let i in nodeMap.nodes){
+
+		i = parseInt(i)
 		for (let connectionID of nodeMap.nodes[i].connections) {
 			let edgeID = ""
 			if (i > connectionID)
@@ -126,7 +156,7 @@ function edgify(nodeMap) {
 	for (let edgeID of Object.keys(seenEdges)) {
 		nodeMap.edges.push(seenEdges[edgeID])
 	}
-	console.log("edgify produced:",nodeMap)
+	// console.log("edgify produced:",nodeMap)
 
 
 }

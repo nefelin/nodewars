@@ -77,7 +77,7 @@ new Vue({
 				initGraph(nodeMap)
 				this.graphInitialized = true;
 			} 
-			updateGraph(nodeMap)
+			updateGraph(newState)
 			
 				
 			// update other hud elements
