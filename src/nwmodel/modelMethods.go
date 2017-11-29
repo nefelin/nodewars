@@ -345,13 +345,14 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 
 		// if target is in the route we're currently connecting through,
 		// auto succede and just return subset of our current route
-		currentRoute, playerHasRoute := gm.Routes[p.ID]
-		if playerHasRoute {
-			log.Println("New route is subset of current route.")
-			if i, ok := currentRoute.containsNode(target); ok {
-				return currentRoute.Nodes[i+1:]
-			}
-		}
+		// TODO buggy on change of POE, investigate
+		// currentRoute, playerHasRoute := gm.Routes[p.ID]
+		// if playerHasRoute {
+		// 	log.Println("New route is subset of current route.")
+		// 	if i, ok := currentRoute.containsNode(target); ok {
+		// 		return currentRoute.Nodes[i+1:]
+		// 	}
+		// }
 
 		unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
 		dist := make(map[*node]int)
