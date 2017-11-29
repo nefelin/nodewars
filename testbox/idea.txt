@@ -25,7 +25,7 @@ outputs: ["string"] // deal with type issues...
 
 testDesc 
 funcDesc: above
-inputs: ["dog", 2], ["monet", 1], ["algebra", 4]
+inputs: [{"dog", "string"}, {"2", "int"}], ["monet", 1], ["algebra", 4]
 outputs: g, o, b
 
 in go that would mean we write to prototype for user:
@@ -53,7 +53,7 @@ func indexOfChar(s string, i int) string {
 func main() {
 	results := make([]bool, 0])
 	for i, input := range inputs {
-		retVal := indexOfChar(input[0],[1]) // This line is dynamic based on number of arguments
+		retVal := indexOfChar(input[0], input[1]) // This line is dynamic based on number of arguments
 		results = append(results, retVal == outputs[i])
 	
 	testResults, err := json.Marshal(results)

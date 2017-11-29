@@ -15,7 +15,7 @@ type funcDesc struct {
 }
 
 type ioExpect struct {
-	value string
+	value interface{}
 	Type  argType
 }
 
@@ -23,6 +23,6 @@ type testDesc struct {
 	id        string
 	desc      string
 	protoFunc funcDesc
-	inputs    []ioExpect
+	inputs    [][]ioExpect // length must be same as len(inputs) of funcDesc
 	outputs   []ioExpect
 }

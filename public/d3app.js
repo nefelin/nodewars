@@ -1,9 +1,14 @@
 const width = 640,
 	  height = 480,
-	  nodeBaseRadius = 8,
-	  nodeRadiusMultiplier = nodeBaseRadius/4
+	  nodeBaseRadius = 16,
+	  nodeRadiusMultiplier = nodeBaseRadius/4,
+	  strokeWidth = 2
 
-let node = null,
+let nodeGroups = null,
+	nodeMains = null,
+	nodeLabels = null,
+	nodeModules = null,
+	nodeTraffics = null,
 	link = null,
 	svg = null,
 	layout = null,
@@ -47,7 +52,7 @@ function arrayifyNodeMap (nodeMap) {
 }
 
 function attachCoords(nodeMap) {
-	const data = node.data()
+	const data = nodeGroups.data()
 
 	// console.log('nodeMap.nodes before:', nodeMap.nodes)
 	for (let i=0; i<data.length; i++) {
@@ -58,41 +63,71 @@ function attachCoords(nodeMap) {
 }
 
 function updateGraph (nodeMap) {
-	attachCoords(nodeMap)
-	console.log('updateGraph')
+	// attachCoords(nodeMap)
+	// console.log('updateGraph')
 
-	node.data(nodeMap.nodes)
-		.select("circle")
-		.data(nodeMap.nodes)
-		.attr("class", d => {
-			if (d.poe.length > 0) {
-		 		if (d.poe[0].team != null)
-		 			return "POE"
-		 	}
+	// nodeGroups.data(nodeMap.nodes)
+	// 	.select("circle")
+ //        // .data(function(d) {return d}) // TODO fix data binding issues
+	// 	.attr("class", d => {
+	// 		if (d.poe.length > 0) {
+	// 	 		if (d.poe[0].team != null)
+	// 	 			return "POE"
+	// 	 	}
 		 	
-		})
-		.style("stroke", d => {
-		 	if (d.poe.length > 0) {
-		 		if (d.poe[0].team != null)
-		 			return d.poe[0].team.name
-		 	}
-		 	// return "black"
-		 })
+	// 	})
+	// 	.style("fill", d => {
+	// 	 	if (d.poe.length > 0) {
+	// 	 		if (d.poe[0].team != null)
+	// 	 			return d.poe[0].team.name
+	// 	 	}
+	// 	 	return "white"
+	// 	 })
+	// 	.classed("player-connected", d => d.connectedPlayers.length>0)
+	// 	.classed("traffic", d => d.traffic.length>0)
 
-	link.data(nodeMap.edges)
+	// link.data(nodeMap.edges)
+	// 	.select('line')
+	// 	.classed("traffic", d => d.traffic.length>0)
 
-	// Since we are updating the data with new objects,
-	// we need to point our simulation at the new objects 
-	// to ensure continued tracking:
-	simulation.nodes(nodeMap.nodes)
-	simulation.force("link")
-            .links(nodeMap.edges);
+	// // Since we are updating the data with new objects,
+	// // we need to point our simulation at the new objects 
+	// // to ensure continued tracking:
+	// simulation.nodes(nodeMap.nodes)
+	// simulation.force("link")
+ //            .links(nodeMap.edges);
 
-	// update node and edge traffic
+	// // update node and edge traffic
 		 
-	// update player POEs and ongoing connections
+	// // update player POEs and ongoing connections
 
-	// update module contents
+	// // update module contents
+}
+
+function edgify(nodeMap) {
+
+	console.log('edgifying', nodeMap)
+	seenEdges = {}
+	nodeMap.edges = []
+
+	for (let i in nodeMap.nodes){
+		for (let connectionID of nodeMap.nodes[i].connections) {
+			let edgeID = ""
+			if (i > connectionID)
+				edgeID = i + "e" + connectionID
+			else
+				edgeID = connectionID + "e" + i
+
+			if (!seenEdges[edgeID])
+				seenEdges[edgeID] = {id:edgeID, source:i, target:connectionID}
+		}
+	}
+
+	for (let edgeID of Object.keys(seenEdges)) {
+		nodeMap.edges.push(seenEdges[edgeID])
+	}
+	console.log("edgify produced:",nodeMap)
+
 
 }
 
@@ -102,13 +137,14 @@ function updateGraph (nodeMap) {
 function initGraph (nodeMap) {
 		console.log('Initializing Graph...');
 
+		edgify(nodeMap)
+
 		simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().id(function(d) { return d.index }).distance(nodeBaseRadius*3))
-            .force("collide",d3.forceCollide( function(d){ return d.r + 8 }).iterations(16) )
+            .force("link", d3.forceLink().distance(nodeBaseRadius*4))
+            .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
-            .force("y", d3.forceY(0))
-            .force("x", d3.forceX(0))
+
     
         link = svg.selectAll('.edge')
         	.data(nodeMap.edges)
@@ -116,21 +152,43 @@ function initGraph (nodeMap) {
             .append("line")
             .attr("class", "edge")
             .attr("stroke", "black")
-            .attr("stroke-width", nodeBaseRadius/5)
+            .attr("stroke-width", strokeWidth)
 
-        node = svg.selectAll(".node")
+        nodeGroups = svg.selectAll(".node")
         	.data(nodeMap.nodes)
         	.enter()
         	.append("g")
-            .attr("class", d=> {return "node"})
+            .attr("class", "node-group")
 
-        node.append("circle")
+        nodeMains = nodeGroups.append("circle")
         	.attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier )
+        	.style("stroke", "black")
+        	.attr("stroke-width", strokeWidth)
+        	.attr("class", "node-main")
 
-        node.append("text")
-	       .attr("dx", nodeBaseRadius*2)
-	       .attr("dy", nodeBaseRadius*2.5)
-	       .text(d=>d.id);
+        // nodeTraffics = nodeGroups.append("circle")
+        // 	.attr("r", d=>3)
+        // 	.style("stroke", "black")
+        // 	.style("fill", "orange")
+        // 	.attr("stroke-width", 1)
+        // 	.attr("class", "node-module")
+        // 	.attr("cx", function(d) {
+        // 		const mainsSiblingRadius = this.parentNode.childNodes[0].r.baseVal.value
+        // 		return mainsSiblingRadius + this.r.baseVal.value
+        // 	})
+	       //  .attr("cy", 0)
+
+        nodeLabels = nodeGroups.append("text")
+	       .attr("dx", -nodeBaseRadius*.6)
+	       .attr("dy", -nodeBaseRadius*2.8)
+	       .attr("class", "node-label")
+	       .text(d=>"ID: " + d.id 
+	       // 			// "\nConnected Players: " + d.connectedPlayers +
+	       // 			"\nPOE: " + d.poe
+	       // 			// "\nModules: " + d.modules + 
+	       // 			// "\nTraffic: " + d.traffic
+	       			)
+
         
         var ticked = function() {
             link
@@ -139,9 +197,9 @@ function initGraph (nodeMap) {
                 .attr("x2", function(d) { return d.target.x; })
                 .attr("y2", function(d) { return d.target.y; });
     
-    		node.attr("transform", d => { return "translate(" + d.x + "," + d.y + ")"; })
-        }  
-        
+    		nodeGroups.attr("transform", d => { return "translate(" + d.x + "," + d.y + ")"; })
+        }
+
         simulation
             .nodes(nodeMap.nodes)
             .on("tick", ticked);

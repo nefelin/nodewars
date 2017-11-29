@@ -76,6 +76,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Assuming we're all good, register client
+	// TODO reconsider this lifecycle, registering player without name has weird side effects
 	thisPlayer := gm.RegisterPlayer(ws)
 	defer scrubPlayerSocket(thisPlayer)
 
@@ -100,7 +101,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 // this should also take a player as an argument and take into account
 // event visibility when composing state message
 func calcStateMsgForPlayer(p *Player) Message {
-	gs := newGameState()
+	// gs := newGameState()
 
 	// log.Println(gs)
 
@@ -114,7 +115,7 @@ func calcStateMsgForPlayer(p *Player) Message {
 	// 	}
 	// }
 
-	stateMsg, err := json.Marshal(gs)
+	stateMsg, err := json.Marshal(gm)
 
 	// log.Printf("stateMsg: %v", string(stateMsg))
 	if err != nil {
@@ -145,14 +146,14 @@ func outgoingRelay(p *Player) {
 // are visible after entire stateMessage update. Pick a paradigm TODO
 func incomingHandler(msg *Message, p *Player) {
 	// Tie message with player name
-	msg.Sender = p.Name
+	msg.Sender = string(p.Name)
 	switch msg.Type {
 	case "allChat":
 		if p.Name == "" {
 			p.outgoing <- Message{"error", "server", "you need a name to send messages"}
 		} else {
-			for player := range gm.Players {
-				player.outgoing <- Message{"allChat", p.Name, msg.Data}
+			for _, player := range gm.Players {
+				player.outgoing <- Message{"allChat", string(p.Name), msg.Data}
 			}
 		}
 
@@ -169,7 +170,7 @@ func incomingHandler(msg *Message, p *Player) {
 		if p.Name == "" {
 			p.outgoing <- Message{"error", "server", "you need a name to join a team"}
 		} else {
-			err := gm.assignPlayerToTeam(p, msg.Data)
+			err := gm.assignPlayerToTeam(p, teamName(msg.Data))
 			if err != nil {
 				p.outgoing <- Message{"error", "server", fmt.Sprintln(err)}
 			}
@@ -209,9 +210,10 @@ func incomingHandler(msg *Message, p *Player) {
 				log.Printf("connectToNode error: %v", err)
 			} else {
 				// if we're all good, try to connect the player to the node
-				if targetNode > -1 && targetNode < nodeCount {
+				if gm.Map.nodeExists(targetNode) {
 					if gm.tryConnectPlayerToNode(p, targetNode) {
 						p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
+						gm.broadcastState()
 					} else {
 						p.outgoing <- Message{"connectFail", "pseudoServer", msg.Data}
 					}
