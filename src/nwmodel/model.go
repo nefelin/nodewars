@@ -4,8 +4,6 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type playerName = string
-
 // GameModel holds all state information
 type GameModel struct {
 	Map     *nodeMap             `json:"map"`
@@ -67,9 +65,9 @@ type team struct {
 
 // Player ...
 type Player struct {
-	ID   playerID   `json:"id"`
-	Name playerName `json:"name"`
-	Team *team      `json:"team"`
+	ID   playerID `json:"id"`
+	Name string   `json:"name"`
+	Team *team    `json:"team"`
 	// PointOfEntry   nodeID `json:"pointOfEntry"`
 	// NodeConnection nodeID `json:"nodeConnection"`
 	// route          []*node

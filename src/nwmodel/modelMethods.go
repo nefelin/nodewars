@@ -114,13 +114,10 @@ func newDefaultMap() *nodeMap {
 
 // RegisterPlayer adds a new player to our world model
 func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
-	newP := &Player{
-		Name: "",
-		// Team:           nil,
-		socket:   ws,
-		outgoing: make(chan Message),
-	}
+	// create player with this websocket
+	newP := newPlayer(ws)
 
+	// add this player to our registry
 	gm.Players[newP.ID] = newP
 	return newP
 }
@@ -132,15 +129,18 @@ func (gm *GameModel) broadcastState() {
 }
 
 func (gm *GameModel) setPlayerName(p *Player, n string) error {
+	log.Printf("Attempting to give name: %v to Player: %v", n, p)
 	// check to see if name is in use
+	// log.Printf("gm.Players: %v", gm.Players)
 	for _, player := range gm.Players {
-		if player.Name == playerName(n) {
+
+		// log.Printf("Comparing: %v to: %v", player.Name, n)
+		if player.Name == n {
 			return errors.New("Name '" + n + "' already in use")
 		}
 	}
-
-	// if not set it and return no error
-	p.Name = playerName(n)
+	// if not, set it and return no error
+	p.Name = n
 	return nil
 }
 
