@@ -27,7 +27,7 @@ func getRandomTest() (id, description string) {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
-	r, err := http.Get(address + port)
+	r, err := http.Get(address + ":" + port)
 	if err != nil {
 		panic(err)
 	}
@@ -51,7 +51,7 @@ func submitTest(id, language, code string) map[string]bool {
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
-	r, err := http.Post(address+port+"/submit/", "application/json", buf)
+	r, err := http.Post(address+":"+port+"/submit/", "application/json", buf)
 	if err != nil {
 		panic(err)
 	}

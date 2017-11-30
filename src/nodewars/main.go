@@ -7,7 +7,6 @@ import (
 )
 
 func main() {
-
 	log.Println("Starting " + nwmodel.VersionTag + " server...")
 
 	// Start Webserver
