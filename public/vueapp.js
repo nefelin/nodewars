@@ -134,6 +134,7 @@ new Vue({
 
 				// turn on normal message parsing
 				this.ws.addEventListener('message', this.parseServerMessages);
+				this.ws.addEventListener('close', (d) => {console.log("server severed connection:", d)});
 				this.autoLogin()
 				return
 			console.log('Server said:', e.data)

@@ -5,24 +5,46 @@
 	<script src="libs/vue.js"></script>
 	<script src="libs/d3.js"></script>
   <style>
-  	.POE {
-  		stroke-width:5;
+
+	.node-main, .node-backing {
+		stroke: black;
+		stroke-width: 2;
+		fill: white
+	}
+
+	.traffic {
+  		stroke-width:3;
   	}
+
   	.player-connected {
   		stroke-width:6;
   	}
-  	.traffic {
-  		stroke-width:3;
-  	}
+
+  	.node-poe{
+	  animation-duration: 1.3s;
+	  animation-name: glowPulse;
+	  animation-iteration-count: infinite;
+	  animation-direction: alternate;
+	  -webkit-animation-timing-function: linear; /* Safari 4.0 - 8.0 */
+      animation-timing-function: linear;
+	}
+  	
 
   	line.traffic {
   		stroke-width:4;
   	}
 
-	.node {
-		stroke-width:2;
-		fill: white;
-	}
+	@keyframes glowPulse {
+	  from {
+	  	fill-opacity:.4;
+	    /*fill-opacity:1;*/
+	  }
+
+	  to {
+	  	fill-opacity:.8;
+	  }
+}
+
   </style>
 </head>
 <body>

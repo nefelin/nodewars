@@ -55,40 +55,71 @@ function svgInit() {
 
 
 function updateGraph (gameState) {
+	// TODO combine all this stuff into 
 	makeEdges(gameState.map)
 	attachPOEs(gameState)
 	attachRoutes(gameState)
 	attachCoords(gameState.map)
+	arrayifyModules(gameState.map)
 	const nodeMap = gameState.map
 	console.log('updateGraph')
 
 	// console.log("state:", gameState)
 	console.log("nodeMap:", nodeMap)
 
-	// console.log("ng data before", nodeGroups.select("circle").data())	
+	var t = d3.transition()
+      .duration(750)
 
+	// rebind node-group data
 	nodeGroups.data(nodeMap.nodes)
-		.select("circle") // select instead of selectAll auto binds to parent data
-		// .attr("class", d => {
-		// 	if (d.poe.length > 0) {
-		//  		if (d.poe[0].team != null)
-		//  			return "POE"
-		//  	}
-		 	
-		// })
-		.style("fill", function(d) {
-		 	if (d.poes.length > 0) {
-		 		if (d.poes[0].team != null)
-		 			return d.poes[0].team.name
-		 	}
-		 	return "white"
-		 })
+
+	// update node-mains 
+	nodeGroups.select(".node-main")
+		.classed("node-poe", d => d.poes.length>0)
 		.classed("player-connected", d => d.connectedPlayers.length>0)
 		.classed("traffic", d => d.traffic.length>0)
+		.transition(t)
+		.style("fill", d => {
+			if (d.poes.length>0)
+				return d.poes[0].team.name
+			return "white"
+		})
 
+	// update modules 
+	nodeGroups.each(function(d) {
+       	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
+			.data(d.modList)
+
+		const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
+		const nodeRadius = parentRadius
+
+		// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+		const modRad = nodeBaseRadius/2.5
+		const spacing = modRad*3
+		const angleInc = 60*0.017453; //convert to radian
+
+		modules.exit()
+			.transition(t)
+			.attr("r", 0)
+			.remove()
+
+		modules.enter()
+			   .append("circle")
+			   .attr("class", "node-module")
+   			   .style("fill", d=> d.team.name)
+	           .style("stroke", "black")
+	           .style("stroke-width", 2)
+	           .attr("opacity", 0)
+	           .attr("r", d => modRad)
+	           // .attr("cy", -nodeRadius/2)
+	           .transition(t)
+	           .style("opacity", 1)
+	           .attr("cx", (d,i) => nodeRadius/2 * Math.cos(-1.5708+angleInc*i))
+	           .attr("cy", (d,i) => nodeRadius/2 * Math.sin(-1.5708+angleInc*i))
+	}) 
 
 	link.data(nodeMap.edges)
-		.classed("traffic", d => {console.log("edge:",d.id,"traffic length:", d.traffic.length); return d.traffic.length>0})
+		.classed("traffic", d => d.traffic.length>0)
 
 	// console.log("ng data after", nodeGroups.data())	
 
@@ -97,36 +128,17 @@ function updateGraph (gameState) {
 	// // to ensure continued tracking:
 	simulation.nodes(nodeMap.nodes)
 	simulation.force("link")
-            .links(nodeMap.edges);
+            .links(nodeMap.edges)
 }
 
-// function pulsate(selection) {
-// 	recursive_transitions();
-
-// 	function recursive_transitions() {
-// 		console.log('pulsate data:',selection.data())
-// 	  if (selection.data()[0].traffic>0) {
-// 	    selection.transition()
-// 	        .duration(400)
-// 	        .attr("stroke-width", 2)
-// 	        .attr("r", 8)
-// 	        .ease('sin-in')
-// 	        .transition()
-// 	        .duration(800)
-// 	        .attr('stroke-width', 3)
-// 	        .attr("r", 12)
-// 	        .ease('bounce-in')
-// 	        .each("end", recursive_transitions);
-// 	    } else {
-// 	    // transition back to normal
-// 	    selection.transition()
-// 	        .duration(200)
-// 	        .attr("r", 8)
-// 	        .attr("stroke-width", 2)
-// 	        .attr("stroke-dasharray", "1, 0");
-// 	    } 
-// 	}
-// }
+function arrayifyModules(nodeMap) {
+	for (let node of nodeMap.nodes) {
+		node.modList = []
+		for (let modID of Object.keys(node.modules)){
+			node.modList.push(node.modules[modID])
+		}
+	}
+}
 
 function attachCoords(nodeMap) {
 	const data = nodeGroups.data()
@@ -174,7 +186,7 @@ function attachRoutes(gameState) {
 		edge.traffic = []
 	}
 
-	console.log("pre attachRoutes", gameState.map)
+	// console.log("pre attachRoutes", gameState.map)
 
 	for (let playerID of Object.keys(gameState.routes)) {
 		const route = gameState.routes[playerID]
@@ -195,7 +207,7 @@ function attachRoutes(gameState) {
 				// otherwise add traffic between last node and target
 				thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
 			}
-			console.log("attachRoutes edgeID:", thisEdgeID)
+			// console.log("attachRoutes edgeID:", thisEdgeID)
 			getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
 			// pulsate(d3.select(".edgeID-"+thisEdgeID))
 		}
@@ -204,7 +216,7 @@ function attachRoutes(gameState) {
 		gameState.map.nodes[route.endpoint.id].connectedPlayers.push(player)
 	}
 
-	console.log("post attachRoutes", gameState.map)
+	// console.log("post attachRoutes", gameState.map)
 }
 
 function makeEdgeID(id1, id2) {
@@ -264,40 +276,31 @@ function initGraph (nodeMap) {
             .attr("stroke", "black")
             .attr("stroke-width", strokeWidth)
 
-        nodeGroups = svg.selectAll(".node")
+        nodeGroups = svg.selectAll(".node-group")
         	.data(nodeMap.nodes)
         	.enter()
         	.append("g")
             .attr("class", "node-group")
 
-        nodeMains = nodeGroups.append("circle")
-        	.attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier )
-        	.style("stroke", "black")
-        	.attr("stroke-width", strokeWidth)
-        	.attr("class", "node-main")
+        nodeMains = nodeGroups.each(function(d) {
+        	// add backing to hide main's transparency when animating POEs
+        	d3.select(this).append("circle")
+        	  .attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+        	  .attr("class", "node-backing")
 
-        // nodeTraffics = nodeGroups.append("circle")
-        // 	.attr("r", d=>3)
-        // 	.style("stroke", "black")
-        // 	.style("fill", "orange")
-        // 	.attr("stroke-width", 1)
-        // 	.attr("class", "node-module")
-        // 	.attr("cx", function(d) {
-        // 		const mainsSiblingRadius = this.parentNode.childNodes[0].r.baseVal.value
-        // 		return mainsSiblingRadius + this.r.baseVal.value
-        // 	})
-	       //  .attr("cy", 0)
+        	// add node-main
+        	d3.select(this).append("circle")
+        	  .attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+        	  .attr("class", "node-main")
+
+        })
 
         nodeLabels = nodeGroups.append("text")
-	       .attr("dx", -nodeBaseRadius*.6)
-	       .attr("dy", -nodeBaseRadius*2.8)
+	       .attr("dx", -nodeBaseRadius*.8)
+	       .attr("dy", -nodeBaseRadius-20) // make spacing programatic TODO
+	       .attr("font-size",15)
 	       .attr("class", "node-label")
-	       .text(d=>"ID: " + d.id 
-	       // 			// "\nConnected Players: " + d.connectedPlayers +
-	       // 			"\nPOE: " + d.poe
-	       // 			// "\nModules: " + d.modules + 
-	       // 			// "\nTraffic: " + d.traffic
-	       			)
+	       .text(d=>"ID: " + d.id)
 
         
         var ticked = function() {
