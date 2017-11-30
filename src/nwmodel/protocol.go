@@ -210,15 +210,11 @@ func incomingHandler(msg *Message, p *Player) {
 				log.Printf("connectToNode error: %v", err)
 			} else {
 				// if we're all good, try to connect the player to the node
-				if gm.Map.nodeExists(targetNode) {
-					if gm.tryConnectPlayerToNode(p, targetNode) {
-						p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
-						gm.broadcastState()
-					} else {
-						p.outgoing <- Message{"connectFail", "pseudoServer", msg.Data}
-					}
+				if err := gm.tryConnectPlayerToNode(p, targetNode); err == nil {
+					p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
+					gm.broadcastState()
 				} else {
-					p.outgoing <- Message{"error", "server", "node '" + msg.Data + "' does not exist"}
+					p.outgoing <- Message{"connectFail", "pseudoServer", fmt.Sprintf("error: %v", err)}
 				}
 			}
 		}
@@ -239,6 +235,7 @@ func incomingHandler(msg *Message, p *Player) {
 // func sendWorldState(p *Player)
 
 func scrubPlayerSocket(p *Player) {
+	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
 	log.Printf("Scrubbing player: %v", p.Name)
 	gm.RemovePlayer(p)
 	p.socket.Close()

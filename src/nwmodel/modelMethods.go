@@ -10,15 +10,18 @@ import (
 
 // Initialization methods ------------------------------------------------------------------
 
-func newModuleBy(p *Player) module {
+func newModuleBy(p *Player) *module {
 	id := moduleIDCount
 	moduleIDCount++
 
-	return module{
+	return &module{
 		ID:         id,
 		TestID:     0,
 		LanguageID: 0,
 		Builder:    p,
+		Team:       p.Team,
+		// Health: 3,
+		// MaxHealth: 3,
 	}
 }
 
@@ -33,12 +36,12 @@ func NewNode() *node {
 	nodeIDCount++
 
 	connections := make([]int, 0)
-	modules := make(map[modID]module)
+	modules := make(map[modID]*module)
 
 	return &node{
 		ID:          id,
 		Connections: connections,
-		Size:        3,
+		Capacity:    3,
 		Modules:     modules,
 		// Traffic:          make([]*Player, 0),
 		// POE:              make([]*Player, 0),
@@ -193,17 +196,22 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 	return nil
 }
 
-func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) bool {
+func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) error {
+
+	// TODO report errors here
+	source, poeOK := gm.POEs[p.ID]
+
+	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
+	if !poeOK {
+		return errors.New("no valid point of entry")
+	}
+
+	if !gm.Map.nodeExists(n) {
+		return fmt.Errorf("%v is not a valid node", n)
+	}
+
 	log.Printf("player %v attempting to connect to node %v from POE %v", p.Name, n, gm.POEs[p.ID].ID)
 
-	// if player is connected elsewhere, break that first, regardless of success of this attempt
-	// if gm.Routes[p.ID] != nil {
-	// 	gm.breakConnection(p)
-	// }
-
-	// TODO handle player connecting to own POE
-
-	source := gm.POEs[p.ID]
 	target := gm.Map.Nodes[n]
 
 	route := gm.Map.routeToNode(p, source, target)
@@ -211,10 +219,11 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) bool {
 		log.Println("Successful Connect")
 		log.Printf("Route to target: %v", route)
 		gm.establishConnection(p, route, target) // This should add player traffic to each intermediary and establish a connection on n
-		return true
+		return nil
 	}
 	log.Println("Cannot Connect")
-	return false
+	return errors.New("no route exists")
+
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically
@@ -233,7 +242,7 @@ func (gm *GameModel) breakConnection(p *Player) {
 // module methods -------------------------------------------------------------------------
 
 func (m module) isFriendlyTo(p *Player) bool {
-	if m.Builder.Team == p.Team {
+	if m.Team == p.Team {
 		return true
 	}
 	return false
@@ -256,9 +265,9 @@ func (n *node) allowsRoutingFor(p *Player) bool {
 	return false
 }
 
-func (n *node) addModule(m module) {
+func (n *node) addModule(m *module) {
 	// TODO QUESTION do I need to return bool since failure is possible?
-	if len(n.Modules) < n.Size {
+	if len(n.Modules) < n.Capacity {
 		n.Modules[m.ID] = m
 	}
 }
@@ -515,6 +524,10 @@ func (n node) modIDs() []modID {
 		i++
 	}
 	return ids
+}
+
+func (n node) contentsAsString() string {
+	return fmt.Sprintf("NodeID: %v\n", n.ID)
 }
 
 func (t team) String() string {

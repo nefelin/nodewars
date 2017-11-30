@@ -41,10 +41,10 @@ var moduleIDCount modID
 
 // node ...
 type node struct {
-	ID          nodeID           `json:"id"` // keys and ids is redundant TODO
-	Connections []nodeID         `json:"connections"`
-	Size        int              `json:"size"`
-	Modules     map[modID]module `json:"modules"`
+	ID          nodeID            `json:"id"` // keys and ids is redundant TODO
+	Connections []nodeID          `json:"connections"`
+	Capacity    int               `json:"size"`
+	Modules     map[modID]*module `json:"modules"`
 }
 
 // module ...
@@ -53,6 +53,7 @@ type module struct {
 	TestID     int     `json:"testId"`
 	LanguageID int     `json:"languageId"`
 	Builder    *Player `json:"builder"`
+	Team       *team   `json:"team"`
 }
 
 type teamName = string
