@@ -198,18 +198,21 @@ function attachRoutes(gameState) {
 			const thisNode = route.nodes[i]
 			gameState.map.nodes[thisNode.id].traffic.push(player)
 
-			//attach traffic to edges
+			//attach traffic to edges if we're not connecting to poe
 			// if we're in the middle of the route push traffic to connector
-			let thisEdgeID
-			if (i > 0) {
-				thisEdgeID = makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
-			} else {
-				// otherwise add traffic between last node and target
-				thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
+			console.log("route", route)
+			if (route.nodes[0].id != route.endpoint.id){
+				let thisEdgeID
+				if (i > 0) {
+					thisEdgeID = makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
+				} else {
+					// otherwise add traffic between last node and target
+					thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
+				}
+
+				getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
 			}
-			// console.log("attachRoutes edgeID:", thisEdgeID)
-			getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
-			// pulsate(d3.select(".edgeID-"+thisEdgeID))
+
 		}
 
 		// attach endpoints

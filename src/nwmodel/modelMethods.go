@@ -527,7 +527,14 @@ func (n node) modIDs() []modID {
 }
 
 func (n node) contentsAsString() string {
-	return fmt.Sprintf("NodeID: %v\n", n.ID)
+	modList := make([]string, 0)
+	for id, mod := range n.Modules {
+		// TODO replace languageID with actual language name?
+		// maybe keeping it numeric feels more hacker-y...
+		modList = append(modList, fmt.Sprintf("%v - %v - (%v),", id, mod.LanguageID, mod.Team.Name))
+	}
+
+	return fmt.Sprintf("NodeID: %v\nCapacity: %v\nModules: %v\n", n.ID, n.Capacity, modList)
 }
 
 func (t team) String() string {

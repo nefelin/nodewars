@@ -212,6 +212,9 @@ func incomingHandler(msg *Message, p *Player) {
 				// if we're all good, try to connect the player to the node
 				if err := gm.tryConnectPlayerToNode(p, targetNode); err == nil {
 					p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
+
+					nodeContents := gm.Routes[p.ID].Endpoint.contentsAsString()
+					p.outgoing <- Message{"nodeContents", "pseudoServer", nodeContents}
 					gm.broadcastState()
 				} else {
 					p.outgoing <- Message{"connectFail", "pseudoServer", fmt.Sprintf("error: %v", err)}
@@ -226,6 +229,8 @@ func incomingHandler(msg *Message, p *Player) {
 		} else {
 			p.outgoing <- Message{"playerNameSet", "server", msg.Data}
 		}
+
+	case "destroyNode":
 
 	default:
 		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
