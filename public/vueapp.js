@@ -68,7 +68,7 @@ new Vue({
 		},
 
 		updateState: function(newState) {
-			console.log('updateState called with state:', newState)
+			// console.log('updateState called with state:', newState)
 			// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
 			// let nodeMap = arrayifyNodeMap(newState.nodeMap)
 			let nodeMap = newState.map

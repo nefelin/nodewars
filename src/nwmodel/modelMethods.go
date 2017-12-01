@@ -241,8 +241,8 @@ func (gm *GameModel) breakConnection(p *Player) {
 
 // module methods -------------------------------------------------------------------------
 
-func (m module) isFriendlyTo(p *Player) bool {
-	if m.Team == p.Team {
+func (m module) isFriendlyTo(t *team) bool {
+	if m.Team == t {
 		return true
 	}
 	return false
@@ -256,9 +256,9 @@ func (n *node) addConnection(m *node) {
 	m.Connections = append(m.Connections, n.ID)
 }
 
-func (n *node) allowsRoutingFor(p *Player) bool {
+func (n *node) allowsRoutingFor(t *team) bool {
 	for _, module := range n.Modules {
-		if module.isFriendlyTo(p) {
+		if module.isFriendlyTo(t) {
 			return true
 		}
 	}
@@ -272,8 +272,26 @@ func (n *node) addModule(m *module) {
 	}
 }
 
-func (n *node) removeModule(m module) {
-	delete(n.Modules, m.ID)
+func (n *node) removeModule(m modID) error {
+	if mod, ok := n.Modules[m]; ok {
+		oldModsTeam := mod.Team
+		delete(n.Modules, m)
+
+		// if the module no longer supports routing for this modules team
+		if !n.allowsRoutingFor(oldModsTeam) {
+			for playerID, route := range gm.Routes {
+				// check each player who is on team's route
+				if gm.Players[playerID].Team == oldModsTeam {
+					// and if it contained that node, break the players connection
+					if _, ok := route.containsNode(n); ok {
+						gm.breakConnection(gm.Players[playerID])
+					}
+				}
+			}
+		}
+		return nil
+	}
+	return fmt.Errorf("error: %v: No such module", m)
 }
 
 // helper function for removing item from slice
@@ -344,7 +362,7 @@ func (m *nodeMap) nodesTouch(n1, n2 *node) bool {
 // TODO get code review on this. I think I'm maybe not getting optimal route
 func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 
-	if source.allowsRoutingFor(p) {
+	if source.allowsRoutingFor(p.Team) {
 		// if we're connecting to our POE, return a route which is only our POE
 		if source == target {
 			route := make([]*node, 1)
@@ -352,31 +370,34 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 			return route
 		}
 
-		// if target is in the route we're currently connecting through,
-		// auto succede and just return subset of our current route
-		// TODO buggy on change of POE, investigate
-		// currentRoute, playerHasRoute := gm.Routes[p.ID]
-		// if playerHasRoute {
-		// 	log.Println("New route is subset of current route.")
-		// 	if i, ok := currentRoute.containsNode(target); ok {
-		// 		return currentRoute.Nodes[i+1:]
-		// 	}
-		// }
-
 		unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
 		dist := make(map[*node]int)
 		prev := make(map[*node]*node)
 
-		// Route must at least contain source, even if target is immediately adjacent
-		// prev[source] = nil
+		seen := make(map[*node]bool)
+		tocheck := make([]*node, 1)
+		tocheck[0] = source
+		for len(tocheck) > 0 {
+			thisNode := tocheck[0]
+			tocheck = tocheck[1:]
 
-		for _, node := range m.Nodes {
-			// Only consider node if node is friendly to player (i.e. has module from team)
-			if node.allowsRoutingFor(p) {
-				dist[node] = 10000
-				unchecked[node] = true
+			log.Printf("this: %v", thisNode)
+			if thisNode.allowsRoutingFor(p.Team) {
+				unchecked[thisNode] = true
+				dist[thisNode] = 1000
+				seen[thisNode] = true
+				for _, nodeID := range thisNode.Connections {
+					log.Printf("nodeid: %v", nodeID)
+					if !seen[m.Nodes[nodeID]] {
+						tocheck = append(tocheck, m.Nodes[nodeID])
+
+					}
+					log.Printf("tocheck %v", tocheck)
+				}
 			}
 		}
+
+		log.Printf("unchecked %v", unchecked)
 
 		dist[source] = 0
 
@@ -393,6 +414,7 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 			}
 
 			for _, cNode := range m.nodesConnections(thisNode) {
+				// TODO refactor to take least risky routes by weighing against vulnerability to enemy connection
 				alt := dist[thisNode] + 1
 				if alt < dist[cNode] {
 					dist[cNode] = alt

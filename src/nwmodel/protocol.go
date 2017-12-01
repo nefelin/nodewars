@@ -230,7 +230,21 @@ func incomingHandler(msg *Message, p *Player) {
 			p.outgoing <- Message{"playerNameSet", "server", msg.Data}
 		}
 
-	case "destroyNode":
+	case "removeModule":
+		targetMod, err := strconv.Atoi(msg.Data)
+		if err != nil {
+			// if we have trouble converting msg to integer, complain
+			log.Printf("removeModule error: %v", err)
+		}
+		if route, ok := gm.Routes[p.ID]; ok {
+			err = route.Endpoint.removeModule(targetMod)
+			if err != nil {
+				p.outgoing <- Message{"removeNodeFail", "pseudoServer", fmt.Sprintln(err)}
+			}
+			gm.broadcastState()
+		} else {
+			p.outgoing <- Message{"removeNodeFail", "pseudoServer", "error: not connected to a node"}
+		}
 
 	default:
 		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}

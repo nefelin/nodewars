@@ -65,7 +65,7 @@ function updateGraph (gameState) {
 	console.log('updateGraph')
 
 	// console.log("state:", gameState)
-	console.log("nodeMap:", nodeMap)
+	// console.log("nodeMap:", nodeMap)
 
 	var t = d3.transition()
       .duration(750)
@@ -200,7 +200,6 @@ function attachRoutes(gameState) {
 
 			//attach traffic to edges if we're not connecting to poe
 			// if we're in the middle of the route push traffic to connector
-			console.log("route", route)
 			if (route.nodes[0].id != route.endpoint.id){
 				let thisEdgeID
 				if (i > 0) {
