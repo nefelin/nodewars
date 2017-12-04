@@ -36,21 +36,23 @@ type node struct {
 	ID          nodeID            `json:"id"` // keys and ids is redundant TODO
 	Connections []nodeID          `json:"connections"`
 	Modules     map[modID]*module `json:"modules"`
-	// using map enables more interesting slot names
-	Slot map[string]*modSlot `json:"slot"`
+	// TODO using map[string] would enable more interesting slot names
+	slots []*modSlot
 }
 
+// TODO rethink I don't like that this setup exposes test information
+// throughout the map to the client.
 type modSlot struct {
-	ChallengeID int     `json:"challengeID"`
-	Module      *module `json:"module"`
+	challenge TestResponse // Should we just send this and let front end handle displaying on comannd? seems more in-paradigm to send only on request.
+	module    *module
 }
 
 type module struct {
-	ID         modID `json:"id"`
-	TestID     int   `json:"testId"`
-	LanguageID int   `json:"languageId"`
-	// Builder    *Player `json:"builder"`
-	Team *team `json:"team"`
+	id         modID  // `json:"id"`
+	testID     int    // `json:"testId"`
+	languageID int    // `json:"languageId"`
+	builder    string // `json:"creator"`
+	Team       *team  `json:"team"`
 }
 
 type team struct {

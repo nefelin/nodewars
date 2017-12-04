@@ -141,7 +141,7 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	_ = gm.setPlayerPOE(p, newPOE)
 
 	// debug only :
-	gm.POEs[p.ID].addModule(newModuleBy(p.Team))
+	gm.POEs[p.ID].addModule(newModuleBy(p))
 
 	gm.broadcastState()
 	return Message{}
@@ -174,7 +174,7 @@ func cmdMake(p *Player, args []string, c string) Message {
 	}
 
 	// Success
-	p.Route.Endpoint.addModule(newModuleBy(p.Team))
+	p.Route.Endpoint.addModule(newModuleBy(p))
 	gm.broadcastState()
 	return Message{}
 }

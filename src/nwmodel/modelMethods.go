@@ -12,22 +12,26 @@ import (
 )
 
 // Initialization methods ------------------------------------------------------------------
-// func newModSlot() *modSlot {
-// 	return &modSlot{
-// 		ChallengeID: Should really be a challenge so we can access desc,
-// 	}
-// }
 
-func newModuleBy(t *team) *module {
+func newModSlot() *modSlot {
+	// get random challenge,
+
+	// assign id
+	return &modSlot{
+		challenge: TestResponse{"1", "The only thing to test are tests themselves"},
+	}
+}
+
+func newModuleBy(p *Player) *module {
 	id := moduleIDCount
 	moduleIDCount++
 
 	return &module{
-		ID:         id,
-		TestID:     0,
-		LanguageID: 0,
-		// Builder:    p,
-		Team: t,
+		id:         id,
+		testID:     0,
+		languageID: 0,
+		builder:    p.Name,
+		Team:       p.Team,
 		// Health: 3,
 		// MaxHealth: 3,
 	}
@@ -63,10 +67,6 @@ func newNodeMap() nodeMap {
 
 // Instantiation with values ------------------------------------------------------------------
 
-// func newBlankMessage() {
-// 	return Message{
-// 	}
-// }
 // NewDefaultModel Generic game model
 func NewDefaultModel() *GameModel {
 	m := newDefaultMap()
@@ -120,6 +120,11 @@ func newDefaultMap() *nodeMap {
 		if targ2 != -1 {
 			newMap.connectNodes(i, targ2)
 		}
+	}
+
+	// create module slots based on connectivity of node
+	for _, node := range newMap.Nodes {
+		node.initSlots()
 	}
 
 	return &newMap
@@ -275,6 +280,14 @@ func (m module) isFriendlyTo(t *team) bool {
 
 // node methods -------------------------------------------------------------------------------
 
+func (n *node) initSlots() {
+	for range n.Connections {
+		newSlot := newModSlot()
+		n.slots = append(n.slots, newSlot)
+	}
+}
+
+// TODO deprecate this for modslot approach
 func (n node) capacity() int {
 	return len(n.Connections)
 }
@@ -304,7 +317,7 @@ func (n *node) allowsRoutingFor(t *team) bool {
 func (n *node) addModule(m *module) {
 	// TODO QUESTION do I need to return bool since failure is possible?
 	if !n.isFull() {
-		n.Modules[m.ID] = m
+		n.Modules[m.id] = m
 	}
 }
 
@@ -582,7 +595,7 @@ func (n node) modIDs() []modID {
 	ids := make([]modID, len(n.Modules))
 	i := 0
 	for _, mod := range n.Modules {
-		ids[i] = mod.ID
+		ids[i] = mod.id
 		i++
 	}
 	return ids
@@ -593,7 +606,7 @@ func (n node) contentsAsString() string {
 	for id, mod := range n.Modules {
 		// TODO replace languageID with actual language name?
 		// maybe keeping it numeric feels more hacker-y...
-		modList = append(modList, fmt.Sprintf("%v - %v - (%v),", id, mod.LanguageID, mod.Team.Name))
+		modList = append(modList, fmt.Sprintf("%v - %v - (%v),", id, mod.languageID, mod.Team.Name))
 	}
 
 	return fmt.Sprintf("NodeID: %v\nCapacity: %v\nModules: %v\n", n.ID, n.capacity(), modList)
@@ -612,7 +625,7 @@ func (p Player) String() string {
 }
 
 func (m module) String() string {
-	return fmt.Sprintf("( <module> {ID: %v, TestID: %v, LangID: %v, Builder: --} )", m.ID, m.TestID, m.LanguageID)
+	return fmt.Sprintf("( <module> {ID: %v, TestID: %v, LangID: %v, Builder: --} )", m.id, m.testID, m.languageID)
 }
 
 func (r route) String() string {
