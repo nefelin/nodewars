@@ -93,7 +93,13 @@ const vueApp = new Vue({
 			const msg = JSON.parse(e.data);
 			switch (msg.sender) {
 				case "pseudoServer":
-					this.response = msg.type + " " + msg.data
+					// const p = document.createElement("p")
+					const t = document.createTextNode(msg.type + " " + msg.data)
+					const out = document.querySelector("#psOutput")
+					out.appendChild(t)
+					out.appendChild(document.createElement("br"))
+					
+					// this.response = msg.type + " " + msg.data + "<br>" + this.response
 					// inelegant trimming of whitespace when msg.type is blank TODO
 					msg.type == "" ? console.log(msg.data)
 								   : console.log(msg.type, msg.data)

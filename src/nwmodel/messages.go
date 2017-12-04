@@ -8,12 +8,13 @@ type Message struct {
 	Sender string `json:"sender"`
 	Data   string `json:"data"`
 	Code   string `json:"code"`
-}
+} // TODO fix code submission to append to other data, this is unnecessary
 
 const (
-	errorStr   = "error:"
-	successStr = ""
-	pseudoStr  = "pseudoServer"
+	errorStr     = "error:"
+	successStr   = ""
+	pseudoStr    = "pseudoServer"
+	noConnectStr = "No connection"
 )
 
 var msgNoTeam = Message{

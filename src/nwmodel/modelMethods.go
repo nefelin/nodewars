@@ -18,22 +18,25 @@ func newModSlot() *modSlot {
 
 	// assign id
 	return &modSlot{
-		challenge: TestResponse{"1", "The only thing to test are tests themselves"},
+		challenge: getRandomTest(),
+		// challenge: Challenge{"", ""}, // getRandomTest(),
+
 	}
 }
 
-func newModuleBy(p *Player) *module {
+// creates a new module by p based on the results from response in language l
+func newModule(p *Player, response ChallengeResponse, lang string) *module {
 	id := moduleIDCount
 	moduleIDCount++
 
 	return &module{
-		id:         id,
-		testID:     0,
-		languageID: 0,
-		builder:    p.Name,
-		Team:       p.Team,
-		// Health: 3,
-		// MaxHealth: 3,
+		id: id,
+		// testID:    testID,
+		language:  lang,
+		builder:   p.name(),
+		Team:      p.Team,
+		health:    response.passed(),
+		maxHealth: len(response.PassFail),
 	}
 }
 
@@ -640,7 +643,7 @@ func (r route) String() string {
 }
 
 func (m module) forMsg() string {
-	return fmt.Sprintf("[%v] [%v] [%v]", m.Team.Name, m.languageID, m.builder)
+	return fmt.Sprintf("[%v] [%v] [%v]", m.Team.Name, m.language, m.builder)
 }
 
 func (n node) forMsg() string {
@@ -660,6 +663,19 @@ func (m modSlot) forMsg() string {
 	default:
 		return "( -empty- )\n"
 	}
+}
+
+func (m modSlot) forProbe() string {
+	var header string
+	switch {
+	case m.module != nil:
+		header = "( " + m.module.forMsg() + " )\n"
+	default:
+		header = "( -empty- )\n"
+	}
+	task := "Task:\n" + m.challenge.Description
+	return header + task
+
 }
 
 func (r route) forMsg() string {

@@ -33,9 +33,10 @@ type nodeMap struct {
 }
 
 type node struct {
-	ID          nodeID            `json:"id"` // keys and ids is redundant TODO
-	Connections []nodeID          `json:"connections"`
-	Modules     map[modID]*module `json:"modules"`
+	ID          nodeID   `json:"id"` // keys and ids is redundant TODO
+	Connections []nodeID `json:"connections"`
+	// address map concurrency TODO
+	Modules map[modID]*module `json:"modules"`
 	// TODO using map[string] would enable more interesting slot names
 	slots []*modSlot
 }
@@ -43,16 +44,18 @@ type node struct {
 // TODO rethink I don't like that this setup exposes test information
 // throughout the map to the client.
 type modSlot struct {
-	challenge TestResponse // Should we just send this and let front end handle displaying on comannd? seems more in-paradigm to send only on request.
+	challenge Challenge // Should we just send this and let front end handle displaying on comannd? seems more in-paradigm to send only on request.
 	module    *module
 }
 
 type module struct {
-	id         modID  // `json:"id"`
-	testID     int    // `json:"testId"`
-	languageID int    // `json:"languageId"`
-	builder    string // `json:"creator"`
-	Team       *team  `json:"team"`
+	id modID // `json:"id"`
+	// testID     int    // `json:"testId"`
+	language  string // `json:"languageId"`
+	builder   string // `json:"creator"`
+	health    int
+	maxHealth int
+	Team      *team `json:"team"`
 }
 
 type team struct {
@@ -61,6 +64,7 @@ type team struct {
 	MaxSize int `json:"maxSize"`
 }
 
+// TODO un export all but route
 // Player ...
 type Player struct {
 	ID       playerID `json:"id"`

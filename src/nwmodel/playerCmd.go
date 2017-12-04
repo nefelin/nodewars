@@ -30,11 +30,16 @@ var msgMap = map[string]playerCommand{
 	"make":    cmdMake,
 	"makemod": cmdMake,
 
-	"um":     cmdUnmake,
-	"un":     cmdUnmake,
-	"unmake": cmdUnmake,
+	// remove ? rm...
+	"rm": cmdRemoveModule,
+	// "um":     cmdUnmake,
+	// "un":     cmdUnmake,
+	// "unmake": cmdUnmake,
 
-	// debug only
+	// non finalized
+	"pr":    cmdProbe,
+	"probe": cmdProbe,
+
 	"ls": cmdLs, // list modules/slot. out of spec but for expediency
 	"sp": cmdSetPOE,
 }
@@ -80,7 +85,7 @@ func cmdTc(p *Player, args []string, c string) Message {
 }
 
 func cmdTeam(p *Player, args []string, c string) Message {
-	log.Println("cmdTeam called")
+	// log.Println("cmdTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 {
 		if p.Team == nil {
@@ -149,51 +154,131 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	_ = gm.setPlayerPOE(p, newPOE)
 
 	// debug only :
-	_ = gm.POEs[p.ID].addModule(newModuleBy(p), 0)
+	_ = gm.POEs[p.ID].addModule(newModule(p, ChallengeResponse{}, "Python"), 0)
 
 	gm.broadcastState()
 	return Message{}
 }
 
-func cmdMake(p *Player, args []string, c string) Message {
-	// TODO demand team for make and unmake actions
+func cmdMake(p *Player, args []string, playerCode string) Message {
 
-	if len(args) < 1 {
-		return psError(errors.New("Expected 1 argument, received 0"))
+	slotNum, err := validateOneIntArg(args)
+	if err != nil {
+		return psError(err)
 	}
 
-	target, err := strconv.Atoi(args[0])
+	if err = slotValidateIsEmpty(p, slotNum); err != nil {
+		return psError(err)
+	}
+
+	// passed error checks on args
+	slot := p.Route.Endpoint.slots[slotNum]
+
+	response := submitTest(slot.challenge.ID, "Python", playerCode)
+	modHealth := response.passed()
+
+	log.Printf("response to submitted test: %v", response)
+
+	if modHealth > 0 {
+		newMod := newModule(p, response, "Python")
+
+		err = p.Route.Endpoint.addModule(newMod, slotNum)
+		if err != nil {
+			return psError(err)
+		}
+	}
+
+	gm.broadcastState()
+	return psSuccess("Should have vmade module :/")
+}
+
+func cmdRemoveModule(p *Player, args []string, c string) Message {
+
+	target, err := validateOneIntArg(args)
 	if err != nil {
-		return psError(fmt.Errorf("%v invalid integer", args[0]))
+		return psError(err)
+	}
+
+	if err = slotValidateNotEmpty(p, target); err != nil {
+		return psError(err)
+	}
+
+	// All checks passed:
+	err = p.Route.Endpoint.removeModule(target)
+	if err != nil {
+		return psError(err)
+	}
+	gm.broadcastState()
+	return Message{}
+
+	return Message{}
+}
+
+func cmdRefac(p *Player, args []string, c string) Message {
+	return Message{}
+}
+
+func cmdProbe(p *Player, args []string, c string) Message {
+
+	slotNum, err := validateOneIntArg(args)
+	if err != nil {
+		return psError(err)
 	}
 
 	switch {
 	case p.Route == nil:
 		return msgNoConnection
 
-	case target > len(p.Route.Endpoint.slots)-1:
-		return psError(errors.New("Slot '" + args[0] + "' does not exist"))
-
-	case p.Route.Endpoint.slots[target].module != nil:
-		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
-		return psError(errors.New("slotasdfasdf not empty"))
+	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
+		return psError(fmt.Errorf("Slot '%v' does not exist", slotNum))
 	}
 
-	// Success
-	err = p.Route.Endpoint.addModule(newModuleBy(p), target)
+	// passed all checks
+
+	return psSuccess(p.Route.Endpoint.slots[slotNum].forProbe())
+}
+
+// input validation helpers
+
+func validateOneIntArg(args []string) (int, error) {
+	if len(args) < 1 {
+		return 0, fmt.Errorf("Expected 1 argument, received %v", len(args))
+	}
+
+	target, err := strconv.Atoi(args[0])
 	if err != nil {
-		return psError(err)
+		return 0, fmt.Errorf("%v invalid integer", args[0])
 	}
-	gm.broadcastState()
-	return Message{}
+
+	return target, nil
 }
 
-func cmdRefac(p *Player, args []string, c string) Message {
+func slotValidateIsEmpty(p *Player, slotNum int) error {
+	switch {
+	case p.Route == nil:
+		return errors.New(noConnectStr)
 
-	return Message{}
+	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
+		return fmt.Errorf("Slot '%v' does not exist", slotNum)
+
+	case p.Route.Endpoint.slots[slotNum].module != nil:
+		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
+		return fmt.Errorf("slot '%v' is not empty", slotNum)
+	}
+	return nil
 }
 
-func cmdUnmake(p *Player, args []string, c string) Message {
+func slotValidateNotEmpty(p *Player, slotNum int) error {
+	switch {
+	case p.Route == nil:
+		return errors.New(noConnectStr)
 
-	return Message{}
+	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
+		return fmt.Errorf("Slot '%v' does not exist", slotNum)
+
+	case p.Route.Endpoint.slots[slotNum].module == nil:
+		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
+		return fmt.Errorf("slot '%v' is empty", slotNum)
+	}
+	return nil
 }

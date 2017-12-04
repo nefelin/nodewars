@@ -3,13 +3,14 @@ package nwmodel
 import (
 	"bytes"
 	"encoding/json"
+	"log"
 	"net/http"
-	"os"
 )
 
 // mirrored struct definitions from TestBox
-type TestResponse struct {
-	Id          string `json:"id"`
+// Challenge does this need to be exported? TODO
+type Challenge struct {
+	ID          string `json:"id"`
 	Description string `json:"description"`
 }
 
@@ -19,33 +20,48 @@ type SubmissionRequest struct {
 	Code     string `json:"code"`
 }
 
-type SubmissionResponse struct {
-	PassedTests map[string]bool `json:"passedTests"`
+type ChallengeResponse struct {
+	PassFail map[string]bool `json:"passFail"`
 }
 
-func getRandomTest() (id, description string) {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+func (c ChallengeResponse) passed() int {
+	var passed int
+	for _, res := range c.PassFail {
+		if res == true {
+			passed++
+		}
+	}
+	return passed
+}
 
+func getRandomTest() Challenge {
+	// address := os.Getenv("TEST_BOX_ADDRESS")
+	// port := os.Getenv("TEST_BOX_PORT")
+
+	address := "http://localhost"
+	port := "31337"
 	r, err := http.Get(address + ":" + port)
+
 	if err != nil {
 		panic(err)
 	}
 	decoder := json.NewDecoder(r.Body)
-	var test TestResponse
-	err = decoder.Decode(&test)
+	var chal Challenge
+	err = decoder.Decode(&chal)
 	if err != nil {
 		panic(err)
 	}
 	defer r.Body.Close()
 
-	return test.Id, test.Description
+	return chal
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id, language, code string) map[string]bool {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+func submitTest(id, language, code string) ChallengeResponse {
+	// address := os.Getenv("TEST_BOX_ADDRESS")
+	// port := os.Getenv("TEST_BOX_PORT")
+	address := "http://localhost"
+	port := "31337"
 
 	submission := SubmissionRequest{id, language, code}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
@@ -57,12 +73,13 @@ func submitTest(id, language, code string) map[string]bool {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var passed SubmissionResponse
-	err = decoder.Decode(&passed)
+	var response ChallengeResponse
+	err = decoder.Decode(&response)
+	log.Printf("submitTest response: %v", response)
 	if err != nil {
 		panic(err)
 	}
 	defer r.Body.Close()
 
-	return passed.PassedTests
+	return response
 }
