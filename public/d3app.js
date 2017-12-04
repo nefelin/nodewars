@@ -188,36 +188,35 @@ function attachRoutes(gameState) {
 
 	// console.log("pre attachRoutes", gameState.map)
 
-	for (let playerID of Object.keys(gameState.routes)) {
-		const route = gameState.routes[playerID]
+	for (let playerID of Object.keys(gameState.players)) {
 		const player = gameState.players[playerID]
+		const route = player.route
 
-		// iterate in reverse since routes are reverse ordered
-		for (let i = route.nodes.length-1; i > -1; i--) {
-			// // attach traffic to nodes
-			const thisNode = route.nodes[i]
-			gameState.map.nodes[thisNode.id].traffic.push(player)
+		if (route) {
+			// iterate in reverse since routes are reverse ordered
+			for (let i = route.nodes.length-1; i > -1; i--) {
+				// // attach traffic to nodes
+				const thisNode = route.nodes[i]
+				gameState.map.nodes[thisNode.id].traffic.push(player)
 
-			//attach traffic to edges if we're not connecting to poe
-			// if we're in the middle of the route push traffic to connector
-			if (route.nodes[0].id != route.endpoint.id){
-				let thisEdgeID
-				if (i > 0) {
-					thisEdgeID = makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
-				} else {
-					// otherwise add traffic between last node and target
-					thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
+				//attach traffic to edges if we're not connecting to poe
+				// if we're in the middle of the route push traffic to connector
+				if (route.nodes[0].id != route.endpoint.id){
+					let thisEdgeID
+					if (i > 0) {
+						thisEdgeID = makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
+					} else {
+						// otherwise add traffic between last node and target
+						thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
+					}
+
+					getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
 				}
-
-				getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
 			}
-
+			// attach endpoints
+			gameState.map.nodes[route.endpoint.id].connectedPlayers.push(player)
 		}
-
-		// attach endpoints
-		gameState.map.nodes[route.endpoint.id].connectedPlayers.push(player)
 	}
-
 	// console.log("post attachRoutes", gameState.map)
 }
 
