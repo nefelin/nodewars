@@ -3,57 +3,62 @@ const versionNum = '0.0.0.1';
 const versionTag = 'NodeWars:' + versionNum;
 const confirmationPhrase = 'Welcome to NodeWars';
 
-
+// codeCmds are playerCmds that need to submit the codebox to the messenger.
+// codeBox content is only submitted with this type of command
+const codeCmds = [
+	"mk", "make", "makemod",
+	"um", "un", "unmake",
+	"rf", "ref", "refac"
+]
 
 // Minimal Vue Stuff
-new Vue({
+const vueApp = new Vue({
 	el: '#app',
 
-	data: function() {
-		return {
-			message: '',
-			msgType: 'teamJoin',
+	data: {
+			codeBox: 'Your code here',
+			playerCmd: '',
 			ws: null,
-			teamColor: 'white',
-			graphInitialized: false
-		}
-	},
+			graphInitialized: false,
+			response: '',
+			stdin: 'stdin test input'
+
+		},
 
 	methods: {
 		sendMsg: function () {
-			const message = JSON.stringify({
-				type: this.msgType,
-				data: this.message
-			})
-			this.message = ''
-			// console.log("sending", message, "to socket:", ws)
+			
+			const cmd = this.playerCmd.split(" ")[0]
+			let message
+
+			// console.log('index of cmd', cmd, ":" ,codeCmds.indexOf(cmd));
+			if (codeCmds.indexOf(cmd) != -1) {
+				console.log("sending code along too")
+				message = JSON.stringify({
+					type: "playerCmd",
+					data: this.playerCmd,
+					code: this.codeBox
+				})
+			} else {
+				// console.log("sending just command")
+				message = JSON.stringify({
+					type: "playerCmd",
+					data: this.playerCmd
+				})
+			}
+
+			console.log("seidning message:", message)
+
+			this.playerCmd = ''
 			this.ws.send(message)
 		},
 
 		autoLogin: function() {
-			const setName = JSON.stringify({
-				type: "setPlayerName",
-				data: "dumdum"
-			});
-
-			const teamJoin = JSON.stringify({
-				type: "teamJoin",
-				data: "red"
-			});
-
-			const setPOE = JSON.stringify({
-				type: "setPOE",
-				data: "7"
-			});
 
 			const stateReq = JSON.stringify({
 				type: "stateRequest",
 				data: ""
 			});
-
-			this.ws.send(setName)
-			this.ws.send(teamJoin)
-			this.ws.send(setPOE)
 			this.ws.send(stateReq)
 
 		},
@@ -68,7 +73,7 @@ new Vue({
 		},
 
 		updateState: function(newState) {
-			// console.log('updateState called with state:', newState)
+			console.log('updateState called with state:', newState)
 			// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
 			// let nodeMap = arrayifyNodeMap(newState.nodeMap)
 			let nodeMap = newState.map
@@ -85,30 +90,48 @@ new Vue({
 		},
 
 		parseServerMessages: function(e) {
-			const message = JSON.parse(e.data);
-			switch (message.type) {
-				case "teamAssign":
-					this.teamColor = message.data
+			const msg = JSON.parse(e.data);
+			switch (msg.sender) {
+				case "pseudoServer":
+					this.response = msg.type + " " + msg.data
+					// inelegant trimming of whitespace when msg.type is blank TODO
+					msg.type == "" ? console.log(msg.data)
+								   : console.log(msg.type, msg.data)
 					break
-				case "teamChat":
-					console.log("("+this.teamColor+")", message.sender + ":", message.data)
+				case "server":
+					if (msg.type == "gameState"){
+						this.updateState(JSON.parse(msg.data))
+						break
+					}
+					console.log("(server) ", msg.type, ":", msg.data)
 					break
-				case "allChat":
-					console.log("(all)", message.sender + ":", message.data)
-					break
-				case "error":
-					console.log("> server error < \n", message.data)
-					break
-				case "gameState":
-				
-					// console.log(message.data)
-					this.updateState(JSON.parse(message.data))
-					break
-				default:
-					console.log('unhandled server response:');
-					console.log("<", message)
 
+				default:
+					console.log(e)
 			}
+			// switch (message.type) {
+			// 	case "teamAssign":
+			// 		this.teamColor = message.data
+			// 		break
+			// 	case "teamChat":
+			// 		console.log("("+this.teamColor+")", message.sender + ":", message.data)
+			// 		break
+			// 	case "allChat":
+			// 		console.log("(all)", message.sender + ":", message.data)
+			// 		break
+			// 	case "error":
+			// 		console.log("> server error < \n", message.data)
+			// 		break
+			// 	case "gameState":
+				
+			// 		// console.log(message.data)
+			// 		this.updateState(JSON.parse(message.data))
+			// 		break
+			// 	default:
+			// 		console.log('unhandled server response:');
+			// 		console.log("<", message)
+
+			// }
 		}
 	},
 
