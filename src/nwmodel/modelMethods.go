@@ -314,11 +314,33 @@ func (n *node) allowsRoutingFor(t *team) bool {
 	return false
 }
 
-func (n *node) addModule(m *module) {
-	// TODO QUESTION do I need to return bool since failure is possible?
-	if !n.isFull() {
+// TODO fix awckward redundancy of modules and slots
+func (n *node) addModule(m *module, slotIndex int) error {
+
+	slot := n.slots[slotIndex]
+	if slot.module == nil {
 		n.Modules[m.id] = m
+		slot.module = m
+		return nil
 	}
+	return errors.New("slot not empty")
+}
+
+func (n *node) removeModule(slotIndex int) error {
+	slot := n.slots[slotIndex]
+	if slot.module != nil {
+		// track old team so we can evaluate traffic after
+		oldModsTeam := slot.module.Team
+
+		//remove module from node and empty slot
+		delete(n.Modules, slot.module.id)
+		slot.module = nil
+
+		// evalTrafficForTeam makes sure all players that were routing through this node are still able to do so
+		n.evalTrafficForTeam(oldModsTeam)
+		return nil
+	}
+	return errors.New("slot is empty")
 }
 
 func (n *node) evalTrafficForTeam(t *team) {
@@ -334,16 +356,6 @@ func (n *node) evalTrafficForTeam(t *team) {
 			}
 		}
 	}
-}
-
-func (n *node) removeModule(m modID) error {
-	if mod, ok := n.Modules[m]; ok {
-		oldModsTeam := mod.Team
-		delete(n.Modules, m)
-		n.evalTrafficForTeam(oldModsTeam)
-		return nil
-	}
-	return fmt.Errorf("error: %v: No such module", m)
 }
 
 // helper function for removing item from slice
@@ -601,17 +613,6 @@ func (n node) modIDs() []modID {
 	return ids
 }
 
-func (n node) contentsAsString() string {
-	modList := make([]string, 0)
-	for id, mod := range n.Modules {
-		// TODO replace languageID with actual language name?
-		// maybe keeping it numeric feels more hacker-y...
-		modList = append(modList, fmt.Sprintf("%v - %v - (%v),", id, mod.languageID, mod.Team.Name))
-	}
-
-	return fmt.Sprintf("NodeID: %v\nCapacity: %v\nModules: %v\n", n.ID, n.capacity(), modList)
-}
-
 func (t team) String() string {
 	var playerList []string
 	for player := range t.players {
@@ -622,10 +623,6 @@ func (t team) String() string {
 
 func (p Player) String() string {
 	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.name(), p.Team)
-}
-
-func (m module) String() string {
-	return fmt.Sprintf("( <module> {ID: %v, TestID: %v, LangID: %v, Builder: --} )", m.id, m.testID, m.languageID)
 }
 
 func (r route) String() string {
@@ -640,6 +637,29 @@ func (r route) String() string {
 	}
 
 	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint.ID, strings.Join(nodeList, ", "))
+}
+
+func (m module) forMsg() string {
+	return fmt.Sprintf("[%v] [%v] [%v]", m.Team.Name, m.languageID, m.builder)
+}
+
+func (n node) forMsg() string {
+
+	slotList := ""
+	for i, slot := range n.slots {
+		slotList += strconv.Itoa(i) + ":" + slot.forMsg()
+	}
+
+	return fmt.Sprintf("NodeID: %v\nMemory Slots:\n%v", n.ID, slotList)
+}
+
+func (m modSlot) forMsg() string {
+	switch {
+	case m.module != nil:
+		return "( " + m.module.forMsg() + " )\n"
+	default:
+		return "( -empty- )\n"
+	}
 }
 
 func (r route) forMsg() string {

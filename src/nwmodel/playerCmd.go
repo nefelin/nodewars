@@ -35,6 +35,7 @@ var msgMap = map[string]playerCommand{
 	"unmake": cmdUnmake,
 
 	// debug only
+	"ls": cmdLs, // list modules/slot. out of spec but for expediency
 	"sp": cmdSetPOE,
 }
 
@@ -133,6 +134,13 @@ func cmdConnect(p *Player, args []string, c string) Message {
 	return psSuccess(fmt.Sprintf("Connected to established : %s", route.forMsg()))
 }
 
+func cmdLs(p *Player, args []string, c string) Message {
+	if p.Route == nil {
+		return msgNoConnection
+	}
+	return psSuccess(p.Route.Endpoint.forMsg())
+}
+
 func cmdSetPOE(p *Player, args []string, c string) Message {
 	if p.Team == nil {
 		return msgNoTeam
@@ -141,7 +149,7 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	_ = gm.setPlayerPOE(p, newPOE)
 
 	// debug only :
-	gm.POEs[p.ID].addModule(newModuleBy(p))
+	_ = gm.POEs[p.ID].addModule(newModuleBy(p), 0)
 
 	gm.broadcastState()
 	return Message{}
@@ -163,18 +171,19 @@ func cmdMake(p *Player, args []string, c string) Message {
 	case p.Route == nil:
 		return msgNoConnection
 
-	// TODO CHECK ACTUAL SLOT AVAILABILITY
-
-	// TODO maybe switch this to actual slot names with hex ids or something
-	case target > p.Route.Endpoint.capacity()-1:
+	case target > len(p.Route.Endpoint.slots)-1:
 		return psError(errors.New("Slot '" + args[0] + "' does not exist"))
 
-	case p.Route.Endpoint.isFull():
-		return psError(errors.New("No slots available"))
+	case p.Route.Endpoint.slots[target].module != nil:
+		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
+		return psError(errors.New("slotasdfasdf not empty"))
 	}
 
 	// Success
-	p.Route.Endpoint.addModule(newModuleBy(p))
+	err = p.Route.Endpoint.addModule(newModuleBy(p), target)
+	if err != nil {
+		return psError(err)
+	}
 	gm.broadcastState()
 	return Message{}
 }
