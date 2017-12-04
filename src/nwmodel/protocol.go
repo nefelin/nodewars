@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -21,13 +20,6 @@ const VersionTag = "NodeWars:" + versionNumber
 var gm = NewDefaultModel()
 
 var upgrader = websocket.Upgrader{}
-
-// Message is our basic message struct
-type Message struct {
-	Type   string `json:"type"`
-	Sender string `json:"sender"`
-	Data   string `json:"data"`
-}
 
 // Ask about reduntant error messaging...
 func doHandshake(ws *websocket.Conn) error {
@@ -148,106 +140,34 @@ func incomingHandler(msg *Message, p *Player) {
 	// Tie message with player name
 	msg.Sender = string(p.Name)
 	switch msg.Type {
-	case "allChat":
-		if p.Name == "" {
-			p.outgoing <- Message{"error", "server", "you need a name to send messages"}
-		} else {
-			for _, player := range gm.Players {
-				player.outgoing <- Message{"allChat", string(p.Name), msg.Data}
-			}
-		}
 
-	case "teamChat":
-		//HANDLE chat by unassigned player, maybe make an Observer team by default?
-		if p.Team != nil {
-			go p.Team.broadcast(*msg)
-		} else {
-			p.outgoing <- Message{"error", "server", "unable to teamChat without team assignment"}
+	case "playerCmd":
+		res := cmdHandler(msg, p)
+		if res.Data != "" {
+			p.outgoing <- res
 		}
-
-		// Attach sendersocket's name since its relevant for chats
-	case "teamJoin":
-		if p.Name == "" {
-			p.outgoing <- Message{"error", "server", "you need a name to join a team"}
-		} else {
-			err := gm.assignPlayerToTeam(p, teamName(msg.Data))
-			if err != nil {
-				p.outgoing <- Message{"error", "server", fmt.Sprintln(err)}
-			}
-		}
-
-		// team method handles messaging, fix TODO
 
 	case "stateRequest":
 		p.outgoing <- calcStateMsgForPlayer(p)
 
-	case "setPOE":
-		if p.Team == nil {
-			p.outgoing <- Message{"error", "server", "you need a team to interact with the map"}
-		} else {
-			newPOE, err := strconv.Atoi(msg.Data)
-			if err != nil {
-				log.Printf("setPOE error: %v", err)
-			} else {
-				if res := gm.setPlayerPOE(p, newPOE); res {
-					p.outgoing <- Message{"POEset", "server", msg.Data}
-					gm.broadcastState()
-					// p.outgoing <- calcStateMsgForPlayer()
-				} else {
-					p.outgoing <- Message{"error", "server", "failed to set, '" + msg.Data + "', as POE. Either does not exist or player cannot switch POE"}
-				}
-			}
-		}
-
-	case "nodeConnect":
-		if p.Team == nil {
-			// if player has no team yet, complain
-			p.outgoing <- Message{"error", "server", "You need a team to interact with the map"}
-		} else {
-			targetNode, err := strconv.Atoi(msg.Data)
-			if err != nil {
-				// if we have trouble converting msg to integer, complain
-				log.Printf("connectToNode error: %v", err)
-			} else {
-				// if we're all good, try to connect the player to the node
-				if err := gm.tryConnectPlayerToNode(p, targetNode); err == nil {
-					p.outgoing <- Message{"connectSuccess", "pseudoServer", msg.Data}
-
-					nodeContents := gm.Routes[p.ID].Endpoint.contentsAsString()
-					p.outgoing <- Message{"nodeContents", "pseudoServer", nodeContents}
-					gm.broadcastState()
-				} else {
-					p.outgoing <- Message{"connectFail", "pseudoServer", fmt.Sprintf("error: %v", err)}
-				}
-			}
-		}
-
-	case "setPlayerName":
-		err := gm.setPlayerName(p, msg.Data)
-		if err != nil {
-			p.outgoing <- Message{"error", "server", fmt.Sprintln(err)}
-		} else {
-			p.outgoing <- Message{"playerNameSet", "server", msg.Data}
-		}
-
-	case "removeModule":
-		targetMod, err := strconv.Atoi(msg.Data)
-		if err != nil {
-			// if we have trouble converting msg to integer, complain
-			log.Printf("removeModule error: %v", err)
-		}
-		if route, ok := gm.Routes[p.ID]; ok {
-			err = route.Endpoint.removeModule(targetMod)
-			if err != nil {
-				p.outgoing <- Message{"removeNodeFail", "pseudoServer", fmt.Sprintln(err)}
-			}
-			gm.broadcastState()
-		} else {
-			p.outgoing <- Message{"removeNodeFail", "pseudoServer", "error: not connected to a node"}
-		}
+	// case "removeModule":
+	// 	targetMod, err := strconv.Atoi(msg.Data)
+	// 	if err != nil {
+	// 		// if we have trouble converting msg to integer, complain
+	// 		log.Printf("removeModule error: %v", err)
+	// 	}
+	// 	if route, ok := gm.Routes[p.ID]; ok {
+	// 		err = route.Endpoint.removeModule(targetMod)
+	// 		if err != nil {
+	// 			p.outgoing <- Message{"removeNodeFail", "pseudoServer", fmt.Sprintln(err)}
+	// 		}
+	// 		gm.broadcastState()
+	// 	} else {
+	// 		p.outgoing <- Message{"removeNodeFail", "pseudoServer", "error: not connected to a node"}
+	// 	}
 
 	default:
-		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
+		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}
 	}
 }
 
@@ -255,7 +175,7 @@ func incomingHandler(msg *Message, p *Player) {
 
 func scrubPlayerSocket(p *Player) {
 	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
-	log.Printf("Scrubbing player: %v", p.Name)
+	log.Printf("Scrubbing player: %v", p.name())
 	gm.RemovePlayer(p)
 	p.socket.Close()
 }
