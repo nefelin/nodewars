@@ -14,8 +14,15 @@
 		float:left;
 	}
 	
-	#app {
+	#appWrap {
+		width: 1240px;
+		height: 200px;
+		overflow-y: auto;
+		border: 1px solid black;
+	}
 
+	#app {
+	
 	}
 
 	#codeBox {
@@ -108,14 +115,16 @@
 
 <!-- Vue app -->
 <br>
-<div id="app" >
+<div id="appWrap">
+	<div id="app" >
 
-	<div id="codeBox">
-		<code><textarea id="codeArea" v-model="codeBox"></textarea></code>
-			  <textarea id="stdinArea" v-model="stdin"></textarea>
+		<div id="codeBox">
+			<code><textarea id="codeArea" v-model="codeBox"></textarea></code>
+				  <textarea id="stdinArea" v-model="stdin"></textarea>
+		</div>
+		<p> Response: {{ response }} </p>
+		<input v-model="playerCmd" placeholder="enter command" v-on:keydown.enter="sendMsg" autofocus>
 	</div>
-	<p> Response: {{ response }} </p>
-	<input v-model="playerCmd" placeholder="enter command" v-on:keydown.enter="sendMsg" autofocus>
 </div>
 
 <script src="d3app.js"></script>
