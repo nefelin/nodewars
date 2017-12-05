@@ -162,6 +162,11 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 
 func cmdMake(p *Player, args []string, playerCode string) Message {
 
+	// TODO handle compiler error
+	if playerCode == "" {
+		return psError(errors.New("No code submitted"))
+	}
+
 	slotNum, err := validateOneIntArg(args)
 	if err != nil {
 		return psError(err)
@@ -173,45 +178,89 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 
 	// passed error checks on args
 	slot := p.Route.Endpoint.slots[slotNum]
+	p.outgoing <- psBegin("Making module...")
 
+	log.Printf("add cID: %v", slot.challenge.ID)
 	response := submitTest(slot.challenge.ID, "Python", playerCode)
+
 	modHealth := response.passed()
 
 	log.Printf("response to submitted test: %v", response)
-
+	var newMod *module
 	if modHealth > 0 {
-		newMod := newModule(p, response, "Python")
+		newMod = newModule(p, response, "Python")
 
 		err = p.Route.Endpoint.addModule(newMod, slotNum)
 		if err != nil {
 			return psError(err)
 		}
+
+		gm.broadcastState()
+		return psSuccess(fmt.Sprintf("Module constructed\nHealth: %d/%d", newMod.health, newMod.maxHealth))
+
 	}
 
-	gm.broadcastState()
-	return psSuccess("Should have vmade module :/")
+	return psError(fmt.Errorf("Module too weak to install: %d/%d", response.passed(), len(response.PassFail)))
+
 }
 
-func cmdRemoveModule(p *Player, args []string, c string) Message {
+func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 
-	target, err := validateOneIntArg(args)
+	if playerCode == "" {
+		return psError(errors.New("No code submitted"))
+	}
+
+	slotNum, err := validateOneIntArg(args)
 	if err != nil {
 		return psError(err)
 	}
 
-	if err = slotValidateNotEmpty(p, target); err != nil {
+	if err = slotValidateNotEmpty(p, slotNum); err != nil {
 		return psError(err)
 	}
 
 	// All checks passed:
-	err = p.Route.Endpoint.removeModule(target)
+	// passed error checks on args
+
+	slot := p.Route.Endpoint.slots[slotNum]
+	p.outgoing <- psBegin("Removing module...")
+
+	// if module doesn't belong to your team, attack
+	if p.Team != slot.module.Team {
+
+		log.Printf("remove cID: %v", slot.challenge.ID)
+		response := submitTest(slot.challenge.ID, "Python", playerCode)
+
+		modHealth := response.passed()
+
+		log.Printf("response to submitted test: %v", response)
+
+		if modHealth >= slot.module.health {
+
+			err = p.Route.Endpoint.removeModule(slotNum)
+			if err != nil {
+				return psError(err)
+			}
+
+			gm.broadcastState()
+			return psSuccess("Module removed")
+
+		}
+
+		return psError(fmt.Errorf(
+			"Solution too weak: %d/%d, at least %d/%d required",
+			response.passed(), len(response.PassFail), slot.module.health, slot.module.maxHealth,
+		))
+	}
+
+	err = p.Route.Endpoint.removeModule(slotNum)
 	if err != nil {
 		return psError(err)
 	}
-	gm.broadcastState()
-	return Message{}
 
-	return Message{}
+	gm.broadcastState()
+	return psSuccess("Module removed")
+
 }
 
 func cmdRefac(p *Player, args []string, c string) Message {
