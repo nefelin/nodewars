@@ -341,23 +341,31 @@ func (n *node) addModule(m *module, slotIndex int) error {
 }
 
 func (n *node) removeModule(slotIndex int) error {
-	slot := n.slots[slotIndex]
-	if slot.module != nil {
-		// track old team so we can evaluate traffic after
-		oldModsTeam := slot.module.Team
-
-		//remove module from node and empty slot
-		delete(n.Modules, slot.module.id)
-		slot.module = nil
-
-		// evalTrafficForTeam makes sure all players that were routing through this node are still able to do so
-		n.evalTrafficForTeam(oldModsTeam)
-
-		// assign new task to slot
-		slot.challenge = getRandomTest()
-		return nil
+	if slotIndex < 0 || slotIndex > len(n.slots)-1 {
+		return errors.New("No valid attachment")
 	}
-	return errors.New("Slot is empty")
+
+	slot := n.slots[slotIndex]
+	log.Printf("removeModule slot: %v", slot)
+
+	if slot.module == nil {
+		return errors.New("Slot is empty")
+	}
+
+	// track old team so we can evaluate traffic after
+	oldModsTeam := slot.module.Team
+
+	//remove module from node and empty slot
+	delete(n.Modules, slot.module.id)
+	slot.module = nil
+
+	// evalTrafficForTeam makes sure all players that were routing through this node are still able to do so
+	n.evalTrafficForTeam(oldModsTeam)
+
+	// assign new task to slot
+	slot.challenge = getRandomTest()
+	return nil
+
 }
 
 func (n *node) evalTrafficForTeam(t *team) {

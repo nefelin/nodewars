@@ -274,6 +274,11 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 	}
 
 	slot := p.slot()
+
+	if slot == nil {
+		return psError(errors.New("Not attached to slot"))
+	}
+
 	if !slot.isFull() {
 		return psError(errors.New("Slot is empty"))
 	}
