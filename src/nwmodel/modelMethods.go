@@ -691,3 +691,10 @@ func (r route) forMsg() string {
 
 	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint.ID, strings.Join(nodeList, ", "))
 }
+
+func (c ChallengeResponse) String() {
+	ret := ""
+	for k, v := range c.PassFail {
+		ret += fmt.Sprintf("Test: %v, Result: %v", k, v)
+	}
+}
