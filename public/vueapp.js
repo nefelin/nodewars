@@ -6,8 +6,9 @@ const confirmationPhrase = 'Welcome to NodeWars';
 // codeCmds are playerCmds that need to submit the codebox to the messenger.
 // codeBox content is only submitted with this type of command
 const codeCmds = [
-	"mk", "make", "makemod",
-	"um", "un", "unmake",
+	"mk","mak", "make", "makemod",
+	"rm",
+	"test", "tst"
 	"rf", "ref", "refac"
 ]
 
@@ -145,6 +146,7 @@ const vueApp = new Vue({
 		svgInit();
 		
 		this.ws = new WebSocket('ws://' + window.location.host + '/ws');
+		console.log
 
 		// Send handshake once socket is open
 		this.ws.addEventListener('open', () => {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 )
 
 // mirrored struct definitions from TestBox
@@ -22,6 +23,7 @@ type SubmissionRequest struct {
 
 type ChallengeResponse struct {
 	PassFail map[string]bool `json:"passFail"`
+	Error    Message         `json:"error"`
 }
 
 func (c ChallengeResponse) passed() int {
@@ -35,11 +37,11 @@ func (c ChallengeResponse) passed() int {
 }
 
 func getRandomTest() Challenge {
-	// address := os.Getenv("TEST_BOX_ADDRESS")
-	// port := os.Getenv("TEST_BOX_PORT")
+	address := os.Getenv("TEST_BOX_ADDRESS")
+	port := os.Getenv("TEST_BOX_PORT")
 
-	address := "http://localhost"
-	port := "31337"
+	// address := "http://localhost"
+	// port := "31337"
 	r, err := http.Get(address + ":" + port)
 
 	if err != nil {
