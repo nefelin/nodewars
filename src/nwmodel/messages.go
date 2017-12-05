@@ -12,7 +12,8 @@ type Message struct {
 
 const (
 	errorStr     = "error:"
-	successStr   = ""
+	successStr   = "succese:"
+	beginStr     = "begin:"
 	pseudoStr    = "pseudoServer"
 	noConnectStr = "No connection"
 )
@@ -48,6 +49,14 @@ func psUnknown(cmd string) Message {
 func psSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,
+		Sender: pseudoStr,
+		Data:   msg,
+	}
+}
+
+func psBegin(msg string) Message {
+	return Message{
+		Type:   beginStr,
 		Sender: pseudoStr,
 		Data:   msg,
 	}
