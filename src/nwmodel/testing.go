@@ -19,17 +19,18 @@ type SubmissionRequest struct {
 	Id       string `json:"id"`
 	Language string `json:"language"`
 	Code     string `json:"code"`
+	Input    string `json:"input"`
 }
 
 type ChallengeResponse struct {
-	PassFail map[string]bool `json:"passFail"`
-	Error    Message         `json:"error"`
+	PassFail map[string]string `json:"passFail"`
+	Error    Message           `json:"error"`
 }
 
 func (c ChallengeResponse) passed() int {
 	var passed int
 	for _, res := range c.PassFail {
-		if res == true {
+		if res == "true" {
 			passed++
 		}
 	}
@@ -40,8 +41,6 @@ func getRandomTest() Challenge {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
-	// address := "http://localhost"
-	// port := "31337"
 	r, err := http.Get(address + ":" + port)
 
 	if err != nil {
@@ -60,16 +59,40 @@ func getRandomTest() Challenge {
 
 // returns a map of inputs to test pass/fail
 func submitTest(id, language, code string) ChallengeResponse {
-	// address := os.Getenv("TEST_BOX_ADDRESS")
-	// port := os.Getenv("TEST_BOX_PORT")
-	address := "http://localhost"
-	port := "31337"
+	address := os.Getenv("TEST_BOX_ADDRESS")
+	port := os.Getenv("TEST_BOX_PORT")
 
-	submission := SubmissionRequest{id, language, code}
+	submission := SubmissionRequest{id, language, code, ""}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
 	r, err := http.Post(address+":"+port+"/submit/", "application/json", buf)
+	if err != nil {
+		panic(err)
+	}
+
+	decoder := json.NewDecoder(r.Body)
+	var response ChallengeResponse
+	err = decoder.Decode(&response)
+	log.Printf("submitTest response: %v", response)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
+	return response
+}
+
+// returns a map of inputs to test pass/fail
+func getOutput(id, language, code, input string) ChallengeResponse {
+	address := os.Getenv("TEST_BOX_ADDRESS")
+	port := os.Getenv("TEST_BOX_PORT")
+
+	submission := SubmissionRequest{id, language, code, input}
+	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
+	buf := bytes.NewBuffer(jsonBytes)
+
+	r, err := http.Post(address+":"+port+"/output/", "application/json", buf)
 	if err != nil {
 		panic(err)
 	}
