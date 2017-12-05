@@ -19,8 +19,6 @@ func newModSlot() *modSlot {
 	// assign id
 	return &modSlot{
 		challenge: getRandomTest(),
-		// challenge: Challenge{"", ""}, // getRandomTest(),
-
 	}
 }
 
@@ -35,8 +33,8 @@ func newModule(p *Player, response ChallengeResponse, lang string) *module {
 		language:  lang,
 		builder:   p.name(),
 		Team:      p.Team,
-		health:    response.passed(),
-		maxHealth: len(response.PassFail),
+		Health:    response.passed(),
+		MaxHealth: len(response.PassFail),
 	}
 }
 
@@ -223,6 +221,9 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
 
+	// break any pre-existing connection before connecting elsewhere
+	gm.breakConnection(p)
+
 	// TODO report errors here
 	source, poeOK := gm.POEs[p.ID]
 
@@ -266,6 +267,11 @@ func (gm *GameModel) breakConnection(p *Player) {
 		// delete(gm.Routes, p.ID)
 		p.Route = nil
 	}
+
+	// detach from any slots
+	if p.slotNum != -1 {
+		p.slotNum = -1
+	}
 }
 
 // module methods -------------------------------------------------------------------------
@@ -279,7 +285,12 @@ func (m module) isFriendlyTo(t *team) bool {
 
 // modSlot methods -------------------------------------------------------------------------
 
-// func ()
+func (m modSlot) isFull() bool {
+	if m.module == nil {
+		return false
+	}
+	return true
+}
 
 // node methods -------------------------------------------------------------------------------
 
@@ -326,7 +337,7 @@ func (n *node) addModule(m *module, slotIndex int) error {
 		slot.module = m
 		return nil
 	}
-	return errors.New("slot not empty")
+	return errors.New("Slot not empty")
 }
 
 func (n *node) removeModule(slotIndex int) error {
@@ -341,9 +352,12 @@ func (n *node) removeModule(slotIndex int) error {
 
 		// evalTrafficForTeam makes sure all players that were routing through this node are still able to do so
 		n.evalTrafficForTeam(oldModsTeam)
+
+		// assign new task to slot
+		slot.challenge = getRandomTest()
 		return nil
 	}
-	return errors.New("slot is empty")
+	return errors.New("Slot is empty")
 }
 
 func (n *node) evalTrafficForTeam(t *team) {
@@ -532,9 +546,20 @@ func newPlayer(ws *websocket.Conn) *Player {
 		// Team:           nil,
 		socket:   ws,
 		outgoing: make(chan Message),
+		language: "Python",
+		slotNum:  -1,
 	}
 	playerIDCount++
 	return ret
+}
+
+// TODO refactor this, modify how slots are tracked, probably with IDs
+func (p *Player) slot() *modSlot {
+	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.slots) {
+		return nil
+	}
+
+	return p.Route.Endpoint.slots[p.slotNum]
 }
 
 func (p *Player) name() string {
@@ -688,13 +713,22 @@ func (r route) forMsg() string {
 		// the list to read from source to target
 		nodeList[nodeCount-i-1] = strconv.Itoa(node.ID)
 	}
-
 	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint.ID, strings.Join(nodeList, ", "))
 }
 
-func (c ChallengeResponse) String() {
+func (c ChallengeResponse) String() string {
 	ret := ""
 	for k, v := range c.PassFail {
-		ret += fmt.Sprintf("Test: %v, Result: %v", k, v)
+		ret += fmt.Sprintf("(in: %v, out: %v)", k, v)
 	}
+	return ret
 }
+
+func (p *Player) setLanguage(l string) {
+	//set player language
+	// and update the front end
+}
+
+// func (m modSlot) String() string {
+
+// }

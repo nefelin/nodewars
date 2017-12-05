@@ -28,6 +28,7 @@ function reveal() {
 }
 
 function svgInit() {
+
 	svg = d3.select('#graph')
 		    .style("border", "1px solid black")
 		    .attr('width', width)
@@ -90,6 +91,7 @@ function updateGraph (gameState) {
        	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
 			.data(d.modList)
 
+
 		const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
 		const nodeRadius = parentRadius
 
@@ -106,7 +108,11 @@ function updateGraph (gameState) {
 		modules.enter()
 			   .append("circle")
 			   .attr("class", "node-module")
-   			   .style("fill", d=> d.team.name)
+   			   .style("fill", d => d.team.name)
+   			   .style("fill-opacity", d => {
+   			   		console.log("making module of fill at:" , d);
+   			   		return d.health/d.maxHealth
+   			   	})
 	           .style("stroke", "black")
 	           .style("stroke-width", 2)
 	           .attr("opacity", 0)
@@ -116,6 +122,15 @@ function updateGraph (gameState) {
 	           .style("opacity", 1)
 	           .attr("cx", (d,i) => nodeRadius/2 * Math.cos(-1.5708+angleInc*i))
 	           .attr("cy", (d,i) => nodeRadius/2 * Math.sin(-1.5708+angleInc*i))
+
+	    // update all modules
+	    modules.transition(t)
+			.style("fill", d => d.team.name)
+		    .style("fill-opacity", d => {
+		   		console.log("making module of fill at:" , d);
+		   		return d.health/d.maxHealth
+		    })
+
 	}) 
 
 	link.data(nodeMap.edges)

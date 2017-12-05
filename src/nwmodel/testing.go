@@ -24,7 +24,7 @@ type SubmissionRequest struct {
 
 type ChallengeResponse struct {
 	PassFail map[string]string `json:"passFail"`
-	Error    Message           `json:"error"`
+	Message  Message           `json:"message"`
 }
 
 func (c ChallengeResponse) passed() int {
@@ -84,15 +84,15 @@ func submitTest(id, language, code string) ChallengeResponse {
 }
 
 // returns a map of inputs to test pass/fail
-func getOutput(id, language, code, input string) ChallengeResponse {
+func getOutput(language, code, input string) ChallengeResponse {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
-	submission := SubmissionRequest{id, language, code, input}
+	submission := SubmissionRequest{"", language, code, input}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
-	r, err := http.Post(address+":"+port+"/output/", "application/json", buf)
+	r, err := http.Post(address+":"+port+"/stdout/", "application/json", buf)
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func getOutput(id, language, code, input string) ChallengeResponse {
 	decoder := json.NewDecoder(r.Body)
 	var response ChallengeResponse
 	err = decoder.Decode(&response)
-	log.Printf("submitTest response: %v", response)
+	log.Printf("getOutput response: %v", response)
 	if err != nil {
 		panic(err)
 	}

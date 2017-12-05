@@ -37,8 +37,7 @@ type node struct {
 	Connections []nodeID `json:"connections"`
 	// address map concurrency TODO
 	Modules map[modID]*module `json:"modules"`
-	// TODO using map[string] would enable more interesting slot names
-	slots []*modSlot
+	slots   []*modSlot
 }
 
 // TODO rethink I don't like that this setup exposes test information
@@ -53,9 +52,9 @@ type module struct {
 	// testID     int    // `json:"testId"`
 	language  string // `json:"languageId"`
 	builder   string // `json:"creator"`
-	health    int
-	maxHealth int
-	Team      *team `json:"team"`
+	Health    int    `json:"health"`
+	MaxHealth int    `json:"maxHealth"`
+	Team      *team  `json:"team"`
 }
 
 type team struct {
@@ -73,4 +72,6 @@ type Player struct {
 	Route    *route   `json:"route"`
 	socket   *websocket.Conn
 	outgoing chan Message
+	language string
+	slotNum  int
 }

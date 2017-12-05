@@ -12,7 +12,7 @@ type Message struct {
 
 const (
 	errorStr     = "error:"
-	successStr   = "succese:"
+	successStr   = "success:"
 	beginStr     = "begin:"
 	pseudoStr    = "pseudoServer"
 	noConnectStr = "No connection"

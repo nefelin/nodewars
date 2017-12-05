@@ -8,7 +8,7 @@ const confirmationPhrase = 'Welcome to NodeWars';
 const codeCmds = [
 	"mk","mak", "make", "makemod",
 	"rm",
-	"test", "tst"
+	"test", "tst",
 	"rf", "ref", "refac"
 ]
 
