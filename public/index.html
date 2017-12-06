@@ -6,85 +6,46 @@
 	<script src="libs/vue.js"></script>
 	<script src="libs/d3.js"></script>
   <style>
-	body {
-		/*background-color: black;*/
-	}
-	
-	svg {
-		float:left;
-	}
 
-	.rowNoWrap {
+	#main-col {
+		position:absolute;
+		top:0;
+		bottom:0;
+		left:0;
+		right:0;
+
 		display:flex;
 		flex-direction: row;
 		flex-wrap: nowrap;
+/*		width:400px;
+		height:400px;*/
+		background-color: green;
 	}
 
-	#playArea {
-		width:95%;
-		height:80%;
+	#main-row {
+		display:flex;
+		flex-grow:5;
+		flex-direction: column;
+		flex-wrap: nowrap;
 	}
 
-	#codeWrapper{
-		width:600px;
+	#graph {
+		flex-grow:1;
+		background-color: grey;
 		height:480px;
 	}
 
-	#codeArea, #stdinArea {
-		width:100%
-	}
-
-	#codeArea {
-		height:400px
-	}
-
-	#stdinArea {
-		height:65px
+	#editor {
+		flex-grow:1;
+		background-color: orange;
 	}
 
 	#terminal {
-		display:flex;
-		flex-direction: column;
-		width:100%;
-		align-items: stretch;
-		border:1px solid black;
+		background-color:black;
+		flex-grow:1;
 	}
 
-	#psOutput {
-		display:flex;
-		flex-direction: column-reverse;
-		height:100px;
-		width:100%;
-		overflow-y: auto;
-		margin-top:10px;
-		background-color:lightgrey;
-	}
 
-/*
-	#stdinArea {
-		width:100%;
-		height:20%;
-		-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
-/*	     -moz-box-sizing: border-box;    /* Firefox, other Gecko */
-/*	     box-sizing: border-box;         /* Opera/IE 8+ */
-/*	}
-*/
-
-	#graph {
-		background-color: ghostwhite;
-		height:480px;
-	}
-
-	#termWrap {
-		display:inline-block;
-		color:black;
-		background-color:ghostwhite;
-		font-size:x-large;
-		width: 100%;
-		height: 275px;
-		overflow-y: auto;
-		border: 1px solid black;
-	}
 
 	/*map styling*/
 
@@ -131,32 +92,15 @@
 </head>
 <body>
 
-
-	
-<!-- Vue app -->
-<span class="rowNoWrap">
+<div id="main-col">
+	<div id="main-row">
 		<div id="graph"></div>
-	
-<div id="app" >
-	
-		<div id="codeWrapper">
-			<code><textarea id="codeArea" v-model="codeBox"></textarea></code>
-				  <textarea id="stdinArea" v-model="stdin"></textarea>
-		</div>
-	</span>
-
-
-	<br><span id="terminal">
-		<input v-model="playerCmd" placeholder="enter command" v-on:keydown.enter="sendMsg" autofocus>
-		<div id = "psOutput"></div>
-		<!-- <p> Response: {{ response }} </p> -->
-	
+		<div id="editor" style="height:100%;width:50%"></div>
+	</div>
+	<div id="terminal">
 </div>
-</span>
-
 
 <script src="d3app.js"></script>
-<script src="vueapp.js"></script>
 
 <script>
 	

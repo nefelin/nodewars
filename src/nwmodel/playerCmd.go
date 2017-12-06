@@ -86,11 +86,13 @@ func cmdTc(p *Player, args []string, c string) Message {
 	}
 
 	chatMsg := p.name() + "> " + strings.Join(args, " ")
-	go p.Team.broadcast(Message{
+
+	p.Team.broadcast(Message{
 		Type: "(team)",
 		Data: chatMsg,
 	})
 	return Message{}
+
 }
 
 func cmdTeam(p *Player, args []string, c string) Message {

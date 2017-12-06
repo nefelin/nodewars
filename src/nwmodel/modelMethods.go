@@ -618,6 +618,8 @@ func (t team) isFull() bool {
 }
 
 func (t *team) broadcast(msg Message) {
+	msg.Sender = "pseudoServer"
+
 	for player := range t.players {
 		player.outgoing <- msg
 	}
