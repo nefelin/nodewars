@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -77,7 +78,7 @@ func newNodeMap() nodeMap {
 
 // NewDefaultModel Generic game model
 func NewDefaultModel() *GameModel {
-	m := newDefaultMap()
+	m := newRandMap()
 	t := makeDummyTeams()
 	p := make(map[playerID]*Player)
 	// r := make(map[playerID]*route)
@@ -97,6 +98,36 @@ func makeDummyTeams() map[teamName]*team {
 	teams["red"] = NewTeam("red")
 	teams["blue"] = NewTeam("blue")
 	return teams
+}
+
+func newRandMap() *nodeMap {
+	rand.Seed(time.Now().UTC().UnixNano())
+	nodeCount := 10
+	newMap := newNodeMap()
+
+	for i := 0; i < nodeCount; i++ {
+		newMap.addNodes(NewNode())
+	}
+
+	for i := 0; i < nodeCount; i++ {
+		if i < nodeCount-1 {
+			newMap.connectNodes(i, i+1)
+		}
+
+		for j := 0; j < rand.Intn(3); j++ {
+			newMap.connectNodes(i, rand.Intn(nodeCount))
+		}
+
+	}
+
+	for _, node := range newMap.Nodes {
+		node.initSlots()
+	}
+
+	newMap.addPoes(rand.Intn(nodeCount))
+	newMap.addPoes(rand.Intn(nodeCount))
+
+	return &newMap
 }
 
 func newDefaultMap() *nodeMap {

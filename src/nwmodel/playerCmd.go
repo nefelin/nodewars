@@ -28,6 +28,8 @@ var msgMap = map[string]playerCommand{
 
 	"lang": cmdLanguage,
 
+	"langs": cmdListLanguages,
+
 	"mk":      cmdMake,
 	"mak":     cmdMake,
 	"make":    cmdMake,
@@ -158,6 +160,14 @@ func cmdLanguage(p *Player, args []string, c string) Message {
 		Sender: "server",
 		Data:   p.language,
 	}
+}
+
+func cmdListLanguages(p *Player, args []string, c string) Message {
+	languages := getLanguages()
+
+	msgContent := strings.Join(languages, "\n")
+
+	return psSuccess(msgContent)
 }
 
 func cmdName(p *Player, args []string, c string) Message {
