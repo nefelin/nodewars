@@ -64,6 +64,7 @@ type team struct {
 }
 
 // TODO un export all but route
+
 // Player ...
 type Player struct {
 	ID       playerID `json:"id"`
@@ -72,6 +73,7 @@ type Player struct {
 	Route    *route   `json:"route"`
 	socket   *websocket.Conn
 	outgoing chan Message
-	language string
-	slotNum  int
+	language string // current working language
+	stdin    string // stdin buffer for testing
+	slotNum  int    // currently attached to slotNum of current node
 }

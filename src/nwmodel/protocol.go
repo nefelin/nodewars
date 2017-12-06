@@ -75,6 +75,8 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	go outgoingRelay(thisPlayer)
 
+	// send initial state
+	thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
 	// Handle socket stream
 	for {
 		var msg Message
@@ -116,7 +118,7 @@ func calcStateMsgForPlayer(p *Player) Message {
 
 	// log.Println(string(stateMsg))
 	return Message{
-		Type:   "gameState",
+		Type:   "graphState",
 		Sender: "server",
 		Data:   string(stateMsg),
 	}

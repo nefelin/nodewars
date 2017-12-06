@@ -46,6 +46,12 @@ func psUnknown(cmd string) Message {
 	}
 }
 
+func psMessage(msg string) Message {
+	return Message{
+		Sender: pseudoStr,
+		Data:   msg,
+	}
+}
 func psSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,

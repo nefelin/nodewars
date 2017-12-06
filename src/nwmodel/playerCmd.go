@@ -26,10 +26,15 @@ var msgMap = map[string]playerCommand{
 	"con":     cmdConnect,
 	"connect": cmdConnect,
 
+	"lang": cmdLanguage,
+
 	"mk":      cmdMake,
 	"mak":     cmdMake,
 	"make":    cmdMake,
 	"makemod": cmdMake,
+
+	"std":   cmdStdin,
+	"stdin": cmdStdin,
 
 	"tst":  cmdTestCode,
 	"test": cmdTestCode,
@@ -42,6 +47,10 @@ var msgMap = map[string]playerCommand{
 
 	"at":     cmdAttach,
 	"attach": cmdAttach,
+
+	// what am I attached to? what's my task? what's my language set to?
+	// "st":   cmdStatus,
+	// "stat": cmdStatus,
 
 	"wh":  cmdWho,
 	"who": cmdWho,
@@ -137,6 +146,20 @@ func cmdTeam(p *Player, args []string, c string) Message {
 	return psSuccess("You're on the " + args[0] + " team")
 }
 
+func cmdLanguage(p *Player, args []string, c string) Message {
+	if len(args) == 0 {
+		return psSuccess("Your name is " + p.language)
+	}
+
+	p.setLanguage(args[0])
+
+	return Message{
+		Type:   "languageState",
+		Sender: "server",
+		Data:   p.language,
+	}
+}
+
 func cmdName(p *Player, args []string, c string) Message {
 	if len(args) == 0 {
 		return psSuccess("Your name is " + p.name())
@@ -216,7 +239,21 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	return Message{}
 }
 
+func cmdStdin(p *Player, args []string, playerCode string) Message {
+	if len(args) == 0 {
+		return psMessage("stdin is: \n" + p.stdin)
+	}
+
+	p.stdin = strings.Join(args, " ")
+
+	return psMessage("stdin set to: \n" + p.stdin)
+}
+
 func cmdTestCode(p *Player, args []string, playerCode string) Message {
+
+	if len(args) > 0 {
+		p.stdin = strings.Join(args, " ")
+	}
 
 	// TODO handle compiler error
 	if playerCode == "" {
@@ -224,10 +261,15 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	}
 
 	// passed error checks on args
-	p.outgoing <- psBegin("Running test...")
+	p.outgoing <- psBegin(fmt.Sprintf("Running test with stdin: \n%v", p.stdin))
 
-	return psSuccess(fmt.Sprintf("Output: %v", getOutput(p.language, playerCode, "dummy stdin")))
+	response := getOutput(p.language, playerCode, "dummy stdin")
 
+	if response.Message.Type == "error" {
+		return psError(errors.New(response.Message.Data))
+	}
+
+	return psSuccess(fmt.Sprintf("Output: %v", response))
 }
 
 func cmdAttach(p *Player, args []string, playerCode string) Message {
@@ -364,6 +406,10 @@ func cmdRefac(p *Player, args []string, playerCode string) Message {
 	slot := p.slot()
 	if !slot.isFull() {
 		return psError(errors.New("Slot is empty"))
+	}
+
+	if slot.module.Health == slot.module.MaxHealth {
+		return psError(errors.New("Cannot refactor completed module, you can try to remove (rm)741"))
 	}
 
 	// All checks passed:

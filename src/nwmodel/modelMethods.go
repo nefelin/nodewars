@@ -561,6 +561,10 @@ func newPlayer(ws *websocket.Conn) *Player {
 	return ret
 }
 
+func (p *Player) setLanguage(l string) {
+	p.language = strings.ToLower(l)
+}
+
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) slot() *modSlot {
 	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.slots) {
@@ -732,11 +736,6 @@ func (c ChallengeResponse) String() string {
 		ret += fmt.Sprintf("(in: %v, out: %v)", k, v)
 	}
 	return ret
-}
-
-func (p *Player) setLanguage(l string) {
-	//set player language
-	// and update the front end
 }
 
 // func (m modSlot) String() string {

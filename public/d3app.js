@@ -31,11 +31,11 @@ function svgInit() {
 
 	svg = d3.select('#graph')
 		    .style("border", "1px solid black")
-		    .attr('width', width)
-		    .attr('height', height)
+		    // .attr('width', width)
+		    // .attr('height', height)
 		    .append('svg')
-		    .attr('width', width)
-		    .attr('height', height) // TODO dynamically pull values, particularly on resize
+		    .attr('width', "100%")
+		    .attr('height', "100%") // TODO dynamically pull values, particularly on resize
 }
 
 // Arrayify turns objects into lists that d3 likes
