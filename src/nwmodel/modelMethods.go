@@ -40,7 +40,11 @@ func newModule(p *Player, response ChallengeResponse, lang string) *module {
 
 // NewTeam creates a new team with color/name color
 func NewTeam(n teamName) *team {
-	return &team{n, make(map[*Player]bool), 2}
+	return &team{
+		Name:    n,
+		players: make(map[*Player]bool),
+		maxSize: 10,
+	}
 }
 
 // NewNode ...
@@ -63,7 +67,10 @@ func NewNode() *node {
 }
 
 func newNodeMap() nodeMap {
-	return nodeMap{make([]*node, 0)}
+	return nodeMap{
+		Nodes: make([]*node, 0),
+		POEs:  make(map[nodeID]bool),
+	}
 }
 
 // Instantiation with values ------------------------------------------------------------------
@@ -128,6 +135,8 @@ func newDefaultMap() *nodeMap {
 		node.initSlots()
 	}
 
+	newMap.addPoes(1, 10)
+
 	return &newMap
 }
 
@@ -156,6 +165,37 @@ func (gm *GameModel) psBroadcast(msg Message) {
 	for _, player := range gm.Players {
 		player.outgoing <- msg
 	}
+}
+
+func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
+	if t.poe != nil {
+		return fmt.Errorf("Team %s already has a point of entry at node '%d'", t.Name, t.poe.ID)
+	}
+
+	if !gm.Map.nodeExists(ni) {
+		return fmt.Errorf("Node '%v' does not exist", ni)
+	}
+	avail, ok := gm.Map.POEs[ni]
+	if !ok {
+		return fmt.Errorf("Node '%v' is not a valid point of entry", ni)
+	}
+
+	if !avail {
+		return errors.New("That point of entry is already taken")
+	}
+
+	node := gm.Map.Nodes[ni]
+	// set the teams poe
+	t.poe = node
+
+	// set all teams players poes
+	for player := range t.players {
+		gm.setPlayerPOE(player, ni)
+	}
+
+	// mark the spot as taken
+	gm.Map.POEs[ni] = false
+	return nil
 }
 
 func (gm *GameModel) setPlayerName(p *Player, n string) error {
@@ -397,6 +437,47 @@ func (n *node) evalTrafficForTeam(t *team) {
 // }
 
 // nodeMap methods -----------------------------------------------------------------------------
+func (m *nodeMap) openPoes() int {
+	var count int
+	for _, open := range m.POEs {
+		if open {
+			count++
+		}
+	}
+	return count
+}
+
+// func (m *nodeMap) addTeams(ts ...*team) error {
+
+// 	if len(ts) > m.openPoes() {
+// 		return fmt.Errorf("addTeams: Tried to add %d teams, only %d POEs available", len(ts), m.openPoes())
+// 	}
+
+// 	// for each team passed
+// 	for _, team := range ts {
+// 		// for each possible POE on map
+// 		for id, avail := range m.POEs {
+// 			// if it's available set the teams poe to that node and move to next team
+// 			if avail {
+// 				team.poe = m.Nodes[id]
+// 				// poe is no longer available
+// 				m.POEs[id] = false
+// 				break
+// 			}
+// 		}
+// 	}
+// }
+
+func (m *nodeMap) addPoes(ns ...nodeID) {
+	for _, id := range ns {
+		// skip bad ids
+		if !m.nodeExists(id) {
+			continue
+		}
+		// make an available POE for each nodeID passed
+		m.POEs[id] = true
+	}
+}
 
 func (m *nodeMap) addNodes(ns ...*node) {
 	for _, node := range ns {
@@ -616,7 +697,7 @@ func (r route) containsNode(n *node) (int, bool) {
 
 // team methods -------------------------------------------------------------------------------
 func (t team) isFull() bool {
-	if len(t.players) < t.MaxSize {
+	if len(t.players) < t.maxSize {
 		return false
 	}
 	return true
@@ -633,12 +714,19 @@ func (t *team) broadcast(msg Message) {
 func (t *team) addPlayer(p *Player) {
 	t.players[p] = true
 	p.Team = t
+	if t.poe != nil {
+		gm.setPlayerPOE(p, t.poe.ID)
+	}
 }
 
 func (t *team) removePlayer(p *Player) {
 	delete(t.players, p)
 	p.Team = nil
 }
+
+// func (t *team) setPoe(n *node) {
+
+// }
 
 // Stringers ----------------------------------------------------------------------------------
 

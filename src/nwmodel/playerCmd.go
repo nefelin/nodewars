@@ -229,24 +229,38 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	if p.Team == nil {
 		return msgNoTeam
 	}
-	newPOE, _ := strconv.Atoi(args[0])
-	_ = gm.setPlayerPOE(p, newPOE)
+
+	newPOE, err := strconv.Atoi(args[0])
+	if err != nil {
+		return psError(fmt.Errorf("expected integer, got '%v'", args[0]))
+	}
+
+	err = gm.setTeamPoe(p.Team, newPOE)
+	if err != nil {
+		return psError(err)
+	}
 
 	// debug only :
+	// fix this TODO
 	_ = gm.POEs[p.ID].addModule(newModule(p, ChallengeResponse{}, p.language), 0)
 
 	gm.broadcastState()
-	return Message{}
+	return psSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.Team.Name, newPOE))
 }
 
 func cmdStdin(p *Player, args []string, playerCode string) Message {
+	// disallow blank stdin
+	if p.stdin == "" {
+		p.stdin = "default stdin"
+	}
+
 	if len(args) == 0 {
-		return psMessage("stdin is: \n" + p.stdin)
+		return psMessage("stdin is: " + p.stdin)
 	}
 
 	p.stdin = strings.Join(args, " ")
 
-	return psMessage("stdin set to: \n" + p.stdin)
+	return psMessage("stdin set to: " + p.stdin)
 }
 
 func cmdTestCode(p *Player, args []string, playerCode string) Message {
@@ -261,7 +275,12 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	}
 
 	// passed error checks on args
-	p.outgoing <- psBegin(fmt.Sprintf("Running test with stdin: \n%v", p.stdin))
+	p.outgoing <- psBegin(fmt.Sprintf("Running test with stdin: %v", p.stdin))
+
+	// disallow blank stdin
+	if p.stdin == "" {
+		p.stdin = "default stdin"
+	}
 
 	response := getOutput(p.language, playerCode, p.stdin)
 
@@ -475,7 +494,7 @@ func validateOneIntArg(args []string) (int, error) {
 
 	target, err := strconv.Atoi(args[0])
 	if err != nil {
-		return 0, fmt.Errorf("%v invalid integer", args[0])
+		return 0, fmt.Errorf("expected integer, got '%v'", args[0])
 	}
 
 	return target, nil

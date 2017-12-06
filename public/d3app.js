@@ -299,15 +299,34 @@ function initGraph (nodeMap) {
             .attr("class", "node-group")
 
         nodeMains = nodeGroups.each(function(d) {
+        	const radius = nodeBaseRadius+d.connections.length*nodeRadiusMultiplier
+
         	// add backing to hide main's transparency when animating POEs
         	d3.select(this).append("circle")
-        	  .attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+        	  .attr("r", d=>radius)
         	  .attr("class", "node-backing")
+        	  .attr("id", d => "node-backing-" + d.id)
+        	  
 
         	// add node-main
         	d3.select(this).append("circle")
-        	  .attr("r", d=>nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+        	  .attr("r", d=>radius)
         	  .attr("class", "node-main")
+        	  .attr("id", d => "node-main-" + d.id)
+
+        	// add potential poe indicators 
+        	const isPotPoe = Object.keys(nodeMap.poes).indexOf(String(d.id))
+
+        	if (isPotPoe > -1) {
+        		d3.select(this).append("circle")
+        		  .attr("r", d=>radius*.85)
+        		  .attr("class", "potentialPOE")
+        		  .style("stroke-width", 2)
+          		  .style("stroke", "black")
+        		  .style("fill-opacity", 0)
+
+        	}
+
 
         })
 
@@ -318,7 +337,6 @@ function initGraph (nodeMap) {
 	       .attr("class", "node-label")
 	       .text(d=>"ID: " + d.id)
 
-        
         var ticked = function() {
             link
                 .attr("x1", function(d) { return d.source.x; })

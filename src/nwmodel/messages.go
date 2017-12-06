@@ -34,7 +34,7 @@ func psError(e error) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   fmt.Sprintln(e),
+		Data:   fmt.Sprint(e),
 	}
 }
 

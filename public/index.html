@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-	 <link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> 
+	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> 
 	<title>NodeWars SuperMegaAlpha</title>
 	<script src="libs/d3.js"></script>
 	<script src="libs/jquery.terminal/js/jquery-1.7.1.min.js"></script>
@@ -134,6 +134,10 @@ function swapTerm() {
 const versionNum = '0.0.0.1';
 const versionTag = 'NodeWars:' + versionNum;
 const confirmationPhrase = 'Welcome to NodeWars';
+const logo = " _  _         _   __      __           \n" +
+ 			 "| \\| |___  __| |__\\ \\    / /_ _ _ _ ___\n" +
+ 			 "| .` / _ \\/ _` / -_) \\/\\/ / _` | '_(_-<\n" +
+  			 "|_|\\_\\___/\\__,_\\___|\\_/\\_/\\__,_|_| /__/\n" 
 
 // codeCmds are playerCmds that need to submit the codebox to the messenger.
 // codeBox content is only submitted with this type of command
@@ -331,6 +335,8 @@ jQuery(function($, term) {
     }, {
     	fontSize:40,
         height: 100,
+        name: "nwMain",
+        greetings: "Welcome to\n" + logo + "\nv" + versionNum,
         // width: 450,
         prompt: 'demo> ',
         onInit: function() {terminal = this},

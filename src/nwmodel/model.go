@@ -29,7 +29,8 @@ type route struct {
 }
 
 type nodeMap struct {
-	Nodes []*node `json:"nodes"`
+	Nodes []*node         `json:"nodes"`
+	POEs  map[nodeID]bool `json:"poes"`
 }
 
 type node struct {
@@ -48,8 +49,7 @@ type modSlot struct {
 }
 
 type module struct {
-	id modID // `json:"id"`
-	// testID     int    // `json:"testId"`
+	id        modID  // `json:"id"`
 	language  string // `json:"languageId"`
 	builder   string // `json:"creator"`
 	Health    int    `json:"health"`
@@ -60,7 +60,8 @@ type module struct {
 type team struct {
 	Name    string `json:"name"` // Names are only colors for now
 	players map[*Player]bool
-	MaxSize int `json:"maxSize"`
+	maxSize int `json:"maxSize"`
+	poe     *node
 }
 
 // TODO un export all but route
