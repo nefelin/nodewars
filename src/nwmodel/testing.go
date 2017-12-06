@@ -27,6 +27,10 @@ type ChallengeResponse struct {
 	Message  Message           `json:"message"`
 }
 
+type LanguagesResponse struct {
+	Languages []string `json:"languages"`
+}
+
 func (c ChallengeResponse) passed() int {
 	var passed int
 	for _, res := range c.PassFail {
@@ -107,4 +111,24 @@ func getOutput(language, code, input string) ChallengeResponse {
 	defer r.Body.Close()
 
 	return response
+}
+
+func getLanguages() []string {
+	address := os.Getenv("TEST_BOX_ADDRESS")
+	port := os.Getenv("TEST_BOX_PORT")
+
+	r, err := http.Get(address + ":" + port + "/languages/")
+
+	if err != nil {
+		panic(err)
+	}
+	decoder := json.NewDecoder(r.Body)
+	var langRes LanguagesResponse
+	err = decoder.Decode(&langRes)
+	if err != nil {
+		panic(err)
+	}
+	defer r.Body.Close()
+
+	return langRes.Languages
 }
