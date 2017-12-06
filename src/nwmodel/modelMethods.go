@@ -549,14 +549,15 @@ func getBestNode(pool map[*node]bool, distMap map[*node]int) *node {
 // TODO this is in the wrong place
 func newPlayer(ws *websocket.Conn) *Player {
 	ret := &Player{
-		ID:   playerIDCount,
-		Name: "",
-		// Team:           nil,
+		ID:       playerIDCount,
+		Name:     "",
+		language: "python",
 		socket:   ws,
 		outgoing: make(chan Message),
-		language: "Python",
 		slotNum:  -1,
 	}
+
+	ret.setLanguage("python")
 	playerIDCount++
 	return ret
 }
