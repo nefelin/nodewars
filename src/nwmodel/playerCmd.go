@@ -263,7 +263,7 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	// passed error checks on args
 	p.outgoing <- psBegin(fmt.Sprintf("Running test with stdin: \n%v", p.stdin))
 
-	response := getOutput(p.language, playerCode, "dummy stdin")
+	response := getOutput(p.language, playerCode, p.stdin)
 
 	if response.Message.Type == "error" {
 		return psError(errors.New(response.Message.Data))
@@ -300,6 +300,11 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 	}
 
 	slot := p.slot()
+
+	if slot == nil {
+		return psError(errors.New("Not attached to slot"))
+	}
+
 	if slot.isFull() {
 		return psError(errors.New("Slot is not empty"))
 	}
@@ -404,6 +409,11 @@ func cmdRefac(p *Player, args []string, playerCode string) Message {
 	}
 
 	slot := p.slot()
+
+	if slot == nil {
+		return psError(errors.New("Not attached to slot"))
+	}
+
 	if !slot.isFull() {
 		return psError(errors.New("Slot is empty"))
 	}
