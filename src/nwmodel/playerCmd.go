@@ -14,9 +14,9 @@ var msgMap = map[string]playerCommand{
 	// chat functions
 	"y":    cmdYell,
 	"yell": cmdYell,
-	//"tell": cmdTell,
-	//"t": cmdTell,
-	"tc": cmdTc,
+	"t":    cmdTell,
+	"tell": cmdTell,
+	"tc":   cmdTc,
 
 	// // player settings
 	"team": cmdTeam,
@@ -77,6 +77,29 @@ func cmdYell(p *Player, args []string, c string) Message {
 		Type: "(global)",
 		Data: chatMsg,
 	})
+	return Message{}
+}
+
+func cmdTell(p *Player, args []string, c string) Message {
+
+	var recip *Player
+	for _, player := range gm.Players {
+		if player.Name == args[0] {
+			recip = player
+		}
+	}
+
+	if recip == nil {
+		return psError(fmt.Errorf("No such player, '%s'", args[0]))
+	}
+
+	chatMsg := p.name() + " > " + strings.Join(args[1:], " ")
+
+	recip.outgoing <- Message{
+		Type:   "(private)",
+		Data:   chatMsg,
+		Sender: pseudoStr,
+	}
 	return Message{}
 }
 
