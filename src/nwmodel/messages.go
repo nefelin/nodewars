@@ -11,11 +11,14 @@ type Message struct {
 } // TODO fix code submission to append to other data, this is unnecessary
 
 const (
-	alertStr     = "alert:"
-	errorStr     = "error:"
-	successStr   = "success:"
-	beginStr     = "begin:"
+	alertStr   = "alert:"
+	errorStr   = "error:"
+	successStr = "success:"
+	beginStr   = "begin:"
+
+	editStateStr = "editorState"
 	pseudoStr    = "pseudoServer"
+	serverStr    = "server"
 	noConnectStr = "No connection"
 )
 
@@ -74,6 +77,14 @@ func psBegin(msg string) Message {
 	return Message{
 		Type:   beginStr,
 		Sender: pseudoStr,
+		Data:   msg,
+	}
+}
+
+func editStateMsg(msg string) Message {
+	return Message{
+		Type:   editStateStr,
+		Sender: serverStr,
 		Data:   msg,
 	}
 }

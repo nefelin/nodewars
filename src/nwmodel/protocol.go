@@ -49,7 +49,7 @@ func doHandshake(ws *websocket.Conn) error {
 
 // HandleConnections is the point of entry for all websocket connections
 func HandleConnections(w http.ResponseWriter, r *http.Request) {
-
+	log.Println("New player connected...")
 	// Upgrade GET to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -69,13 +69,18 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// Assuming we're all good, register client
 	// TODO reconsider this lifecycle, registering player without name has weird side effects
+	// log.Println("Registering player...")
 	thisPlayer := gm.RegisterPlayer(ws)
 	defer scrubPlayerSocket(thisPlayer)
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
+	// log.Println("Spinning up outgoing handler for player...")
 	go outgoingRelay(thisPlayer)
+	// cannot set language before outgoingRelay is running, will cause program hault
+	thisPlayer.setLanguage("python")
 
 	// send initial state
+	// log.Println("Sending initial state message to player...")
 	thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
 	// Handle socket stream
 	for {
@@ -86,6 +91,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 			log.Printf("error: %v", err)
 			break
 		}
+		// log.Println("received player message")
 		incomingHandler(&msg, thisPlayer)
 	}
 }

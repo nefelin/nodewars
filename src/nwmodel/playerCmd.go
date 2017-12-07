@@ -328,20 +328,34 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	}
 
 	// build buffer from language boilerplate and test sampleIO
+	// langDetails := gm.languages[p.language]
+	// boilerplate := langDetails.Boilerplate
+	// comment := langDetails.CommentPrefix
+	// sampleIO := pSlot.challenge.SampleIO
+	// description := pSlot.challenge.Description
+
+	// buffer := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s",comment, description, comment, sampleIO)
+	p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
+
+	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, Working in: %s", slotNum, pSlot.forProbe(), p.language))
+}
+
+func boilerPlateFor(p *Player) string {
 	langDetails := gm.languages[p.language]
-	boilerplate := langDetails.Boilerplate
+	return langDetails.Boilerplate
+}
+
+func challengeBufferFor(p *Player) string {
+	langDetails := gm.languages[p.language]
+	pSlot := p.slot()
+	if pSlot == nil || !pSlot.isFull() {
+		return ""
+	}
+
 	comment := langDetails.CommentPrefix
 	sampleIO := pSlot.challenge.SampleIO
 	description := pSlot.challenge.Description
-
-	buffer := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
-	p.outgoing <- Message{
-		Type:   "editorState",
-		Sender: "server",
-		Data:   buffer,
-	}
-
-	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, Working in: %s", slotNum, pSlot.forProbe(), p.language))
+	return fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 }
 
 func cmdMake(p *Player, args []string, playerCode string) Message {
