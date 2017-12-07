@@ -163,9 +163,11 @@ func cmdLanguage(p *Player, args []string, c string) Message {
 }
 
 func cmdListLanguages(p *Player, args []string, c string) Message {
-	languages := getLanguages()
+	msgContent := ""
 
-	msgContent := strings.Join(languages, "\n")
+	for k := range gm.languages {
+		msgContent += k + "\n"
+	}
 
 	return psSuccess(msgContent)
 }
@@ -318,6 +320,9 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	if pSlot.module != nil {
 		p.setLanguage(pSlot.module.language)
 	}
+
+	//TODO: build buffer from language boilerplate and test sampleIO
+
 	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, Working in: %s", slotNum, pSlot.forProbe(), p.language))
 }
 

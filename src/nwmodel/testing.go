@@ -13,6 +13,7 @@ import (
 type Challenge struct {
 	ID          string `json:"id"`
 	Description string `json:"description"`
+	SampleIO    string `json:"sampleIO"`
 }
 
 type SubmissionRequest struct {
@@ -27,8 +28,13 @@ type ChallengeResponse struct {
 	Message  Message           `json:"message"`
 }
 
+type LanguageDetails struct {
+	Boilerplate   string `json:"boilerplate"`
+	CommentPrefix string `json:"commentPrefix"`
+}
+
 type LanguagesResponse struct {
-	Languages []string `json:"languages"`
+	Languages map[string]LanguageDetails `json:"languages"`
 }
 
 func (c ChallengeResponse) passed() int {
@@ -113,7 +119,7 @@ func getOutput(language, code, input string) ChallengeResponse {
 	return response
 }
 
-func getLanguages() []string {
+func getLanguages() map[string]LanguageDetails {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
