@@ -155,12 +155,7 @@ func cmdLanguage(p *Player, args []string, c string) Message {
 	}
 
 	p.setLanguage(args[0])
-
-	return Message{
-		Type:   "languageState",
-		Sender: "server",
-		Data:   p.language,
-	}
+	return psSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 
 func cmdListLanguages(p *Player, args []string, c string) Message {
