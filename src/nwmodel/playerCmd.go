@@ -154,7 +154,10 @@ func cmdLanguage(p *Player, args []string, c string) Message {
 		return psSuccess("Your name is " + p.language)
 	}
 
-	p.setLanguage(args[0])
+	err := p.setLanguage(args[0])
+	if err != nil {
+		return psError(err)
+	}
 	return psSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 

@@ -695,8 +695,21 @@ func newPlayer(ws *websocket.Conn) *Player {
 	return ret
 }
 
-func (p *Player) setLanguage(l string) {
-	p.language = strings.ToLower(l)
+func (p *Player) setLanguage(l string) error {
+
+	for lang := range gm.languages {
+		if l == lang {
+			p.language = strings.ToLower(l)
+
+			p.outgoing <- Message{
+				Type:   "languageState",
+				Sender: "server",
+				Data:   p.language,
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")
 }
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
