@@ -98,7 +98,7 @@ function updateGraph (gameState) {
 		// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
 		const modRad = nodeBaseRadius/2.5
 		const spacing = modRad*3
-		const angleInc = 60*0.017453; //convert to radian
+		const angleInc = 70*0.017453; //convert to radian
 
 		modules.exit()
 			.transition(t)
@@ -120,8 +120,8 @@ function updateGraph (gameState) {
 	           // .attr("cy", -nodeRadius/2)
 	           .transition(t)
 	           .style("opacity", 1)
-	           .attr("cx", (d,i) => nodeRadius/2 * Math.cos(-1.5708+angleInc*i))
-	           .attr("cy", (d,i) => nodeRadius/2 * Math.sin(-1.5708+angleInc*i))
+	           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
+	           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
 
 	    // update all modules
 	    modules.transition(t)

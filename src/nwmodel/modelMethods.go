@@ -198,6 +198,19 @@ func (gm *GameModel) psBroadcast(msg Message) {
 	}
 }
 
+// broadcast to all but one player
+func (gm *GameModel) psBroadcastExcept(p *Player, msg Message) {
+	msg.Sender = "pseudoServer"
+
+	for _, player := range gm.Players {
+		//skip if it's our player
+		if player == p {
+			continue
+		}
+		player.outgoing <- msg
+	}
+}
+
 func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	if t.poe != nil {
 		return fmt.Errorf("Team %s already has a point of entry at node '%d'", t.Name, t.poe.ID)
@@ -337,6 +350,7 @@ func (gm *GameModel) breakConnection(p *Player) {
 	if p.Route != nil {
 		// delete(gm.Routes, p.ID)
 		p.Route = nil
+		p.outgoing <- psError(errors.New("Connection interrupted!"))
 	}
 
 	// detach from any slots
@@ -451,6 +465,12 @@ func (n *node) evalTrafficForTeam(t *team) {
 				}
 			}
 		}
+		// if this is a POE, announce that teams elimination
+		if t.poe == n {
+			gm.psBroadcast(psAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
+
+		}
+
 	}
 }
 
@@ -802,7 +822,7 @@ func (r route) String() string {
 }
 
 func (m module) forMsg() string {
-	return fmt.Sprintf("[%v] [%v] [%v]", m.Team.Name, m.language, m.builder)
+	return fmt.Sprintf("[%s] [%d/%d] [%s] [%s]", m.Team.Name, m.Health, m.MaxHealth, m.language, m.builder)
 }
 
 func (n node) forMsg() string {

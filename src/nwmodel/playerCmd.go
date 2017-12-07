@@ -12,11 +12,12 @@ type playerCommand func(p *Player, args []string, code string) Message
 
 var msgMap = map[string]playerCommand{
 	// chat functions
-	"y":    cmdYell,
-	"yell": cmdYell,
-	"t":    cmdTell,
-	"tell": cmdTell,
-	"tc":   cmdTc,
+	"y":        cmdYell,
+	"yell":     cmdYell,
+	"t":        cmdTell,
+	"tell":     cmdTell,
+	"tc":       cmdTc,
+	"teamchat": cmdTc,
 
 	// // player settings
 	"team": cmdTeam,
@@ -25,6 +26,9 @@ var msgMap = map[string]playerCommand{
 	// // world interaction
 	"con":     cmdConnect,
 	"connect": cmdConnect,
+	// disconnect
+	// "disconnect": cmdDisconnect,
+	// "dis":        cmdDisconnect,
 
 	"lang": cmdLanguage,
 
@@ -35,10 +39,8 @@ var msgMap = map[string]playerCommand{
 	"make":    cmdMake,
 	"makemod": cmdMake,
 
-	"std":   cmdStdin,
 	"stdin": cmdStdin,
 
-	"tst":  cmdTestCode,
 	"test": cmdTestCode,
 
 	"rm": cmdRemoveModule,
@@ -48,20 +50,19 @@ var msgMap = map[string]playerCommand{
 	"refac": cmdRefac,
 
 	"at":     cmdAttach,
+	"att":    cmdAttach,
 	"attach": cmdAttach,
 
 	// what am I attached to? what's my task? what's my language set to?
 	// "st":   cmdStatus,
 	// "stat": cmdStatus,
 
-	"wh":  cmdWho,
 	"who": cmdWho,
-	// non finalized
-	// "pr":    cmdProbe,
-	// "probe": cmdProbe,
 
-	"ls": cmdLs, // list modules/slot. out of spec but for expediency
-	"sp": cmdSetPOE,
+	"ls":      cmdLs, // list modules/slot. out of spec but for expediency
+	"listmod": cmdLs, // list modules/slot. out of spec but for expediency
+	"sp":      cmdSetPOE,
+	"teampoe": cmdSetPOE,
 }
 
 func cmdHandler(m *Message, p *Player) Message {
@@ -188,8 +189,15 @@ func cmdConnect(p *Player, args []string, c string) Message {
 		return psError(errors.New("Join a team first"))
 	}
 
-	if len(args) < 1 {
-		return psError(errors.New("Expected 1 argument, received 0"))
+	// if len(args) < 1 {
+	// 	return psError(errors.New("Expected 1 argument, received 0"))
+	// }
+
+	if len(args) == 0 {
+		if p.Route != nil {
+			return psSuccess(fmt.Sprintf("Connected to node %d, node %d connects to %v", p.Route.Endpoint.ID, p.Route.Endpoint.ID, p.Route.Endpoint.Connections))
+		}
+		return psError(errors.New("No connection, provide a nodeID argument to connect"))
 	}
 
 	targetNode, err := strconv.Atoi(args[0])
@@ -360,6 +368,7 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 		}
 
 		gm.broadcastState()
+		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
 		return psSuccess(fmt.Sprintf("Module constructed\nHealth: %d/%d", newMod.Health, newMod.MaxHealth))
 
 	}
@@ -369,10 +378,6 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 }
 
 func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
-
-	if playerCode == "" {
-		return psError(errors.New("No code submitted"))
-	}
 
 	slot := p.slot()
 
@@ -384,50 +389,55 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 		return psError(errors.New("Slot is empty"))
 	}
 
+	// if we're removing a friendly module, just do it:
+	if p.Team == slot.module.Team {
+		err := p.Route.Endpoint.removeModule(p.slotNum)
+		if err != nil {
+			return psError(err)
+		}
+
+		gm.broadcastState()
+		return psSuccess("Module removed")
+	}
+
+	if playerCode == "" {
+		return psError(errors.New("No code submitted"))
+	}
+
 	// All checks passed:
 	// passed error checks on args
 
 	p.outgoing <- psBegin("Removing module...")
 
-	// if module doesn't belong to your team, attack
-	if p.Team != slot.module.Team {
+	log.Printf("remove cID: %v", slot.challenge.ID)
+	response := submitTest(slot.challenge.ID, p.language, playerCode)
 
-		log.Printf("remove cID: %v", slot.challenge.ID)
-		response := submitTest(slot.challenge.ID, p.language, playerCode)
-
-		if response.Message.Type == "error" {
-			return psError(errors.New(response.Message.Data))
-		}
-
-		newModHealth := response.passed()
-
-		log.Printf("response to submitted test: %v", response)
-
-		if newModHealth >= slot.module.Health {
-
-			err := p.Route.Endpoint.removeModule(p.slotNum)
-			if err != nil {
-				return psError(err)
-			}
-
-			gm.broadcastState()
-			return psSuccess("Module removed")
-
-		}
-
-		return psError(fmt.Errorf(
-			"Solution too weak: %d/%d, need %d/%d to remove",
-			response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth,
-		))
+	if response.Message.Type == "error" {
+		return psError(errors.New(response.Message.Data))
 	}
 
-	err := p.Route.Endpoint.removeModule(p.slotNum)
-	if err != nil {
-		return psError(err)
+	newModHealth := response.passed()
+
+	log.Printf("response to submitted test: %v", response)
+
+	if newModHealth >= slot.module.Health {
+		oldTeamName := slot.module.Team.Name
+
+		err := p.Route.Endpoint.removeModule(p.slotNum)
+		if err != nil {
+			return psError(err)
+		}
+
+		gm.broadcastState()
+		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.Name, p.Team.Name, oldTeamName, p.Route.Endpoint.ID)))
+		return psSuccess("Module removed")
+
 	}
 
-	gm.broadcastState()
-	return psSuccess("Module removed")
+	return psError(fmt.Errorf(
+		"Solution too weak: %d/%d, need %d/%d to remove",
+		response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth,
+	))
 
 }
 
@@ -478,6 +488,7 @@ func cmdRefac(p *Player, args []string, playerCode string) Message {
 		// if the module changed hands...
 		if oldTeam != p.Team {
 			p.Route.Endpoint.evalTrafficForTeam(oldTeam)
+			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
 			retMsg = psSuccess(fmt.Sprintf("Module refactored to (%v) with health %d/%d", slot.module.Team.Name, slot.module.Health, slot.module.MaxHealth))
 		} else {
 			retMsg = psSuccess(fmt.Sprintf("Module refactored with health %d/%d", slot.module.Health, slot.module.MaxHealth))

@@ -11,6 +11,7 @@ type Message struct {
 } // TODO fix code submission to append to other data, this is unnecessary
 
 const (
+	alertStr     = "alert:"
 	errorStr     = "error:"
 	successStr   = "success:"
 	beginStr     = "begin:"
@@ -52,6 +53,15 @@ func psMessage(msg string) Message {
 		Data:   msg,
 	}
 }
+
+func psAlert(msg string) Message {
+	return Message{
+		Type:   alertStr,
+		Sender: pseudoStr,
+		Data:   msg,
+	}
+}
+
 func psSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,

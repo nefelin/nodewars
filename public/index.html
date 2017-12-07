@@ -139,14 +139,84 @@ const logo = " _  _         _   __      __           \n" +
  			 "| .` / _ \\/ _` / -_) \\/\\/ / _` | '_(_-<\n" +
   			 "|_|\\_\\___/\\__,_\\___|\\_/\\_/\\__,_|_| /__/\n" 
 
-// codeCmds are playerCmds that need to submit the codebox to the messenger.
-// codeBox content is only submitted with this type of command
-const codeCmds = [
-	"mk","mak", "make", "makemod",
-	"rm",
-	"test", "tst",
-	"rf", "ref", "refac"
-]
+
+// const helpFiles = [
+const helpFiles = ["help_docs.json"]
+// const uiHelpFile = "./uihelp_docs.json"
+let helpObj
+let cmdList
+
+for (let file of helpFiles) {
+	console.log("file",file)
+	$.getJSON(file, function(json) {
+		console.log("Loaded", file, "as JSON")
+	    // console.log(json); // this will show the info it in firebug console
+	    helpObj = json
+	    cmdList = makeCmdList(json)
+	});
+}
+
+function makeCmdList(json) {
+	let txt = "Available commands: "
+	const cmds = []
+	for (let cmd of json) {
+		cmds.push(cmd.keywords[0])
+	}
+	txt += cmds.join(', ')
+	txt += "\nhelp (cmd) to get more info."
+	return txt
+}
+
+// function prettifyCommands(json) {
+// 	let text = "List of available commands:\n" 
+
+// 	var cmdMaxLen = 0
+// 	var aliasMaxLen = 0
+
+// 	for (let cmd of json) {
+// 		// console.log(cmd)
+// 		if (cmd.keywords[0].length > cmdMaxLen)
+// 			cmdMaxLen = cmd.keywords[0].length
+
+// 		const aliasLength = cmd.keywords.join(', ').length
+// 		console.log("length for", cmd.keywords.join(', '), "is", cmd.keywords.join(', ').length)
+// 		if (aliasLength > cmdMaxLen)
+// 			aliasMaxLen = aliasLength
+// 	}
+
+// 	for (let cmd of json) {
+// 		let leftSide = cmd.keywords[0]
+// 		let rightSide = "("+ cmd.keywords.join(', ') + ")"
+
+// 		for (let i = 0; i < cmdMaxLen - cmd.keywords[0].length; i++) {
+// 			leftSide += " "
+// 		}
+// 		for (let j = 0; j < aliasMaxLen - cmd.keywords.join(', ').length+2; j++) {
+// 			rightSide = " " + rightSide
+// 		}
+// 		text += leftSide + "   -   " + rightSide + "\n"
+// 	}
+
+
+// 	text += "help (command) for more info."
+// 	return text
+// }
+
+function prettifyCommand(cmd) {
+	let recordIndex = -1
+	for (let i = 0; i < helpObjs[0].length; i++) {
+		if (helpObjs[0][i].keywords.indexOf(cmd) > -1) {
+			recordIndex = i 
+			break
+		}
+	}
+	if (recordIndex > -1) {
+		const retStr = helpObjs[0][recordIndex].keywords.join(', ') + " - " + helpObjs[0][recordIndex].longDesc ? helpObjs[0][recordIndex].longDesc : helpObjs[0][recordIndex].shortDesc
+		return retStr
+	} else {
+		return "Unknown command '" + cmd + "'"
+	}
+}
 
 svgInit();
 let graphInitialized = false
@@ -259,7 +329,14 @@ function sendMsg(input) {
 }
 
 
-
+// codeCmds are playerCmds that need to submit the codebox to the messenger.
+// codeBox content is only submitted with this type of command
+const codeCmds = [
+	"make", "makemod",
+	"rm", "remove",
+	"test",
+	"ref", "refac"
+]
 
 //jquery terminal stuff
 jQuery(function($, term) {
@@ -267,7 +344,12 @@ jQuery(function($, term) {
     $('#terminal').terminal({
     	// editor font size adjust
     	// editor theme change (w/ list) TODO
-    	help: function(){terminal = this },
+    	cmds: function(){
+    		this.echo(cmdList)
+    	},
+
+    	uihelp: function(){},
+
         add: function(a, b) {
             this.echo(a + b);
         },
@@ -339,7 +421,11 @@ jQuery(function($, term) {
         greetings: "Welcome to\n" + logo + "\nv" + versionNum,
         // width: 450,
         prompt: 'demo> ',
-        onInit: function() {terminal = this},
+        onInit: function() {
+        	terminal = this
+
+        	// set this.helpText to parsed json of 
+        },
         onCommandNotFound: a => {sendMsg(a)},
       
     });
