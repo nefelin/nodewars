@@ -211,7 +211,7 @@ function updateEditorContent(newContent) {
 }
 
 
-
+let userPrompt = "nodewars>"
 function parseServerMessages(e) {
 	const msg = JSON.parse(e.data);
 	switch (msg.sender) {
@@ -241,7 +241,8 @@ function parseServerMessages(e) {
 				case "promptState":
 					console.log("promptState")
 					// how to sync this correctly... ?
-					// terminal.set_prompt(msg.data)
+					// userPrompt = msg.data
+					terminal.set_prompt(msg.data)
 					break
 
 				default:
@@ -408,7 +409,10 @@ jQuery(function($, term) {
         onBlur: () => {}, 
         checkArity: false,
         exit: false,
-        prompt: "nodeWars>",
+        prompt: function() {
+        	// console.log(userPrompt)
+        	// setTimeout(()=>{terminal.set_prompt(userPrompt)}, 1000)
+        },
         onInit: function() {
         	terminal = this
 
