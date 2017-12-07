@@ -4,9 +4,13 @@ import (
 	"log"
 	"net/http"
 	"nwmodel"
+	"os"
 )
 
 func main() {
+	certfile := os.Getenv("CERTFILE")
+	keyfile := os.Getenv("KEYFILE")
+
 	log.Println("Starting " + nwmodel.VersionTag + " server...")
 
 	// Start Webserver
@@ -14,7 +18,7 @@ func main() {
 	http.Handle("/", fs)
 	http.HandleFunc("/ws", nwmodel.HandleConnections)
 
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServeTLS(":443", certfile, keyfile, nil)
 	if err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
