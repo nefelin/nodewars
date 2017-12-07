@@ -337,8 +337,11 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	description := pSlot.challenge.Description
 
 	buffer := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
-	_ = buffer
-	// TODO: send this buffer to the FE somehow?
+	p.outgoing <- Message{
+		Type:   "editorState",
+		Sender: "server",
+		Data:   buffer,
+	}
 
 	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, Working in: %s", slotNum, pSlot.forProbe(), p.language))
 }

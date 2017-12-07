@@ -241,6 +241,10 @@ function updateLanguage(newLang) {
 	terminal.echo(msg)
 }
 
+function updateEditorContent(newContent) {
+	editor.session.setValue(newContent)
+}
+
 function parseServerMessages(e) {
 	const msg = JSON.parse(e.data);
 	switch (msg.sender) {
@@ -264,6 +268,9 @@ function parseServerMessages(e) {
 					updateLanguage(msg.data)
 					break
 
+				case "editorState":
+					updateEditorContent(msg.data)
+					break
 
 				default:
 					console.log("(server) ", msg.type, ":", msg.data)
@@ -276,7 +283,9 @@ function parseServerMessages(e) {
 	}
 }
 
-const ws = new WebSocket('wss://' + window.location.host + '/ws');
+// const ws = new WebSocket('wss://' + window.location.host + '/ws');
+const ws = new WebSocket('ws://' + window.location.host + '/ws');
+
 
 function handshake() {
 	console.log('>', versionTag)
