@@ -705,6 +705,25 @@ func newPlayer(ws *websocket.Conn) *Player {
 	return ret
 }
 
+func (p *Player) prompt() string {
+	promptEndChar := ">"
+	prompt := fmt.Sprintf("(%s)", p.name())
+	if p.Team != nil {
+		prompt += fmt.Sprintf(":%s:", p.Team.Name)
+	}
+	if p.Route != nil {
+		prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
+	}
+	if p.slotNum != -1 {
+		prompt += fmt.Sprintf(":s%d", p.slotNum)
+	}
+	prompt += fmt.Sprintf("[%s]", p.language)
+
+	prompt += promptEndChar
+
+	return prompt
+}
+
 func (p *Player) setLanguage(l string) error {
 
 	for lang := range gm.languages {
