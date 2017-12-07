@@ -78,7 +78,7 @@ func newNodeMap() nodeMap {
 
 // NewDefaultModel Generic game model
 func NewDefaultModel() *GameModel {
-	m := newRandMap()
+	m := newRandMap(10)
 	t := makeDummyTeams()
 	p := make(map[playerID]*Player)
 	// r := make(map[playerID]*route)
@@ -101,9 +101,9 @@ func makeDummyTeams() map[teamName]*team {
 	return teams
 }
 
-func newRandMap() *nodeMap {
+func newRandMap(n int) *nodeMap {
 	rand.Seed(time.Now().UTC().UnixNano())
-	nodeCount := 10
+	nodeCount := n
 	newMap := newNodeMap()
 
 	for i := 0; i < nodeCount; i++ {
@@ -125,8 +125,9 @@ func newRandMap() *nodeMap {
 		node.initSlots()
 	}
 
-	newMap.addPoes(rand.Intn(nodeCount))
-	newMap.addPoes(rand.Intn(nodeCount))
+	for len(newMap.POEs) < 2 {
+		newMap.addPoes(rand.Intn(nodeCount))
+	}
 
 	return &newMap
 }
