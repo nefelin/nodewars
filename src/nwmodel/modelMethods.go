@@ -237,9 +237,7 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 
 	// set all teams players poes
 	for player := range t.players {
-		gm.Lock()
 		gm.setPlayerPOE(player, ni)
-		gm.Unlock()
 	}
 
 	// mark the spot as taken
@@ -319,9 +317,7 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
 
 	// break any pre-existing connection before connecting elsewhere
-	gm.Lock()
 	gm.breakConnection(p)
-	gm.Unlock()
 
 	// TODO report errors here
 	source, poeOK := gm.POEs[p.ID]
