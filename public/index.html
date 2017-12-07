@@ -255,7 +255,7 @@ function parseServerMessages(e) {
 	}
 }
 
-const ws = new WebSocket('ws://' + window.location.host + '/ws');
+const ws = new WebSocket('wss://' + window.location.host + '/ws');
 
 
 function handshake() {
