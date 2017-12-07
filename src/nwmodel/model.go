@@ -1,6 +1,8 @@
 package nwmodel
 
 import (
+	"sync"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -22,6 +24,7 @@ type GameModel struct {
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
+	sync.Mutex
 }
 
 type route struct {
