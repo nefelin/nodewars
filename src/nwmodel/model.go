@@ -17,10 +17,11 @@ var moduleIDCount modID
 
 // GameModel holds all state information
 type GameModel struct {
-	Map     *nodeMap             `json:"map"`
-	Teams   map[teamName]*team   `json:"teams"`
-	Players map[playerID]*Player `json:"players"`
-	POEs    map[playerID]*node   `json:"poes"`
+	Map       *nodeMap             `json:"map"`
+	Teams     map[teamName]*team   `json:"teams"`
+	Players   map[playerID]*Player `json:"players"`
+	POEs      map[playerID]*node   `json:"poes"`
+	languages map[string]LanguageDetails
 }
 
 type route struct {

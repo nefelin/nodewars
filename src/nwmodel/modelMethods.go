@@ -89,7 +89,8 @@ func NewDefaultModel() *GameModel {
 		Teams:   t,
 		Players: p,
 		// Routes:  r,
-		POEs: poes,
+		POEs:      poes,
+		languages: getLanguages(),
 	}
 }
 
