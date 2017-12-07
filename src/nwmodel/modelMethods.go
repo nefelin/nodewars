@@ -177,13 +177,10 @@ func newDefaultMap() *nodeMap {
 // RegisterPlayer adds a new player to our world model
 func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
 	// create player with this websocket
-	log.Println("Creating new player object...")
 	newP := newPlayer(ws)
 
 	// add this player to our registry
-	log.Println("Adding player to GM roster...")
 	gm.Players[newP.ID] = newP
-	log.Println("Finished registering player")
 	return newP
 }
 
@@ -692,7 +689,7 @@ func newPlayer(ws *websocket.Conn) *Player {
 		slotNum:  -1,
 	}
 
-	log.Println("New player created, setting language...")
+	// log.Println("New player created, setting language...")
 	playerIDCount++
 	return ret
 }

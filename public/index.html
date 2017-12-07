@@ -236,8 +236,6 @@ function parseGraphState(newState) {
 
 function updateLanguage(newLang) {
 	editor.session.setMode("ace/mode/" + newLang.toLowerCase())
-
-	const msg = "Language set to '" + newLang.toLowerCase() + "'"
 	terminal.echo(msg)
 }
 

@@ -59,10 +59,12 @@ var msgMap = map[string]playerCommand{
 
 	"who": cmdWho,
 
-	"ls":      cmdLs, // list modules/slot. out of spec but for expediency
-	"listmod": cmdLs, // list modules/slot. out of spec but for expediency
-	"sp":      cmdSetPOE,
-	"teampoe": cmdSetPOE,
+	"ls":          cmdLs, // list modules/slot. out of spec but for expediency
+	"listmod":     cmdLs, // list modules/slot. out of spec but for expediency
+	"sp":          cmdSetPOE,
+	"teampoe":     cmdSetPOE,
+	"boilerplate": cmdLoadBoilerplate,
+	"bp":          cmdLoadBoilerplate,
 }
 
 func cmdHandler(m *Message, p *Player) Message {
@@ -158,6 +160,12 @@ func cmdLanguage(p *Player, args []string, c string) Message {
 	if err != nil {
 		return psError(err)
 	}
+
+	// if the player's attached somewhere, update the buffer
+	if p.slotNum != -1 {
+		p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
+	}
+
 	return psSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 
@@ -169,6 +177,11 @@ func cmdListLanguages(p *Player, args []string, c string) Message {
 	}
 
 	return psSuccess(msgContent)
+}
+
+func cmdLoadBoilerplate(p *Player, args []string, c string) Message {
+	p.outgoing <- editStateMsg(boilerPlateFor(p))
+	return psSuccess(fmt.Sprintf("%s boilerplate loaded", p.language))
 }
 
 func cmdName(p *Player, args []string, c string) Message {
@@ -342,13 +355,13 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 
 func boilerPlateFor(p *Player) string {
 	langDetails := gm.languages[p.language]
-	return langDetails.Boilerplate
+	return langDetails.Boilerplate + "\n"
 }
 
 func challengeBufferFor(p *Player) string {
 	langDetails := gm.languages[p.language]
 	pSlot := p.slot()
-	if pSlot == nil || !pSlot.isFull() {
+	if pSlot == nil {
 		return ""
 	}
 
