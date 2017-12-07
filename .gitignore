@@ -1,3 +1,11 @@
-*.swp
 bin/
+old/
 pkg/
+reference/
+vendor/
+d3/
+pathtest/
+resources/
+*.txt
+*.swp
+*.DS_Store
