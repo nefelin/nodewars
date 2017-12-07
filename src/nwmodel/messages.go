@@ -16,7 +16,9 @@ const (
 	successStr = "success:"
 	beginStr   = "begin:"
 
-	editStateStr = "editorState"
+	editStateStr   = "editorState"
+	promptStateStr = "promptState"
+
 	pseudoStr    = "pseudoServer"
 	serverStr    = "server"
 	noConnectStr = "No connection"
@@ -84,6 +86,14 @@ func psBegin(msg string) Message {
 func editStateMsg(msg string) Message {
 	return Message{
 		Type:   editStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
+func promptStateMsg(msg string) Message {
+	return Message{
+		Type:   promptStateStr,
 		Sender: serverStr,
 		Data:   msg,
 	}

@@ -157,30 +157,33 @@ for (let file of helpFiles) {
 }
 
 function makeCmdList(json) {
-	let txt = "Available commands: "
+	let txt = "\nAvailable commands: "
 	const cmds = []
 	for (let cmd of json) {
 		cmds.push(cmd.keywords[0])
 	}
 	txt += cmds.join(', ')
-	txt += "\nhelp (cmd) to get more info."
+	txt += "\nhelp (cmd) to get more info.\n"
 	return txt
 }
 
 function prettifyCommand(cmd) {
 	let recordIndex = -1
-	console.log(helpObj)
-	for (let i = 0; i < helpObj[0].length; i++) {
-		if (helpObjs[0][i].keywords.indexOf(cmd) > -1) {
+	let retStr
+	console.log("help object", helpObj[1])
+	for (let i = 0; i < helpObj.length; i++) {
+		if (helpObj[i].keywords.indexOf(cmd) > -1) {
 			recordIndex = i 
 			break
 		}
 	}
 	if (recordIndex > -1) {
-		const retStr = helpObj[0][recordIndex].keywords.join(', ') + " - " + helpObj[0][recordIndex].longDesc ? helpObj[0][recordIndex].longDesc : helpObj[0][recordIndex].shortDesc
-		return retStr
+		retStr = "Command: " + helpObj[recordIndex].keywords.join(', ') + "\n" + 
+				 "Usage: " + helpObj[recordIndex].usage + "\n" +
+				 "----------\n" + helpObj[recordIndex].shortDesc
 	} 
-	return ""
+
+	return retStr
 }
 
 svgInit();
@@ -207,6 +210,8 @@ function updateEditorContent(newContent) {
 	editor.session.setValue(newContent)
 }
 
+
+
 function parseServerMessages(e) {
 	const msg = JSON.parse(e.data);
 	switch (msg.sender) {
@@ -214,6 +219,7 @@ function parseServerMessages(e) {
 			
 			// write to terminal
 			terminal.echo(msg.type + " " + msg.data)
+			terminal.set_prompt("asdf")
 			
 			// inelegant trimming of whitespace when msg.type is blank TODO
 			msg.type == "" ? console.log(msg.data)
@@ -232,6 +238,10 @@ function parseServerMessages(e) {
 
 				case "editorState":
 					updateEditorContent(msg.data)
+					break
+
+				case "promptState":
+					terminal.set_prompt(msg.data)
 					break
 
 				default:
@@ -314,21 +324,19 @@ jQuery(function($, term) {
     $('#terminal').terminal({
     	// editor font size adjust
     	// editor theme change (w/ list) TODO
-    	cmds: function(){
-    		this.echo(cmdList)
-    	},
     	help: function(cmd) {
-    		const txt = prettifyCommand(cmd)
-    		if (txt){
-    			this.echo(txt)
+    		if (!cmd) {
+    			this.echo(cmdList)
     		} else {
-    			this.echo("error: help: Unknown command '" + cmd + "'")
+    			const txt = prettifyCommand(cmd)
+				console.log("HELP",txt)
+				if (txt){
+					this.echo(txt)
+				} else {
+					this.echo("error: help: Unknown command '" + cmd + "'")
+				}
     		}
     	},
-    	// uihelp: function(){},
-        add: function(a, b) {
-            this.echo(a + b);
-        },
 
         swap: function(a) {
         	switch (a) {
@@ -336,6 +344,9 @@ jQuery(function($, term) {
 	        		swapMain()
 	        		break
 	        	case "term":
+	        		swapTerm()
+	        		break
+	        	default:
 	        		swapTerm()
 	        		break
         	}
@@ -375,15 +386,14 @@ jQuery(function($, term) {
         vim: function(a) {
         	switch (a) {
         		case "on":
-                    console.log(editor.getKeyboardHandler())
+                    // console.log(editor.getKeyboardHandler())
         			editor.setKeyboardHandler("ace/keyboard/vim")
         			this.echo("Vim mode on")
         			break
         		case "off":
         			editor.setKeyboardHandler(null)
         			this.echo("Vim mode off")
-                                        console.log(editor.getKeyboardHandler())
-
+                    // console.log(editor.getKeyboardHandler())
         			break
         		default:
         			this.echo("invalid argument")
@@ -393,10 +403,12 @@ jQuery(function($, term) {
     }, {
     	fontSize:40,
         height: 100,
-        name: "nwMain",
         greetings: "Welcome to\n" + logo + "\nv" + versionNum,
         // width: 450,
-        prompt: 'demo> ',
+        onBlur: () => {}, 
+        checkArity: false,
+        exit: false,
+        prompt: "n0dew4re5>",
         onInit: function() {
         	terminal = this
 
