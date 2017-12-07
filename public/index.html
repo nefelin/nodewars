@@ -180,7 +180,7 @@ function prettifyCommand(cmd) {
 	if (recordIndex > -1) {
 		retStr = "Command: " + helpObj[recordIndex].keywords.join(', ') + "\n" + 
 				 "Usage: " + helpObj[recordIndex].usage + "\n" +
-				 "----------\n" + helpObj[recordIndex].shortDesc
+				 "----------\n" + helpObj[recordIndex].shortDesc + "\n"
 	} 
 
 	return retStr
@@ -218,9 +218,7 @@ function parseServerMessages(e) {
 		case "pseudoServer":
 			
 			// write to terminal
-			terminal.echo(msg.type + " " + msg.data)
-			terminal.set_prompt("asdf")
-			
+			terminal.echo(msg.type + " " + msg.data)			
 			// inelegant trimming of whitespace when msg.type is blank TODO
 			msg.type == "" ? console.log(msg.data)
 						   : console.log(msg.type, msg.data)
@@ -241,7 +239,9 @@ function parseServerMessages(e) {
 					break
 
 				case "promptState":
-					terminal.set_prompt(msg.data)
+					console.log("promptState")
+					// how to sync this correctly... ?
+					// terminal.set_prompt(msg.data)
 					break
 
 				default:
@@ -408,7 +408,7 @@ jQuery(function($, term) {
         onBlur: () => {}, 
         checkArity: false,
         exit: false,
-        prompt: "n0dew4re5>",
+        prompt: "nodeWars>",
         onInit: function() {
         	terminal = this
 
