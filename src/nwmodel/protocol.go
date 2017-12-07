@@ -101,20 +101,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 // this should also take a player as an argument and take into account
 // event visibility when composing state message
 func calcStateMsgForPlayer(p *Player) Message {
-	// gs := newGameState()
-
-	// log.Println(gs)
-
-	// for name, teamOb := range gm.Teams {
-	// 	// make a blank roster of length players
-	// 	gs.teamsOfPlayers[name] = make([]string, len(teamOb.Players))
-	// 	i := 0
-	// 	for p := range teamOb.Players {
-	// 		gs.teamsOfPlayers[name][i] = p.Name
-	// 		i++
-	// 	}
-	// }
-
 	stateMsg, err := json.Marshal(gm)
 
 	// log.Printf("stateMsg: %v", string(stateMsg))

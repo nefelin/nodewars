@@ -297,6 +297,10 @@ function initGraph (nodeMap) {
         	.enter()
         	.append("g")
             .attr("class", "node-group")
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended)); 
 
         nodeMains = nodeGroups.each(function(d) {
         	const radius = nodeBaseRadius+d.connections.length*nodeRadiusMultiplier
@@ -354,6 +358,24 @@ function initGraph (nodeMap) {
         simulation.force("link")
             .links(nodeMap.edges);  
 
-	console.log("Calculation Layout...")
+        // handle nodes being dragged
+        function dragstarted(d) {
+            if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+        
+        function dragged(d) {
+            d.fx = d3.event.x;
+            d.fy = d3.event.y;
+        }
+        
+        function dragended(d) {
+            if (!d3.event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        } 
+
+	// console.log("Calculation Layout...")
 
 }
