@@ -167,55 +167,20 @@ function makeCmdList(json) {
 	return txt
 }
 
-// function prettifyCommands(json) {
-// 	let text = "List of available commands:\n" 
-
-// 	var cmdMaxLen = 0
-// 	var aliasMaxLen = 0
-
-// 	for (let cmd of json) {
-// 		// console.log(cmd)
-// 		if (cmd.keywords[0].length > cmdMaxLen)
-// 			cmdMaxLen = cmd.keywords[0].length
-
-// 		const aliasLength = cmd.keywords.join(', ').length
-// 		console.log("length for", cmd.keywords.join(', '), "is", cmd.keywords.join(', ').length)
-// 		if (aliasLength > cmdMaxLen)
-// 			aliasMaxLen = aliasLength
-// 	}
-
-// 	for (let cmd of json) {
-// 		let leftSide = cmd.keywords[0]
-// 		let rightSide = "("+ cmd.keywords.join(', ') + ")"
-
-// 		for (let i = 0; i < cmdMaxLen - cmd.keywords[0].length; i++) {
-// 			leftSide += " "
-// 		}
-// 		for (let j = 0; j < aliasMaxLen - cmd.keywords.join(', ').length+2; j++) {
-// 			rightSide = " " + rightSide
-// 		}
-// 		text += leftSide + "   -   " + rightSide + "\n"
-// 	}
-
-
-// 	text += "help (command) for more info."
-// 	return text
-// }
-
 function prettifyCommand(cmd) {
 	let recordIndex = -1
-	for (let i = 0; i < helpObjs[0].length; i++) {
+	console.log(helpObj)
+	for (let i = 0; i < helpObj[0].length; i++) {
 		if (helpObjs[0][i].keywords.indexOf(cmd) > -1) {
 			recordIndex = i 
 			break
 		}
 	}
 	if (recordIndex > -1) {
-		const retStr = helpObjs[0][recordIndex].keywords.join(', ') + " - " + helpObjs[0][recordIndex].longDesc ? helpObjs[0][recordIndex].longDesc : helpObjs[0][recordIndex].shortDesc
+		const retStr = helpObj[0][recordIndex].keywords.join(', ') + " - " + helpObj[0][recordIndex].longDesc ? helpObj[0][recordIndex].longDesc : helpObj[0][recordIndex].shortDesc
 		return retStr
-	} else {
-		return "Unknown command '" + cmd + "'"
-	}
+	} 
+	return ""
 }
 
 svgInit();
@@ -236,7 +201,6 @@ function parseGraphState(newState) {
 
 function updateLanguage(newLang) {
 	editor.session.setMode("ace/mode/" + newLang.toLowerCase())
-	terminal.echo(msg)
 }
 
 function updateEditorContent(newContent) {
@@ -353,9 +317,15 @@ jQuery(function($, term) {
     	cmds: function(){
     		this.echo(cmdList)
     	},
-
-    	uihelp: function(){},
-
+    	help: function(cmd) {
+    		const txt = prettifyCommand(cmd)
+    		if (txt){
+    			this.echo(txt)
+    		} else {
+    			this.echo("error: help: Unknown command '" + cmd + "'")
+    		}
+    	},
+    	// uihelp: function(){},
         add: function(a, b) {
             this.echo(a + b);
         },
@@ -437,6 +407,40 @@ jQuery(function($, term) {
     });
 });
 
+// function prettifyCommands(json) {
+// 	let text = "List of available commands:\n" 
+
+// 	var cmdMaxLen = 0
+// 	var aliasMaxLen = 0
+
+// 	for (let cmd of json) {
+// 		// console.log(cmd)
+// 		if (cmd.keywords[0].length > cmdMaxLen)
+// 			cmdMaxLen = cmd.keywords[0].length
+
+// 		const aliasLength = cmd.keywords.join(', ').length
+// 		console.log("length for", cmd.keywords.join(', '), "is", cmd.keywords.join(', ').length)
+// 		if (aliasLength > cmdMaxLen)
+// 			aliasMaxLen = aliasLength
+// 	}
+
+// 	for (let cmd of json) {
+// 		let leftSide = cmd.keywords[0]
+// 		let rightSide = "("+ cmd.keywords.join(', ') + ")"
+
+// 		for (let i = 0; i < cmdMaxLen - cmd.keywords[0].length; i++) {
+// 			leftSide += " "
+// 		}
+// 		for (let j = 0; j < aliasMaxLen - cmd.keywords.join(', ').length+2; j++) {
+// 			rightSide = " " + rightSide
+// 		}
+// 		text += leftSide + "   -   " + rightSide + "\n"
+// 	}
+
+
+// 	text += "help (command) for more info."
+// 	return text
+// }
 </script>
 </body>
 </html>
