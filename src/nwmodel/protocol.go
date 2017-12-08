@@ -136,13 +136,13 @@ func incomingHandler(msg *Message, p *Player) {
 	switch msg.Type {
 
 	case "playerCmd":
-		// TODO how do we syncronize these?
-		p.outgoing <- promptStateMsg(p.prompt())
-
 		res := cmdHandler(msg, p)
 		if res.Data != "" {
 			p.outgoing <- res
 		}
+
+		// TODO how do we syncronize these?
+		p.outgoing <- promptStateMsg(p.prompt())
 
 	case "stateRequest":
 		p.outgoing <- calcStateMsgForPlayer(p)

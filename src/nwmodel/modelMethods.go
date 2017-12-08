@@ -317,9 +317,6 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
 
-	// break any pre-existing connection before connecting elsewhere
-	gm.breakConnection(p)
-
 	// TODO report errors here
 	source, poeOK := gm.POEs[p.ID]
 
@@ -362,6 +359,8 @@ func (gm *GameModel) breakConnection(p *Player) {
 	if p.Route != nil {
 		// delete(gm.Routes, p.ID)
 		p.Route = nil
+
+		// TODO this should only happen if connection was severed non-voluntarily...
 		p.outgoing <- psError(errors.New("Connection interrupted!"))
 	}
 
@@ -412,6 +411,12 @@ func (n node) isFull() bool {
 
 // addConnection is reciprocol
 func (n *node) addConnection(m *node) {
+	// if the connection already exists, ignore
+	for _, nID := range n.Connections {
+		if m.ID == nID {
+			return
+		}
+	}
 	n.Connections = append(n.Connections, m.ID)
 	m.Connections = append(m.Connections, n.ID)
 }

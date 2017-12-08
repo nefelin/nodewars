@@ -51,6 +51,17 @@
 		flex-grow:2;
 	}
 
+	#team-flag {
+		position:absolute;
+		width:100%;
+		height:15px;
+/*		bottom:0;
+		right:0;
+		top:700;
+		right:700;
+		background-color: green
+*/	}
+
 	.terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt {
 	    font-size: 18px;
 	    line-height: 22px;
@@ -103,22 +114,48 @@
 
 <div id="main-col">
 	<div id="main-row">
-		<div id="graph"></div>
+		<div id="graph"><div id="team-flag"></div></div>
 		<div id="editor"></div>
 	</div>
 	<div id="terminal"></div>
 </div>
+
 
 <script src="d3app.js"></script>
 
 <script>
 'use strict';
 
+let focus = true
+$(document).keypress("`",function(e) {
+	if(e.ctrlKey){
+		
+		focus = !focus
+		// alert("key press" + focus+ "??")
+		switch (focus) {
+			case true:
+				console.log("termFocus")
+				terminal.focus()
+				break
+			case false:
+				console.log("editFocus")
+				// terminal.command_line.set('')
+				// setTimeout(() => {
+				    // terminal.disable();
+				    terminal.focus(false)
+				    editor.focus();
+				// }, 100);
+				// editor.focus()
+				break
+		}
+	  }
+});
 
-const editor = ace.edit("editor");
+
+var editor = ace.edit("editor");
 editor.session.setMode("ace/mode/python")
 // will later refer to terminal...
-let terminal = null
+var terminal = null
 
 // CSS UI functions
 function swapMain() {
@@ -243,7 +280,12 @@ function parseServerMessages(e) {
 					// how to sync this correctly... ?
 					// userPrompt = msg.data
 					terminal.set_prompt(msg.data)
+					terminal.resume()
+					// setTimeout(()=>{terminal.resume()}, 100)
 					break
+				
+				case "teamState":
+					$("#team-flag").css("background-color", msg.data)
 
 				default:
 					console.log("(server) ", msg.type, ":", msg.data)
@@ -379,8 +421,13 @@ jQuery(function($, term) {
 
         ed: function() {
         	// terminal always grabs focus
-        	this.focus(false)
-        	editor.focus()
+        	setTimeout(() => {
+				    this.disable();
+				    // this.focus(false)
+	            	editor.focus()
+
+				}, 100);
+        	// this.focus(false)
         	console.log('focus')
         },
 
@@ -406,8 +453,10 @@ jQuery(function($, term) {
         height: 100,
         greetings: "Welcome to\n" + logo + "\nv" + versionNum,
         // width: 450,
-        onBlur: () => {}, 
+        // onBlur: ()=>{return true}, 
         checkArity: false,
+        prompt: null,
+        // enabled: false,
         exit: false,
         prompt: function() {
         	// console.log(userPrompt)
@@ -418,7 +467,10 @@ jQuery(function($, term) {
 
         	// set this.helpText to parsed json of 
         },
-        onCommandNotFound: a => {sendMsg(a)},
+        onCommandNotFound: a => {
+        	terminal.pause();
+        	sendMsg(a)
+        },
       
     });
 });

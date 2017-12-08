@@ -143,11 +143,15 @@ func cmdTeam(p *Player, args []string, c string) Message {
 	}
 
 	err := gm.assignPlayerToTeam(p, teamName(args[0]))
-
 	if err != nil {
 		return psError(err)
 	}
 
+	p.outgoing <- Message{
+		Type:   "teamState",
+		Sender: "server",
+		Data:   args[0],
+	}
 	return psSuccess("You're on the " + args[0] + " team")
 }
 
@@ -202,13 +206,9 @@ func cmdConnect(p *Player, args []string, c string) Message {
 		return psError(errors.New("Join a team first"))
 	}
 
-	// if len(args) < 1 {
-	// 	return psError(errors.New("Expected 1 argument, received 0"))
-	// }
-
 	if len(args) == 0 {
 		if p.Route != nil {
-			return psSuccess(fmt.Sprintf("Connected to node %d, node %d connects to %v", p.Route.Endpoint.ID, p.Route.Endpoint.ID, p.Route.Endpoint.Connections))
+			return psSuccess(fmt.Sprintf("You're connected to node %d which connects to %v", p.Route.Endpoint.ID, p.Route.Endpoint.Connections))
 		}
 		return psError(errors.New("No connection, provide a nodeID argument to connect"))
 	}
@@ -218,6 +218,7 @@ func cmdConnect(p *Player, args []string, c string) Message {
 		return psError(err)
 	}
 
+	// break any pre-existing connection before connecting elsewhere
 	route, err := gm.tryConnectPlayerToNode(p, targetNode)
 	if err != nil {
 		return psError(err)
@@ -275,6 +276,13 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	// fix this TODO
 	_ = gm.POEs[p.ID].addModule(newModule(p, ChallengeResponse{}, p.language), 0)
 
+	for player := range p.Team.players {
+		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
+	}
+
+	// TODO connect players on POE set. that means we have to create the module before each player's POE gets set...
+	// which is happening right now as a result of setTeamPoe
+
 	gm.broadcastState()
 	return psSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.Team.Name, newPOE))
 }
@@ -303,6 +311,10 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	// TODO handle compiler error
 	if playerCode == "" {
 		return psError(errors.New("No code submitted"))
+	}
+
+	if p.stdin == "" {
+		p.stdin = "default stdin"
 	}
 
 	// passed error checks on args
@@ -336,21 +348,19 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	p.slotNum = slotNum
 	pSlot := p.slot()
 	// if the slot has a module, player's language is set to that module's
+
+	langLock := false
 	if pSlot.module != nil {
+		langLock = true
 		p.setLanguage(pSlot.module.language)
 	}
 
-	// build buffer from language boilerplate and test sampleIO
-	// langDetails := gm.languages[p.language]
-	// boilerplate := langDetails.Boilerplate
-	// comment := langDetails.CommentPrefix
-	// sampleIO := pSlot.challenge.SampleIO
-	// description := pSlot.challenge.Description
-
-	// buffer := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s",comment, description, comment, sampleIO)
-	p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
-
-	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, Working in: %s", slotNum, pSlot.forProbe(), p.language))
+	if langLock {
+		// TODO add this message to codebox
+		p.outgoing <- psSuccess(fmt.Sprintf("Attached to slot %d: %v, details loaded to codebox", slotNum, pSlot.forProbe()))
+		return psAlert(fmt.Sprintf("SOLUTION MUST BE IN %v", pSlot.module.language))
+	}
+	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, details loaded to codebox", slotNum, pSlot.forProbe()))
 }
 
 func boilerPlateFor(p *Player) string {
