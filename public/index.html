@@ -37,6 +37,7 @@
 		order:0;
 		flex-grow:1;
 		background-color: beige;
+		overflow-y: auto;
 	}
 
 	#editor {
@@ -45,22 +46,25 @@
 		background-color: lightgrey;
 	}
 
+    /* TODO resizable terminal */
 	#terminal {
+		display:flex;
+		flex-direction: column;
 		order:1;
-		background-color:black;
+		flex-grow:5;
+	}
+
+	#term-component {
 		flex-grow:2;
+		height: 100%;
+		width: 100%;
 	}
 
 	#team-flag {
-		position:absolute;
 		width:100%;
-		height:15px;
-/*		bottom:0;
-		right:0;
-		top:700;
-		right:700;
-		background-color: green
-*/	}
+		height:8px;
+		background-color: black
+	}
 
 	.terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt {
 	    font-size: 18px;
@@ -114,10 +118,13 @@
 
 <div id="main-col">
 	<div id="main-row">
-		<div id="graph"><div id="team-flag"></div></div>
+		<div id="graph"></div>
 		<div id="editor"></div>
 	</div>
-	<div id="terminal"></div>
+	<div id="terminal">
+		<div id="team-flag"></div>
+		<div id="term-component"></div>
+	</div>
 </div>
 
 
@@ -254,11 +261,18 @@ function parseServerMessages(e) {
 	switch (msg.sender) {
 		case "pseudoServer":
 			
+			if (msg.type == "confirmation") {
+				terminal.read(msg.data, (d) => {
+					sendMsg(d)
+				})
+				break
+			}
 			// write to terminal
-			terminal.echo(msg.type + " " + msg.data)			
+			let txt = msg.type + " " + msg.data
+			txt = txt.trim()
+			terminal.echo(txt + "\n")			
 			// inelegant trimming of whitespace when msg.type is blank TODO
-			msg.type == "" ? console.log(msg.data)
-						   : console.log(msg.type, msg.data)
+			// txt = (msg.type == "" ? msg.data : msg.type + " " + msg.data)
 			break
 
 		case "server":
@@ -276,12 +290,7 @@ function parseServerMessages(e) {
 					break
 
 				case "promptState":
-					console.log("promptState")
-					// how to sync this correctly... ?
-					// userPrompt = msg.data
 					terminal.set_prompt(msg.data)
-					terminal.resume()
-					// setTimeout(()=>{terminal.resume()}, 100)
 					break
 				
 				case "teamState":
@@ -364,7 +373,7 @@ const codeCmds = [
 //jquery terminal stuff
 jQuery(function($, term) {
 	terminal = term;
-    $('#terminal').terminal({
+    $('#term-component').terminal({
     	// editor font size adjust
     	// editor theme change (w/ list) TODO
     	help: function(cmd) {
@@ -380,7 +389,6 @@ jQuery(function($, term) {
 				}
     		}
     	},
-
         swap: function(a) {
         	switch (a) {
         		case "main":
@@ -452,11 +460,8 @@ jQuery(function($, term) {
     	fontSize:40,
         height: 100,
         greetings: "Welcome to\n" + logo + "\nv" + versionNum,
-        // width: 450,
-        // onBlur: ()=>{return true}, 
         checkArity: false,
-        prompt: null,
-        // enabled: false,
+        prompt: "",
         exit: false,
         prompt: function() {
         	// console.log(userPrompt)
@@ -468,7 +473,6 @@ jQuery(function($, term) {
         	// set this.helpText to parsed json of 
         },
         onCommandNotFound: a => {
-        	terminal.pause();
         	sendMsg(a)
         },
       
