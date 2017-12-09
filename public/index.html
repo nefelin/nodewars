@@ -133,30 +133,33 @@
 <script>
 'use strict';
 
-let focus = true
+
+// focus switching shortcut
+let focus = "terminal"
 $(document).keypress("`",function(e) {
 	if(e.ctrlKey){
-		
-		focus = !focus
-		// alert("key press" + focus+ "??")
 		switch (focus) {
-			case true:
-				console.log("termFocus")
+			case "editor":
 				terminal.focus()
+				focus = "terminal"
 				break
-			case false:
-				console.log("editFocus")
-				// terminal.command_line.set('')
-				// setTimeout(() => {
-				    // terminal.disable();
-				    terminal.focus(false)
-				    editor.focus();
-				// }, 100);
-				// editor.focus()
+			case "terminal":
+			    terminal.focus(false)
+			    editor.focus();
+			    focus="editor"
 				break
 		}
 	  }
 });
+$("#term-component").focusin(()=>{focus="terminal"})
+$("#editor").focusin(()=>{focus="editor"})
+
+// shortcut to make
+// $(document).keypress("m",function(e) {
+// 	if(e.ctrlKey){
+// 		sendMsg("make")
+// 	}
+// })
 
 
 var editor = ace.edit("editor");
@@ -429,15 +432,8 @@ jQuery(function($, term) {
         },
 
         ed: function() {
-        	// terminal always grabs focus
-        	setTimeout(() => {
-				    this.disable();
-				    // this.focus(false)
-	            	editor.focus()
-
-				}, 100);
-        	// this.focus(false)
-        	console.log('focus')
+        	this.focus(false)
+        	editor.focus()
         },
 
         vim: function(a) {
