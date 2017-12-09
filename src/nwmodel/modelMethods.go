@@ -594,6 +594,46 @@ func (m *nodeMap) nodesTouch(n1, n2 *node) bool {
 	return false
 }
 
+type searchField struct {
+	unchecked map[*node]bool
+	dist      map[*node]int
+	prev      map[*node]*node
+}
+
+func (m *nodeMap) newSearchField(t *team, source *node) searchField {
+	retField := searchField{
+		unchecked: make(map[*node]bool), // TODO this should be a priority queue for efficiency
+		dist:      make(map[*node]int),
+		prev:      make(map[*node]*node),
+	}
+
+	seen := make(map[*node]bool)
+	tocheck := make([]*node, 1)
+	tocheck[0] = source
+
+	for len(tocheck) > 0 {
+		thisNode := tocheck[0]
+		tocheck = tocheck[1:]
+
+		// log.Printf("this: %v", thisNode)
+		if thisNode.allowsRoutingFor(t) {
+			retField.unchecked[thisNode] = true
+			retField.dist[thisNode] = 1000
+			seen[thisNode] = true
+			for _, nodeID := range thisNode.Connections {
+				// log.Printf("nodeid: %v", nodeID)
+				if !seen[m.Nodes[nodeID]] {
+					tocheck = append(tocheck, m.Nodes[nodeID])
+
+				}
+				// log.Printf("tocheck %v", tocheck)
+			}
+		}
+	}
+
+	return retField
+}
+
 // routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find node path
 // TODO get code review on this. I think I'm maybe not getting optimal route
 func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
@@ -606,61 +646,65 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 			return route
 		}
 
-		unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
-		dist := make(map[*node]int)
-		prev := make(map[*node]*node)
+		nodePool := m.newSearchField(p.Team, source)
 
-		seen := make(map[*node]bool)
-		tocheck := make([]*node, 1)
-		tocheck[0] = source
-		for len(tocheck) > 0 {
-			thisNode := tocheck[0]
-			tocheck = tocheck[1:]
+		// unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
+		// dist := make(map[*node]int)
+		// prev := make(map[*node]*node)
 
-			// log.Printf("this: %v", thisNode)
-			if thisNode.allowsRoutingFor(p.Team) {
-				unchecked[thisNode] = true
-				dist[thisNode] = 1000
-				seen[thisNode] = true
-				for _, nodeID := range thisNode.Connections {
-					// log.Printf("nodeid: %v", nodeID)
-					if !seen[m.Nodes[nodeID]] {
-						tocheck = append(tocheck, m.Nodes[nodeID])
+		// seen := make(map[*node]bool)
+		// tocheck := make([]*node, 1)
+		// tocheck[0] = source
 
-					}
-					// log.Printf("tocheck %v", tocheck)
-				}
-			}
-		}
+		// for len(tocheck) > 0 {
+		// 	thisNode := tocheck[0]
+		// 	tocheck = tocheck[1:]
+
+		// 	// log.Printf("this: %v", thisNode)
+		// 	if thisNode.allowsRoutingFor(p.Team) {
+		// 		unchecked[thisNode] = true
+		// 		dist[thisNode] = 1000
+		// 		seen[thisNode] = true
+		// 		for _, nodeID := range thisNode.Connections {
+		// 			// log.Printf("nodeid: %v", nodeID)
+		// 			if !seen[m.Nodes[nodeID]] {
+		// 				tocheck = append(tocheck, m.Nodes[nodeID])
+
+		// 			}
+		// 			// log.Printf("tocheck %v", tocheck)
+		// 		}
+		// 	}
+		// }
 
 		// log.Printf("unchecked %v", unchecked)
 
-		dist[source] = 0
+		nodePool.dist[source] = 0
 
-		for len(unchecked) > 0 {
-			thisNode := getBestNode(unchecked, dist)
+		for len(nodePool.unchecked) > 0 {
+			thisNode := getBestNode(nodePool.unchecked, nodePool.dist)
 
-			delete(unchecked, thisNode)
+			delete(nodePool.unchecked, thisNode)
 
 			if m.nodesTouch(thisNode, target) {
-				prev[target] = thisNode
-				route := constructPath(prev, target)
+				nodePool.prev[target] = thisNode
+				route := constructPath(nodePool.prev, target)
 				// log.Println("Found target!")
 				return route
 			}
 
 			for _, cNode := range m.nodesConnections(thisNode) {
 				// TODO refactor to take least risky routes by weighing against vulnerability to enemy connection
-				alt := dist[thisNode] + 1
-				if alt < dist[cNode] {
-					dist[cNode] = alt
-					prev[cNode] = thisNode
+				alt := nodePool.dist[thisNode] + 1
+				if alt < nodePool.dist[cNode] {
+					nodePool.dist[cNode] = alt
+					nodePool.prev[cNode] = thisNode
 				}
 			}
 		}
-	} else {
-		// log.Println("POE Blocked")
 	}
+	//else {
+	// log.Println("POE Blocked")
+	//}
 	// log.Println("No possible route")
 	return nil
 }
