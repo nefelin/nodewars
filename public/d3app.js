@@ -30,7 +30,7 @@ function reveal() {
 function svgInit() {
 
 	svg = d3.select('#graph')
-		    .style("border", "1px solid black")
+		    .style("border-right", "1px solid black")
 		    // .attr('width', width)
 		    // .attr('height', height)
 		    .append('svg')

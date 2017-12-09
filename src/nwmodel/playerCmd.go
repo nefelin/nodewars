@@ -358,10 +358,10 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	// passed checks, set player slot to target
 	p.slotNum = slotNum
 	pSlot := p.slot()
-	// if the slot has a module, player's language is set to that module's
 
+	// if the slot has an enemy module, player's language is set to that module's
 	langLock := false
-	if pSlot.module != nil {
+	if pSlot.module != nil && pSlot.module.Team != p.Team {
 		langLock = true
 		p.setLanguage(pSlot.module.language)
 	}
@@ -430,32 +430,32 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 	if slot.module != nil {
 		// in case we're refactoring a friendly module
 		if slot.module.Team == p.Team {
-			newMod := newModule(p, response, p.language)
-			err := p.Route.Endpoint.addModule(newMod, p.slotNum)
-			if err != nil {
-				return psError(err)
-			}
+
+			slot.module.Health = newModHealth
+			slot.module.language = p.language
+
 			gm.broadcastState()
 			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
 			return psSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.module.Health, slot.module.MaxHealth, slot.module.language))
-		} else {
-			// hostile module
-			switch {
-			case newModHealth < slot.module.Health:
-				return psError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth))
-
-			case newModHealth == slot.module.Health:
-				return psAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
-
-			case newModHealth > slot.module.Health:
-				oldTeam := slot.module.Team
-				slot.module.Team = p.Team
-				slot.module.Health = newModHealth
-				gm.broadcastState()
-				gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
-				return psSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
-			}
 		}
+
+		// hostile module
+		switch {
+		case newModHealth < slot.module.Health:
+			return psError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth))
+
+		case newModHealth == slot.module.Health:
+			return psAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
+
+		case newModHealth > slot.module.Health:
+			oldTeam := slot.module.Team
+			slot.module.Team = p.Team
+			slot.module.Health = newModHealth
+			gm.broadcastState()
+			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
+			return psSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
+		}
+
 	}
 	// slot is empty, simply install...
 	newMod := newModule(p, response, p.language)

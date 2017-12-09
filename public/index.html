@@ -6,6 +6,7 @@
 	<script src="libs/d3.js"></script>
 	<script src="libs/jquery.terminal/js/jquery-1.7.1.min.js"></script>
     <script src="libs/jquery.terminal/js/jquery.terminal.min.js"></script>
+    <script src="https://rawgit.com/RickStrahl/jquery-resizable/master/src/jquery-resizable.js"></script>
     <link href="libs/jquery.terminal/css/jquery.terminal.css" rel="stylesheet"/>
     <script src="libs/ace-builds/src/ace.js" type="text/javascript" charset="utf-8">
 </script>
@@ -20,15 +21,15 @@
 		right:0;
 
 		display:flex;
-		flex-direction: column;
+		flex-direction: column-reverse;
 		flex-wrap: nowrap;
 	}
 
 	#main-row {
 		display:flex;
-
+		flex-grow: 10;
 		order:0;
-		flex-grow:7;
+		flex:1 1 auto;
 		flex-direction: row;
 		flex-wrap: nowrap;
 	}
@@ -46,24 +47,35 @@
 		background-color: lightgrey;
 	}
 
-    /* TODO resizable terminal */
-	#terminal {
-		display:flex;
-		flex-direction: column;
-		order:1;
-		flex-grow:5;
+	#splitter-horizontal {
+		width:100%;
+		height:12px;
+		background: url(https://raw.githubusercontent.com/RickStrahl/jquery-resizable/master/assets/vsizegrip.png) center center no-repeat #535353;
+		cursor: row-resize;
 	}
-
-	#term-component {
-		flex-grow:2;
-		height: 100%;
-		width: 100%;
+    /* TODO resizable terminal */
+	#term-column {
+		border: 2px solid red;
+		display: flex;
+		flex: 0 0 auto;
+		flex-direction: column;
+		order:3;
+		/*flex-grow:1;*/
+		height: 200px;
 	}
 
 	#team-flag {
+		order:1;
 		width:100%;
 		height:8px;
 		background-color: black
+	}
+
+	#terminal {
+		order:0;
+		flex-grow:2;
+		height: 100%;
+		width: 100%;
 	}
 
 	.terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt {
@@ -121,9 +133,10 @@
 		<div id="graph"></div>
 		<div id="editor"></div>
 	</div>
-	<div id="terminal">
+	<div id="splitter-horizontal"></div>
+	<div id="term-column">
 		<div id="team-flag"></div>
-		<div id="term-component"></div>
+		<div id="terminal"></div>
 	</div>
 </div>
 
@@ -133,6 +146,11 @@
 <script>
 'use strict';
 
+// ui resize stuff
+$("#term-column").resizable({
+   handleSelector: "#splitter-horizontal",
+   resizeWidth: false
+ });
 
 // focus switching shortcut
 let focus = "terminal"
@@ -151,7 +169,7 @@ $(document).keypress("`",function(e) {
 		}
 	  }
 });
-$("#term-component").focusin(()=>{focus="terminal"})
+$("#terminal").focusin(()=>{focus="terminal"})
 $("#editor").focusin(()=>{focus="editor"})
 
 // shortcut to make
@@ -174,8 +192,8 @@ function swapMain() {
 }
 
 function swapTerm() {
-	$("#main-row").css("order", +$("#main-row").css("order") ? "0" : "1")
-	$("#terminal").css("order", +$("#terminal").css("order") ? "0" : "1")
+	$("#main-row").css("order", + $("#main-row").css("order") ? "0" : "1")
+	$("#term-column").css("order", + $("#term-column").css("order") ? "0" : "1")
 }
 
 const versionNum = '0.0.0.1';
@@ -377,7 +395,7 @@ const codeCmds = [
 //jquery terminal stuff
 jQuery(function($, term) {
 	terminal = term;
-    $('#term-component').terminal({
+    $('#terminal').terminal({
     	// editor font size adjust
     	// editor theme change (w/ list) TODO
     	help: function(cmd) {
