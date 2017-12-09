@@ -407,12 +407,13 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 		return psError(errors.New("Not attached to slot"))
 	}
 
-	if slot.isFull() {
-		return psError(errors.New("Slot is not empty"))
+	// enforce module language
+	if slot.module != nil && slot.module.Team != p.Team && slot.module.language != p.language {
+		psError(fmt.Errorf("This module is written in %s, your code must be written in %s", slot.module.language, slot.module.language))
 	}
 
 	// passed error checks on args
-	p.outgoing <- psBegin("Making module...")
+	p.outgoing <- psBegin("Compiling...")
 
 	response := submitTest(slot.challenge.ID, p.language, playerCode)
 
@@ -422,24 +423,49 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 
 	newModHealth := response.passed()
 
-	log.Printf("response to submitted test: %v", response)
-	var newMod *module
-	if newModHealth > 0 {
-		newMod = newModule(p, response, p.language)
-
-		err := p.Route.Endpoint.addModule(newMod, p.slotNum)
-		if err != nil {
-			return psError(err)
-		}
-
-		gm.broadcastState()
-		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
-		return psSuccess(fmt.Sprintf("Module constructed\nHealth: %d/%d", newMod.Health, newMod.MaxHealth))
-
+	if newModHealth == 0 {
+		return psError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
 	}
 
-	return psError(fmt.Errorf("Module too weak to install: %d/%d", response.passed(), len(response.PassFail)))
+	if slot.module != nil {
+		// in case we're refactoring a friendly module
+		if slot.module.Team == p.Team {
+			newMod := newModule(p, response, p.language)
+			err := p.Route.Endpoint.addModule(newMod, p.slotNum)
+			if err != nil {
+				return psError(err)
+			}
+			gm.broadcastState()
+			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
+			return psSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.module.Health, slot.module.MaxHealth, slot.module.language))
+		} else {
+			// hostile module
+			switch {
+			case newModHealth < slot.module.Health:
+				return psError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth))
 
+			case newModHealth == slot.module.Health:
+				return psAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
+
+			case newModHealth > slot.module.Health:
+				oldTeam := slot.module.Team
+				slot.module.Team = p.Team
+				slot.module.Health = newModHealth
+				gm.broadcastState()
+				gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
+				return psSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
+			}
+		}
+	}
+	// slot is empty, simply install...
+	newMod := newModule(p, response, p.language)
+	err := p.Route.Endpoint.addModule(newMod, p.slotNum)
+	if err != nil {
+		return psError(err)
+	}
+	gm.broadcastState()
+	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
+	return psSuccess(fmt.Sprintf("Module constructed in [%s], Healht: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
 
 func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
@@ -509,69 +535,6 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 	))
 
 }
-
-// func cmdRefac(p *Player, args []string, playerCode string) Message {
-
-// 	if playerCode == "" {
-// 		return psError(errors.New("No code submitted"))
-// 	}
-
-// 	slot := p.slot()
-
-// 	if slot == nil {
-// 		return psError(errors.New("Not attached to slot"))
-// 	}
-
-// 	if !slot.isFull() {
-// 		return psError(errors.New("Slot is empty"))
-// 	}
-
-// 	if slot.module.Health == slot.module.MaxHealth {
-// 		return psError(errors.New("Cannot refactor completed module, you can try to remove (rm)741"))
-// 	}
-
-// 	// All checks passed:
-// 	// passed error checks on args
-// 	p.outgoing <- psBegin("Refactoring module...")
-
-// 	response := submitTest(slot.challenge.ID, p.language, playerCode)
-
-// 	if response.Message.Type == "error" {
-// 		return psError(errors.New(response.Message.Data))
-// 	}
-
-// 	newModHealth := response.passed()
-
-// 	log.Printf("response to submitted refactor: %v", response)
-
-// 	if newModHealth > slot.module.Health {
-
-// 		// who owns module before refactor:
-// 		log.Printf("refac slot: %v", slot)
-// 		oldTeam := slot.module.Team
-// 		var retMsg Message
-
-// 		slot.module.Health = newModHealth
-// 		slot.module.Team = p.Team
-
-// 		// if the module changed hands...
-// 		if oldTeam != p.Team {
-// 			p.Route.Endpoint.evalTrafficForTeam(oldTeam)
-// 			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
-// 			retMsg = psSuccess(fmt.Sprintf("Module refactored to (%v) with health %d/%d", slot.module.Team.Name, slot.module.Health, slot.module.MaxHealth))
-// 		} else {
-// 			retMsg = psSuccess(fmt.Sprintf("Module refactored with health %d/%d", slot.module.Health, slot.module.MaxHealth))
-// 		}
-
-// 		gm.broadcastState()
-// 		return retMsg
-// 	}
-
-// 	return psError(fmt.Errorf(
-// 		"Solution too weak: %d/%d, need %d/%d to refactor",
-// 		response.passed(), len(response.PassFail), slot.module.Health+1, slot.module.MaxHealth,
-// 	))
-// }
 
 func cmdLoadMod(p *Player, args []string, c string) Message {
 	return Message{}

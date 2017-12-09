@@ -261,6 +261,7 @@ function parseServerMessages(e) {
 	switch (msg.sender) {
 		case "pseudoServer":
 			
+			// if server asks for confirmation, pose a question to user and send the response... 
 			if (msg.type == "confirmation") {
 				terminal.read(msg.data, (d) => {
 					sendMsg(d)
@@ -269,10 +270,10 @@ function parseServerMessages(e) {
 			}
 			// write to terminal
 			let txt = msg.type + " " + msg.data
+			// sometimes msg.type is blank, so trim
 			txt = txt.trim()
+			// trim lost us our nice formatting, so add a newline
 			terminal.echo(txt + "\n")			
-			// inelegant trimming of whitespace when msg.type is blank TODO
-			// txt = (msg.type == "" ? msg.data : msg.type + " " + msg.data)
 			break
 
 		case "server":
