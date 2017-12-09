@@ -44,7 +44,7 @@ var msgNoConnection = Message{
 	Data:   "No connection",
 }
 
-func psConfirm(p *Player, m string) string {
+func psPrompt(p *Player, m string) string {
 	question := Message{
 		Type:   confirmStr,
 		Sender: pseudoStr,
