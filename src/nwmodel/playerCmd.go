@@ -43,11 +43,12 @@ var msgMap = map[string]playerCommand{
 
 	"test": cmdTestCode,
 
-	"rm": cmdRemoveModule,
+	"rm":     cmdRemoveModule,
+	"remove": cmdRemoveModule,
 
-	"rf":    cmdRefac,
-	"ref":   cmdRefac,
-	"refac": cmdRefac,
+	// "rf":    cmdRefac,
+	// "ref":   cmdRefac,
+	// "refac": cmdRefac,
 
 	"at":     cmdAttach,
 	"att":    cmdAttach,
@@ -152,6 +153,16 @@ func cmdTeam(p *Player, args []string, c string) Message {
 		Sender: "server",
 		Data:   args[0],
 	}
+
+	if p.Team.poe != nil {
+		log.Printf("player joined team, tryin to log into %v", p.Team.poe.ID)
+		_, err = gm.tryConnectPlayerToNode(p, p.Team.poe.ID)
+		if err != nil {
+			log.Println(err)
+		}
+		gm.broadcastState()
+	}
+
 	return psSuccess("You're on the " + args[0] + " team")
 }
 
@@ -180,7 +191,7 @@ func cmdListLanguages(p *Player, args []string, c string) Message {
 		msgContent += k + "\n"
 	}
 
-	return psSuccess(msgContent)
+	return psMessage(msgContent)
 }
 
 func cmdLoadBoilerplate(p *Player, args []string, c string) Message {
@@ -254,7 +265,7 @@ func cmdLs(p *Player, args []string, c string) Message {
 	if p.Route == nil {
 		return msgNoConnection
 	}
-	return psSuccess(p.Route.Endpoint.forMsg())
+	return psMessage(p.Route.Endpoint.forMsg())
 }
 
 func cmdSetPOE(p *Player, args []string, c string) Message {
@@ -355,12 +366,14 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 		p.setLanguage(pSlot.module.language)
 	}
 
-	if langLock {
+	// Send slot info to edit buffer
+	p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
+	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v \nchallenge details loaded to codebox", slotNum, pSlot.forMsg())
+	if langLock && p.Team != pSlot.module.Team {
 		// TODO add this message to codebox
-		p.outgoing <- psSuccess(fmt.Sprintf("Attached to slot %d: %v, details loaded to codebox", slotNum, pSlot.forProbe()))
-		return psAlert(fmt.Sprintf("SOLUTION MUST BE IN %v", pSlot.module.language))
+		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.module.language)
 	}
-	return psSuccess(fmt.Sprintf("Attached to slot %d: %v, details loaded to codebox", slotNum, pSlot.forProbe()))
+	return psSuccess(retText)
 }
 
 func boilerPlateFor(p *Player) string {
@@ -443,13 +456,17 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 
 	// if we're removing a friendly module, just do it:
 	if p.Team == slot.module.Team {
-		err := p.Route.Endpoint.removeModule(p.slotNum)
-		if err != nil {
-			return psError(err)
-		}
+		resp := psConfirm(p, "Friendly module, confirm removal?")
+		if resp {
+			err := p.Route.Endpoint.removeModule(p.slotNum)
+			if err != nil {
+				return psError(err)
+			}
 
-		gm.broadcastState()
-		return psSuccess("Module removed")
+			gm.broadcastState()
+			return psSuccess("Module removed")
+		}
+		return psError(errors.New("removal aborted"))
 	}
 
 	if playerCode == "" {
@@ -493,68 +510,68 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 
 }
 
-func cmdRefac(p *Player, args []string, playerCode string) Message {
+// func cmdRefac(p *Player, args []string, playerCode string) Message {
 
-	if playerCode == "" {
-		return psError(errors.New("No code submitted"))
-	}
+// 	if playerCode == "" {
+// 		return psError(errors.New("No code submitted"))
+// 	}
 
-	slot := p.slot()
+// 	slot := p.slot()
 
-	if slot == nil {
-		return psError(errors.New("Not attached to slot"))
-	}
+// 	if slot == nil {
+// 		return psError(errors.New("Not attached to slot"))
+// 	}
 
-	if !slot.isFull() {
-		return psError(errors.New("Slot is empty"))
-	}
+// 	if !slot.isFull() {
+// 		return psError(errors.New("Slot is empty"))
+// 	}
 
-	if slot.module.Health == slot.module.MaxHealth {
-		return psError(errors.New("Cannot refactor completed module, you can try to remove (rm)741"))
-	}
+// 	if slot.module.Health == slot.module.MaxHealth {
+// 		return psError(errors.New("Cannot refactor completed module, you can try to remove (rm)741"))
+// 	}
 
-	// All checks passed:
-	// passed error checks on args
-	p.outgoing <- psBegin("Refactoring module...")
+// 	// All checks passed:
+// 	// passed error checks on args
+// 	p.outgoing <- psBegin("Refactoring module...")
 
-	response := submitTest(slot.challenge.ID, p.language, playerCode)
+// 	response := submitTest(slot.challenge.ID, p.language, playerCode)
 
-	if response.Message.Type == "error" {
-		return psError(errors.New(response.Message.Data))
-	}
+// 	if response.Message.Type == "error" {
+// 		return psError(errors.New(response.Message.Data))
+// 	}
 
-	newModHealth := response.passed()
+// 	newModHealth := response.passed()
 
-	log.Printf("response to submitted refactor: %v", response)
+// 	log.Printf("response to submitted refactor: %v", response)
 
-	if newModHealth > slot.module.Health {
+// 	if newModHealth > slot.module.Health {
 
-		// who owns module before refactor:
-		log.Printf("refac slot: %v", slot)
-		oldTeam := slot.module.Team
-		var retMsg Message
+// 		// who owns module before refactor:
+// 		log.Printf("refac slot: %v", slot)
+// 		oldTeam := slot.module.Team
+// 		var retMsg Message
 
-		slot.module.Health = newModHealth
-		slot.module.Team = p.Team
+// 		slot.module.Health = newModHealth
+// 		slot.module.Team = p.Team
 
-		// if the module changed hands...
-		if oldTeam != p.Team {
-			p.Route.Endpoint.evalTrafficForTeam(oldTeam)
-			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
-			retMsg = psSuccess(fmt.Sprintf("Module refactored to (%v) with health %d/%d", slot.module.Team.Name, slot.module.Health, slot.module.MaxHealth))
-		} else {
-			retMsg = psSuccess(fmt.Sprintf("Module refactored with health %d/%d", slot.module.Health, slot.module.MaxHealth))
-		}
+// 		// if the module changed hands...
+// 		if oldTeam != p.Team {
+// 			p.Route.Endpoint.evalTrafficForTeam(oldTeam)
+// 			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
+// 			retMsg = psSuccess(fmt.Sprintf("Module refactored to (%v) with health %d/%d", slot.module.Team.Name, slot.module.Health, slot.module.MaxHealth))
+// 		} else {
+// 			retMsg = psSuccess(fmt.Sprintf("Module refactored with health %d/%d", slot.module.Health, slot.module.MaxHealth))
+// 		}
 
-		gm.broadcastState()
-		return retMsg
-	}
+// 		gm.broadcastState()
+// 		return retMsg
+// 	}
 
-	return psError(fmt.Errorf(
-		"Solution too weak: %d/%d, need %d/%d to refactor",
-		response.passed(), len(response.PassFail), slot.module.Health+1, slot.module.MaxHealth,
-	))
-}
+// 	return psError(fmt.Errorf(
+// 		"Solution too weak: %d/%d, need %d/%d to refactor",
+// 		response.passed(), len(response.PassFail), slot.module.Health+1, slot.module.MaxHealth,
+// 	))
+// }
 
 func cmdLoadMod(p *Player, args []string, c string) Message {
 	return Message{}
