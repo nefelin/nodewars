@@ -367,8 +367,17 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	}
 
 	// Send slot info to edit buffer
-	p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
-	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v \nchallenge details loaded to codebox", slotNum, pSlot.forMsg())
+	challengeDetails := "\nchallenge details loaded to codebox"
+
+	resp := psPrompt(p, "Overwriting edit buffer with challenge details\nhit any key to continue, (n) to abort: ")
+	if resp != "n" && resp != "no" {
+		p.outgoing <- editStateMsg(boilerPlateFor(p) + "\n" + challengeBufferFor(p))
+	} else {
+		challengeDetails = "\n" + challengeBufferFor(p)
+	}
+
+	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v", slotNum, pSlot.forMsg())
+	retText += challengeDetails
 	if langLock && p.Team != pSlot.module.Team {
 		// TODO add this message to codebox
 		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.module.language)
@@ -378,7 +387,7 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 
 func boilerPlateFor(p *Player) string {
 	langDetails := gm.languages[p.language]
-	return langDetails.Boilerplate + "\n"
+	return langDetails.Boilerplate
 }
 
 func challengeBufferFor(p *Player) string {
@@ -482,8 +491,8 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 
 	// if we're removing a friendly module, just do it:
 	if p.Team == slot.module.Team {
-		resp := psConfirm(p, "Friendly module, confirm removal?")
-		if resp {
+		resp := psPrompt(p, "Friendly module, confirm removal? (y/n)")
+		if resp == "y" || resp == "ye" || resp == "yes" {
 			err := p.Route.Endpoint.removeModule(p.slotNum)
 			if err != nil {
 				return psError(err)
