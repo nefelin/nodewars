@@ -181,9 +181,9 @@ func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
 	newP := newPlayer(ws)
 
 	// add this player to our registry
-	gm.Lock()
+
 	gm.Players[newP.ID] = newP
-	gm.Unlock()
+
 	return newP
 }
 
@@ -242,9 +242,9 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	}
 
 	// mark the spot as taken
-	gm.Lock()
+
 	gm.Map.POEs[ni] = false
-	gm.Unlock()
+
 	return nil
 }
 
@@ -267,9 +267,9 @@ func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 	// if nodeID is valid
 
 	if gm.Map.nodeExists(n) {
-		gm.Lock()
+
 		gm.POEs[p.ID] = gm.Map.Nodes[n]
-		gm.Unlock()
+
 		return true
 	}
 
@@ -286,7 +286,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	}
 
 	// clean up POE
-	gm.Lock()
+
 	delete(gm.POEs, p.ID)
 
 	// Clean up route
@@ -294,7 +294,6 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 
 	// Clean up player
 	delete(gm.Players, p.ID)
-	gm.Unlock()
 
 	return nil
 }
@@ -309,9 +308,8 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 		return errors.New("team: " + tn + " is full")
 	}
 
-	gm.Lock()
 	gm.Teams[tn].addPlayer(p)
-	gm.Unlock()
+
 	return nil
 }
 
@@ -877,33 +875,33 @@ func (n node) forMsg() string {
 
 	slotList := ""
 	for i, slot := range n.slots {
-		slotList += strconv.Itoa(i) + ":" + slot.forMsg()
+		slotList += "\n" + strconv.Itoa(i) + ":" + slot.forMsg()
 	}
 
-	return fmt.Sprintf("NodeID: %v\nMemory Slots:\n%v", n.ID, slotList)
+	return fmt.Sprintf("NodeID: %v\nMemory Slots:%v", n.ID, slotList)
 }
 
 func (m modSlot) forMsg() string {
 	switch {
 	case m.module != nil:
-		return "( " + m.module.forMsg() + " )\n"
+		return "(" + m.module.forMsg() + ")"
 	default:
-		return "( -empty- )\n"
+		return "( -empty- )"
 	}
 }
 
-func (m modSlot) forProbe() string {
-	var header string
-	switch {
-	case m.module != nil:
-		header = "( " + m.module.forMsg() + " )\n"
-	default:
-		header = "( -empty- )\n"
-	}
-	task := "Task:\n" + m.challenge.Description
-	return header + task
+// func (m modSlot) forProbe() string {
+// 	var header string
+// 	switch {
+// 	case m.module != nil:
+// 		header = "( " + m.module.forMsg() + " )\n"
+// 	default:
+// 		header = "( -empty- )\n"
+// 	}
+// 	// task := "Task:\n" + m.challenge.Description
+// 	return header //+ task
 
-}
+// }
 
 func (r route) forMsg() string {
 	nodeCount := len(r.Nodes)
