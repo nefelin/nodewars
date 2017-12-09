@@ -35,11 +35,6 @@
 		"shortDesc": "Runs editor code against challenge in current slot. Creates a module with health equal to the number of tests passed. If zero tests pass, make fails. Requires attachment to empty slot."
 	},
 	{
-		"keywords": ["refac","ref"],
-		"usage": "refac",
-		"shortDesc": "Executes editor code against challenge in current slot. In order to be successful, the refactored code must pass at least one more test than the pre-existing code. Player takes ownership of enemy modules if successful. Friendly module is improved if successul. Requires attachment to occupied slot."
-	},
-	{
 		"keywords": ["remove", "rm"],
 		"usage": "remove",
 		"shortDesc": "Executes editor code against challenge in current slot. Removes enemy module if successful. Friendly modules are removed automatically. Requires attachment to occupied slot."
