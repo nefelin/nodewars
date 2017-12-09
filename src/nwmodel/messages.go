@@ -20,7 +20,7 @@ const (
 	successStr = "success:"
 	beginStr   = "begin:"
 	confirmStr = "confirmation"
-	yesnoStr   = "(y/n)"
+	// yesnoStr   = "(y/n)"
 
 	editStateStr   = "editorState"
 	promptStateStr = "promptState"
@@ -44,11 +44,11 @@ var msgNoConnection = Message{
 	Data:   "No connection",
 }
 
-func psConfirm(p *Player, m string) bool {
+func psConfirm(p *Player, m string) string {
 	question := Message{
 		Type:   confirmStr,
 		Sender: pseudoStr,
-		Data:   m + " " + yesnoStr,
+		Data:   m,
 	}
 
 	// pose question
@@ -60,14 +60,10 @@ func psConfirm(p *Player, m string) bool {
 	err := p.socket.ReadJSON(&res)
 	if err != nil {
 		log.Printf("error: %v", err)
-		return false
+		return "error"
 	}
 
-	yesno := strings.ToLower(res.Data)
-	if yesno == "y" || yesno == "ye" || yesno == "yes" {
-		return true
-	}
-	return false
+	return strings.ToLower(res.Data)
 }
 
 func psError(e error) Message {
