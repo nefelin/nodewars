@@ -1,6 +1,10 @@
 package nwmodel
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+	"strings"
+)
 
 // Message is our basic message struct
 type Message struct {
@@ -15,6 +19,8 @@ const (
 	errorStr   = "error:"
 	successStr = "success:"
 	beginStr   = "begin:"
+	confirmStr = "confirmation"
+	yesnoStr   = "(y/n)"
 
 	editStateStr   = "editorState"
 	promptStateStr = "promptState"
@@ -22,6 +28,8 @@ const (
 	pseudoStr    = "pseudoServer"
 	serverStr    = "server"
 	noConnectStr = "No connection"
+
+	terminatorStr = "\n"
 )
 
 var msgNoTeam = Message{
@@ -36,6 +44,32 @@ var msgNoConnection = Message{
 	Data:   "No connection",
 }
 
+func psConfirm(p *Player, m string) bool {
+	question := Message{
+		Type:   confirmStr,
+		Sender: pseudoStr,
+		Data:   m + " " + yesnoStr,
+	}
+
+	// pose question
+	p.outgoing <- question
+
+	// wait for response
+	var res Message
+
+	err := p.socket.ReadJSON(&res)
+	if err != nil {
+		log.Printf("error: %v", err)
+		return false
+	}
+
+	yesno := strings.ToLower(res.Data)
+	if yesno == "y" || yesno == "ye" || yesno == "yes" {
+		return true
+	}
+	return false
+}
+
 func psError(e error) Message {
 	return Message{
 		Type:   errorStr,
@@ -48,14 +82,14 @@ func psUnknown(cmd string) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   "Unknown command '" + cmd + "'",
+		Data:   "Unknown command '" + cmd + "'" + terminatorStr,
 	}
 }
 
 func psMessage(msg string) Message {
 	return Message{
 		Sender: pseudoStr,
-		Data:   msg,
+		Data:   msg + terminatorStr,
 	}
 }
 
@@ -63,7 +97,7 @@ func psAlert(msg string) Message {
 	return Message{
 		Type:   alertStr,
 		Sender: pseudoStr,
-		Data:   msg,
+		Data:   msg + terminatorStr,
 	}
 }
 
@@ -71,7 +105,7 @@ func psSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,
 		Sender: pseudoStr,
-		Data:   msg,
+		Data:   msg + terminatorStr,
 	}
 }
 
@@ -79,7 +113,7 @@ func psBegin(msg string) Message {
 	return Message{
 		Type:   beginStr,
 		Sender: pseudoStr,
-		Data:   msg,
+		Data:   msg + terminatorStr,
 	}
 }
 
