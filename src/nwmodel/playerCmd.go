@@ -346,6 +346,7 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	return psSuccess(fmt.Sprintf("Output: %v", response))
 }
 
+// TODO refactor cmdAttach for clarity and redundancy
 func cmdAttach(p *Player, args []string, playerCode string) Message {
 	slotNum, err := validateOneIntArg(args)
 	if err != nil {
@@ -368,18 +369,30 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	}
 
 	// Send slot info to edit buffer
-	challengeDetails := "\nchallenge details loaded to codebox"
+	msgPostfix := "\nchallenge details loaded to codebox"
+
+	// get language details
+	langDetails := gm.languages[p.language]
+	boilerplate := langDetails.Boilerplate
+	comment := langDetails.CommentPrefix
+	sampleIO := pSlot.challenge.SampleIO
+	description := pSlot.challenge.Description
 
 	resp := psPrompt(p, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	if resp != "n" && resp != "no" {
-		p.outgoing <- editStateMsg(boilerPlateFor(p) + "\n" + challengeBufferFor(p))
+		editMessage := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+		if langLock {
+			editMessage += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().module.language))
+		}
+
+		p.outgoing <- editStateMsg(editMessage)
 	} else {
-		challengeDetails = "\n" + challengeBufferFor(p)
+		msgPostfix = "\n" + challengeBufferFor(p)
 	}
 
 	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v", slotNum, pSlot.forMsg())
-	retText += challengeDetails
-	if langLock && p.Team != pSlot.module.Team {
+	retText += msgPostfix
+	if langLock {
 		// TODO add this message to codebox
 		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.module.language)
 	}
