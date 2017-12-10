@@ -115,15 +115,13 @@ func newRandMap(n int) *nodeMap {
 			newMap.connectNodes(i, i+1)
 		}
 
-		for j := 0; j < rand.Intn(3); j++ {
+		for j := 0; j < rand.Intn(2); j++ {
 			newMap.connectNodes(i, rand.Intn(nodeCount))
 		}
 
 	}
 
-	for _, node := range newMap.Nodes {
-		node.initSlots()
-	}
+	newMap.initAllNodes()
 
 	for len(newMap.POEs) < 2 {
 		newMap.addPoes(rand.Intn(nodeCount))
@@ -331,7 +329,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 
 	target := gm.Map.Nodes[n]
 
-	routeNodes := gm.Map.routeToNode(p, source, target)
+	routeNodes := gm.Map.routeToNode(p.Team, source, target)
 	if routeNodes != nil {
 		// log.Println("Successful Connect")
 		// log.Printf("Route to target: %v", routeNodes)
@@ -420,6 +418,11 @@ func (n *node) addConnection(m *node) {
 }
 
 func (n *node) allowsRoutingFor(t *team) bool {
+	// t == nil means we don't care...
+	if t == nil {
+		return true
+	}
+
 	for _, module := range n.Modules {
 		if module.isFriendlyTo(t) {
 			return true
@@ -503,6 +506,50 @@ func (n *node) evalTrafficForTeam(t *team) {
 // }
 
 // nodeMap methods -----------------------------------------------------------------------------
+func (m *nodeMap) initAllNodes() {
+
+	// initialize each node's slots
+	for _, node := range m.Nodes {
+		node.initSlots()
+	}
+
+	// initialize each nodes remoteness.
+	var mapDiameter float32
+	for _, node := range m.Nodes {
+		node.Remoteness = float32(m.findNodeEccentricity(node))
+		if node.Remoteness > mapDiameter {
+			mapDiameter = node.Remoteness
+		}
+		// log.Printf("Node %d, eccentricity: %d", node.ID, node.Remoteness)
+	}
+
+	for _, node := range m.Nodes {
+		node.Remoteness = node.Remoteness / mapDiameter
+		// log.Printf("Node %d, remoteness: %d", node.ID, node.Remoteness)
+	}
+
+}
+
+func (m *nodeMap) findNodeEccentricity(n *node) int {
+	// for every node, count distance to other nodes, pick the largest
+	var maxDist int
+	// var farthesNode nodeID
+	for _, node := range m.Nodes {
+
+		// don't check our starting point
+		if n != node {
+			nodePath := m.routeToNode(nil, n, node)
+			if len(nodePath) > maxDist {
+				maxDist = len(nodePath)
+				// farthestNode = node.ID
+			}
+		}
+
+	}
+	// log.Printf("Farthest node from %d: %d", n.ID, farthesNode)
+	return maxDist
+}
+
 func (m *nodeMap) openPoes() int {
 	var count int
 	for _, open := range m.POEs {
@@ -616,7 +663,8 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 		tocheck = tocheck[1:]
 
 		// log.Printf("this: %v", thisNode)
-		if thisNode.allowsRoutingFor(t) {
+		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
+		if t == nil || thisNode.allowsRoutingFor(t) {
 			retField.unchecked[thisNode] = true
 			retField.dist[thisNode] = 1000
 			seen[thisNode] = true
@@ -636,9 +684,9 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 
 // routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find node path
 // TODO get code review on this. I think I'm maybe not getting optimal route
-func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
+func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 
-	if source.allowsRoutingFor(p.Team) {
+	if source.allowsRoutingFor(t) {
 		// if we're connecting to our POE, return a route which is only our POE
 		if source == target {
 			route := make([]*node, 1)
@@ -646,8 +694,8 @@ func (m *nodeMap) routeToNode(p *Player, source, target *node) []*node {
 			return route
 		}
 
-		nodePool := m.newSearchField(p.Team, source)
-
+		nodePool := m.newSearchField(t, source)
+		// log.Printf("nodePool: %v", nodePool)
 		// unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
 		// dist := make(map[*node]int)
 		// prev := make(map[*node]*node)
@@ -836,6 +884,10 @@ func (r route) containsNode(n *node) (int, bool) {
 	return 0, false
 }
 
+func (r route) length() int {
+	return len(r.Nodes)
+}
+
 // team methods -------------------------------------------------------------------------------
 func (t team) isFull() bool {
 	if len(t.players) < t.maxSize {
@@ -912,7 +964,7 @@ func (r route) String() string {
 }
 
 func (m module) forMsg() string {
-	return fmt.Sprintf("[%s] [%d/%d] [%s] [%s]", m.Team.Name, m.Health, m.MaxHealth, m.language, m.builder)
+	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.Team.Name, m.builder, m.language, m.Health, m.MaxHealth)
 }
 
 func (n node) forMsg() string {

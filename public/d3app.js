@@ -80,11 +80,15 @@ function updateGraph (gameState) {
 		.classed("player-connected", d => d.connectedPlayers.length>0)
 		.classed("traffic", d => d.traffic.length>0)
 		.transition(t)
-		.style("fill", d => {
-			if (d.poes.length>0)
-				return d.poes[0].team.name
-			return "white"
-		})
+		// visualizing remoteness only
+		.style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})
+		// .style("fill", d => d3.rgb(220, 255*d.remoteness, 180))
+		// uncomment below to have normal gameplay
+		// .style("fill", d => {
+		// 	if (d.poes.length>0)
+		// 		return d.poes[0].team.name
+		// 	return "white"
+		// })
 
 	// update modules 
 	nodeGroups.each(function(d) {
@@ -317,6 +321,7 @@ function initGraph (nodeMap) {
         	  .attr("r", d=>radius)
         	  .attr("class", "node-main")
         	  .attr("id", d => "node-main-" + d.id)
+
 
         	// add potential poe indicators 
         	const isPotPoe = Object.keys(nodeMap.poes).indexOf(String(d.id))

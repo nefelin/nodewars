@@ -1,8 +1,6 @@
 package nwmodel
 
 import (
-	"sync"
-
 	"github.com/gorilla/websocket"
 )
 
@@ -24,7 +22,7 @@ type GameModel struct {
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
-	sync.Mutex
+	// sync.Mutex
 }
 
 type route struct {
@@ -41,8 +39,9 @@ type node struct {
 	ID          nodeID   `json:"id"` // keys and ids is redundant TODO
 	Connections []nodeID `json:"connections"`
 	// address map concurrency TODO
-	Modules map[modID]*module `json:"modules"`
-	slots   []*modSlot
+	Modules    map[modID]*module `json:"modules"`
+	slots      []*modSlot
+	Remoteness float32 `json:"remoteness"`
 }
 
 // TODO rethink I don't like that this setup exposes test information
