@@ -195,6 +195,17 @@ func (gm *GameModel) broadcastState() {
 	}
 }
 
+func (gm *GameModel) broadcastAlertFlash(color string) {
+	// TODO abstract this to messages
+	for _, player := range gm.Players {
+		player.outgoing <- Message{
+			Type:   "alertFlash",
+			Sender: serverStr,
+			Data:   color,
+		}
+	}
+}
+
 // send a pseudoServer message to all players
 func (gm *GameModel) psBroadcast(msg Message) {
 	msg.Sender = "pseudoServer"

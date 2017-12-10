@@ -475,6 +475,7 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 			slot.module.Team = p.Team
 			slot.module.Health = newModHealth
 			gm.broadcastState()
+			gm.broadcastAlertFlash(p.Team.Name)
 			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
 			return psSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
 		}
@@ -487,6 +488,7 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 		return psError(err)
 	}
 	gm.broadcastState()
+	gm.broadcastAlertFlash(p.Team.Name)
 	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
 	return psSuccess(fmt.Sprintf("Module constructed in [%s], Healht: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
@@ -560,6 +562,7 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 		}
 
 		gm.broadcastState()
+		gm.broadcastAlertFlash(p.Team.Name)
 		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.Name, p.Team.Name, oldTeamName, p.Route.Endpoint.ID)))
 		return psSuccess("Module removed")
 

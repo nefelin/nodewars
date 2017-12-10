@@ -299,6 +299,10 @@ function parseServerMessages(e) {
 
 		case "server":
 			switch(msg.type) {
+				case "alertFlash":
+					alertFlash(msg.data)
+					break
+
 				case "graphState": 
 					parseGraphState(msg)
 					
@@ -402,6 +406,10 @@ jQuery(function($, term) {
     $('#terminal').terminal({
     	// editor font size adjust
     	// editor theme change (w/ list) TODO
+    	flash: function(color){
+    		alertFlash("red")
+    	},
+
     	help: function(cmd) {
     		if (!cmd) {
     			this.echo(cmdList)

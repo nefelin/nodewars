@@ -16,7 +16,17 @@ let nodeGroups = null,
 	layout = null,
 	simulation = null
 
-// const colors = d3.scale.category10();
+function alertFlash(color) {
+	const startColor = svg.style("background-color")
+
+	svg.transition()
+		 .style("background-color", d3.hsl(color).brighter(1))
+		 .transition()
+		 .ease(d3.easeLinear)
+		 .duration(800)
+		 .style("background-color", startColor)
+
+}
 
 function reveal() {
 	// TODO don't do this after first reveal
@@ -294,8 +304,8 @@ function initGraph (nodeMap) {
             .attr("stroke", "black")
             .attr("stroke-width", strokeWidth)
 
-        if (nodeGroups)
-        	nodeGroups.exit()
+        // if (nodeGroups)
+        // 	nodeGroups.exit()
         nodeGroups = svg.selectAll(".node-group")
         	.data(nodeMap.nodes)
         	.enter()
