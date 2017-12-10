@@ -369,7 +369,7 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	// Send slot info to edit buffer
 	challengeDetails := "\nchallenge details loaded to codebox"
 
-	resp := psPrompt(p, "Overwriting edit buffer with challenge details\nhit any key to continue, (n) to abort: ")
+	resp := psPrompt(p, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	if resp != "n" && resp != "no" {
 		p.outgoing <- editStateMsg(boilerPlateFor(p) + "\n" + challengeBufferFor(p))
 	} else {
