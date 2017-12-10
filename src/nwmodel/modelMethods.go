@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -69,8 +70,10 @@ func NewNode() *node {
 
 func newNodeMap() nodeMap {
 	return nodeMap{
-		Nodes: make([]*node, 0),
-		POEs:  make(map[nodeID]bool),
+		Nodes:    make([]*node, 0),
+		POEs:     make(map[nodeID]bool),
+		diameter: 0,
+		radius:   1000,
 	}
 }
 
@@ -123,9 +126,10 @@ func newRandMap(n int) *nodeMap {
 
 	newMap.initAllNodes()
 
-	for len(newMap.POEs) < 2 {
-		newMap.addPoes(rand.Intn(nodeCount))
-	}
+	newMap.initPoes(2)
+	// for len(newMap.POEs) < 2 {
+	// 	newMap.addPoes(rand.Intn(nodeCount))
+	// }
 
 	return &newMap
 }
@@ -506,6 +510,7 @@ func (n *node) evalTrafficForTeam(t *team) {
 // }
 
 // nodeMap methods -----------------------------------------------------------------------------
+
 func (m *nodeMap) initAllNodes() {
 
 	// initialize each node's slots
@@ -514,17 +519,19 @@ func (m *nodeMap) initAllNodes() {
 	}
 
 	// initialize each nodes remoteness.
-	var mapDiameter float32
 	for _, node := range m.Nodes {
-		node.Remoteness = float32(m.findNodeEccentricity(node))
-		if node.Remoteness > mapDiameter {
-			mapDiameter = node.Remoteness
+		node.Remoteness = float64(m.findNodeEccentricity(node))
+		if node.Remoteness > m.diameter {
+			m.diameter = node.Remoteness
+		}
+		if node.Remoteness < m.radius {
+			m.radius = node.Remoteness
 		}
 		// log.Printf("Node %d, eccentricity: %d", node.ID, node.Remoteness)
 	}
 
 	for _, node := range m.Nodes {
-		node.Remoteness = node.Remoteness / mapDiameter
+		node.Remoteness = node.Remoteness / m.diameter
 		// log.Printf("Node %d, remoteness: %d", node.ID, node.Remoteness)
 	}
 
@@ -550,35 +557,14 @@ func (m *nodeMap) findNodeEccentricity(n *node) int {
 	return maxDist
 }
 
-func (m *nodeMap) openPoes() int {
-	var count int
-	for _, open := range m.POEs {
-		if open {
-			count++
-		}
-	}
-	return count
-}
-
-// func (m *nodeMap) addTeams(ts ...*team) error {
-
-// 	if len(ts) > m.openPoes() {
-// 		return fmt.Errorf("addTeams: Tried to add %d teams, only %d POEs available", len(ts), m.openPoes())
-// 	}
-
-// 	// for each team passed
-// 	for _, team := range ts {
-// 		// for each possible POE on map
-// 		for id, avail := range m.POEs {
-// 			// if it's available set the teams poe to that node and move to next team
-// 			if avail {
-// 				team.poe = m.Nodes[id]
-// 				// poe is no longer available
-// 				m.POEs[id] = false
-// 				break
-// 			}
+// func (m *nodeMap) openPoes() int {
+// 	var count int
+// 	for _, open := range m.POEs {
+// 		if open {
+// 			count++
 // 		}
 // 	}
+// 	return count
 // }
 
 func (m *nodeMap) addPoes(ns ...nodeID) {
@@ -590,6 +576,44 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 		// make an available POE for each nodeID passed
 		m.POEs[id] = true
 	}
+}
+
+// initPoes right now places poes at remotest locations, which is not idea if remoteness = value
+func (m *nodeMap) initPoes(n int) {
+	// make a map of remotesnesses to nodes
+	remMap := make(map[float64][]*node)
+	for _, node := range m.Nodes {
+		remMap[node.Remoteness] = append(remMap[node.Remoteness], node)
+	}
+
+	// create sorted list of remotenesses
+	ordRem := make([]float64, len(remMap))
+	I := 0
+	for k := range remMap {
+		ordRem[I] = k
+		I++
+	}
+
+	sort.Sort(sort.Reverse(sort.Float64Slice(ordRem)))
+
+	// check each remoteness in ascending order,
+
+	// if not, move up to the next remoteness tier
+	for i, v := range ordRem {
+		// if there're enough nodes of that remoteness, seen if we can place n poes in those remotenesses
+		if len(remMap[v]) >= n {
+			// add a poe at each node of that remoteness
+			for _, node := range remMap[v] {
+				m.addPoes(node.ID)
+			}
+			break
+		}
+		log.Printf("We have %d nodes of remoteness %v", len(remMap[ordRem[i]]), ordRem[i])
+	}
+
+	// if all else fails, assign at random
+	// only ensuring distance
+
 }
 
 func (m *nodeMap) addNodes(ns ...*node) {

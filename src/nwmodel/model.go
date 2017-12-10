@@ -31,8 +31,10 @@ type route struct {
 }
 
 type nodeMap struct {
-	Nodes []*node         `json:"nodes"`
-	POEs  map[nodeID]bool `json:"poes"`
+	Nodes    []*node         `json:"nodes"`
+	POEs     map[nodeID]bool `json:"poes"`
+	diameter float64
+	radius   float64
 }
 
 type node struct {
@@ -41,7 +43,7 @@ type node struct {
 	// address map concurrency TODO
 	Modules    map[modID]*module `json:"modules"`
 	slots      []*modSlot
-	Remoteness float32 `json:"remoteness"`
+	Remoteness float64 `json:"remoteness"`
 }
 
 // TODO rethink I don't like that this setup exposes test information
