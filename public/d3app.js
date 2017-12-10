@@ -269,8 +269,6 @@ function makeEdges(nodeMap) {
 		nodeMap.edges.push(seenEdges[edgeID])
 	}
 	// console.log("makeEdges produced:",nodeMap)
-
-
 }
 
 // initGraph creates the actual dom elements and provides necessary class tags etc
@@ -296,6 +294,8 @@ function initGraph (nodeMap) {
             .attr("stroke", "black")
             .attr("stroke-width", strokeWidth)
 
+        if (nodeGroups)
+        	nodeGroups.exit()
         nodeGroups = svg.selectAll(".node-group")
         	.data(nodeMap.nodes)
         	.enter()

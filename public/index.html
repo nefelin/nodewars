@@ -252,17 +252,17 @@ function prettifyCommand(cmd) {
 }
 
 svgInit();
-let graphInitialized = false
-function parseGraphState(newState) {
+function parseGraphState(msg) {
 
+	const newState = JSON.parse(msg.data)
 	console.log('updateGraph called with state:', newState)
 	// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
 	// let nodeMap = arrayifyNodeMap(newState.nodeMap)
 	let nodeMap = newState.map
 	// console.log("nodeMap after arrayifyNodeMap:", newState.nodeMap)
-	if (!graphInitialized) {
+	if (msg.type == "initGraphState") {
+		// console.log("initing with nodemap", nodeMap)
 		initGraph(nodeMap)
-		graphInitialized = true;
 	} 
 	updateGraph(newState)
 }
@@ -300,7 +300,11 @@ function parseServerMessages(e) {
 		case "server":
 			switch(msg.type) {
 				case "graphState": 
-					parseGraphState(JSON.parse(msg.data))
+					parseGraphState(msg)
+					
+
+				case "initGraphState": 
+					parseGraphState(msg)
 					break
 
 				case "languageState":

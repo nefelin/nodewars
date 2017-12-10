@@ -81,7 +81,9 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// send initial state
 	// log.Println("Sending initial state message to player...")
-	thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
+	// thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
+	thisPlayer.outgoing <- initStateMsgForPlayer(thisPlayer)
+
 	// Handle socket stream
 	for {
 		var msg Message
@@ -116,6 +118,22 @@ func calcStateMsgForPlayer(p *Player) Message {
 	}
 }
 
+func initStateMsgForPlayer(p *Player) Message {
+	stateMsg, err := json.Marshal(gm)
+
+	// log.Printf("stateMsg: %v", string(stateMsg))
+	if err != nil {
+		log.Println(err)
+	}
+
+	// log.Println(string(stateMsg))
+	return Message{
+		Type:   "initGraphState",
+		Sender: "server",
+		Data:   string(stateMsg),
+	}
+}
+
 // Should this do socket scrubbing on error? Is that redundant? TODO
 func outgoingRelay(p *Player) {
 	for {
@@ -144,8 +162,9 @@ func incomingHandler(msg *Message, p *Player) {
 		// TODO how do we syncronize these?
 		p.outgoing <- promptStateMsg(p.prompt())
 
-	case "stateRequest":
-		p.outgoing <- calcStateMsgForPlayer(p)
+	// case "stateRequest":
+	// 	log.Println("Received stateRequest")
+	// 	p.outgoing <- calcStateMsgForPlayer(p)
 
 	default:
 		p.outgoing <- Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}
