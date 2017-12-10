@@ -54,6 +54,7 @@ var msgMap = map[string]playerCommand{
 	"att":    cmdAttach,
 	"attach": cmdAttach,
 
+	"nm": cmdNewMap,
 	// what am I attached to? what's my task? what's my language set to?
 	// "st":   cmdStatus,
 	// "stat": cmdStatus,
@@ -475,6 +476,19 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 	gm.broadcastState()
 	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
 	return psSuccess(fmt.Sprintf("Module constructed in [%s], Healht: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
+}
+
+func cmdNewMap(p *Player, args []string, playerCode string) Message {
+	// TODO fix d3 to update...
+	nodeCount, err := validateOneIntArg(args)
+	if err != nil {
+		return psError(err)
+	}
+
+	nodeIDCount = 0
+	gm.Map = newRandMap(nodeCount)
+	gm.broadcastState()
+	return psSuccess("Generating new map...")
 }
 
 func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
