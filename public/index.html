@@ -135,6 +135,7 @@
 <script>
 'use strict';
 
+const nodeMap = new NWGraph('#graph')
 Split(['#main-row', '#terminal'], {
 	direction: 'vertical',
     elementStyle: function (dimension, size, gutterSize) {
@@ -249,20 +250,19 @@ function prettifyCommand(cmd) {
 	return retStr
 }
 
-svgInit();
 function parseGraphState(msg) {
 
 	const newState = JSON.parse(msg.data)
 	console.log('updateGraph called with state:', newState)
 	// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
 	// let nodeMap = arrayifyNodeMap(newState.nodeMap)
-	let nodeMap = newState.map
 	// console.log("nodeMap after arrayifyNodeMap:", newState.nodeMap)
-	if (msg.type == "initGraphState") {
-		// console.log("initing with nodemap", nodeMap)
-		initGraph(nodeMap)
-	} 
-	updateGraph(newState)
+	// if (msg.type == "initGraphState") {
+	// 	// console.log("initing with nodemap", nodeMap)
+	// 	initGraph(nodeMap)
+	// } 
+	nodeMap.update(newState)
+	nodeMap.draw()
 }
 
 function updateLanguage(newLang) {
