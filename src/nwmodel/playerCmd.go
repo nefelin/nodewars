@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -242,24 +243,42 @@ func cmdConnect(p *Player, args []string, c string) Message {
 
 func cmdWho(p *Player, args []string, c string) Message {
 	// lists all players in the current node
-	if p.Route.Endpoint == nil {
-		return psError(errors.New(noConnectStr))
-	}
+	// if p.Route.Endpoint == nil {
+	// 	return psError(errors.New(noConnectStr))
+	// }
 
-	// TODO maintain a list of connected players at either node or slot
-	pHere := ""
-	for _, otherPlayer := range gm.Players {
-		if otherPlayer.Route != nil {
-			if otherPlayer.Route.Endpoint == p.Route.Endpoint {
-				playerDesc := otherPlayer.name()
-				if otherPlayer.slotNum > -1 {
-					playerDesc += " at slot: " + strconv.Itoa(otherPlayer.slotNum)
-				}
-				pHere += playerDesc + "\n"
-			}
+	// // TODO maintain a list of connected players at either node or slot
+	// pHere := ""
+	// for _, otherPlayer := range gm.Players {
+	// 	if otherPlayer.Route != nil {
+	// 		if otherPlayer.Route.Endpoint == p.Route.Endpoint {
+	// 			playerDesc := otherPlayer.name()
+	// 			if otherPlayer.slotNum > -1 {
+	// 				playerDesc += " at slot: " + strconv.Itoa(otherPlayer.slotNum)
+	// 			}
+	// 			pHere += playerDesc + "\n"
+	// 		}
+	// 	}
+	// }
+
+	// Sort team names
+	whoStr := ""
+	teamNames := make([]string, 0)
+	for tname := range gm.Teams {
+		teamNames = append(teamNames, tname)
+	}
+	sort.Strings(teamNames)
+
+	// build rosters and display string
+	for _, n := range teamNames {
+		t := gm.Teams[n]
+		whoStr += n + ":\n"
+		for mem := range t.players {
+			whoStr += "\t" + mem.Name + "\n"
 		}
 	}
-	return psSuccess(pHere)
+
+	return psMessage(whoStr)
 }
 
 func cmdLs(p *Player, args []string, c string) Message {
