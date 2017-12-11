@@ -41,9 +41,10 @@ type node struct {
 	ID          nodeID   `json:"id"` // keys and ids is redundant TODO
 	Connections []nodeID `json:"connections"`
 	// address map concurrency TODO
-	Modules    map[modID]*module `json:"modules"`
-	slots      []*modSlot
-	Remoteness float64 `json:"remoteness"`
+	Modules     map[modID]*module `json:"modules"`
+	slots       []*modSlot
+	Remoteness  float64 `json:"remoteness"`
+	playersHere []*Player
 }
 
 // TODO rethink I don't like that this setup exposes test information

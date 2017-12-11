@@ -285,7 +285,25 @@ func cmdLs(p *Player, args []string, c string) Message {
 	if p.Route == nil {
 		return msgNoConnection
 	}
-	return psMessage(p.Route.Endpoint.forMsg())
+
+	retMsg := p.Route.Endpoint.forMsg()
+	pHere := p.Route.Endpoint.playersHere
+	if len(pHere) > 1 {
+		//make slice of names (excluding this player)
+		names := make([]string, 0, len(pHere)-1)
+		for _, player := range pHere {
+			if player != p {
+				names = append(names, player.Name)
+			}
+		}
+
+		//join the slice to string
+		addMsg := "\nAlso here: " + strings.Join(names, ", ")
+
+		//add to message
+		retMsg += addMsg
+	}
+	return psMessage(retMsg)
 }
 
 func cmdSetPOE(p *Player, args []string, c string) Message {

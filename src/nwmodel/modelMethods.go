@@ -361,6 +361,7 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 	// set's players route to the route generated via routeToNode
 	// gm.Routes[p.ID] = &route{Endpoint: n, Nodes: routeNodes}
 	p.Route = &route{Endpoint: n, Nodes: routeNodes}
+	n.addPlayer(p)
 	return p.Route
 	// return gm.Routes[p.ID]
 }
@@ -368,6 +369,7 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 func (gm *GameModel) breakConnection(p *Player) {
 	// if _, exists := gm.Routes[p.ID]; exists {
 	if p.Route != nil {
+		p.Route.Endpoint.removePlayer(p)
 		// delete(gm.Routes, p.ID)
 		p.Route = nil
 
@@ -507,18 +509,27 @@ func (n *node) evalTrafficForTeam(t *team) {
 	}
 }
 
-// helper function for removing item from slice
-// func cutPlayer(s []*Player, p *Player) []*Player {
-// 	for i, thisP := range s {
-// 		if p == thisP {
-// 			// swaps the last element with the found element and returns with the last element cut
-// 			s[len(s)-1], s[i] = s[i], s[len(s)-1]
-// 			return s[:len(s)-1]
-// 		}
-// 	}
-// 	log.Printf("CutPlayer returning: %v", s)
-// 	return s
-// }
+func (n *node) addPlayer(p *Player) {
+	n.playersHere = append(n.playersHere, p)
+}
+
+func (n *node) removePlayer(p *Player) {
+	n.playersHere = cutPFromSlice(n.playersHere, p)
+}
+
+// helper function for removing player from slice of players
+func cutPFromSlice(s []*Player, p *Player) []*Player {
+	for i, thisP := range s {
+		if p == thisP {
+			// swaps the last element with the found element and returns with the last element cut
+			s[len(s)-1], s[i] = s[i], s[len(s)-1]
+			return s[:len(s)-1]
+		}
+	}
+	// log.Printf("CutPlayer returning: %v", s)
+	log.Println("Player not found in slice")
+	return s
+}
 
 // nodeMap methods -----------------------------------------------------------------------------
 
