@@ -9,7 +9,7 @@ const width = 640,
 	  nodeRadiusMultiplier = nodeBaseRadius/4,
 	  strokeWidth = 2
 
-const modTrans = d3.transition()
+const t = d3.transition()
       .duration(750)
 
 
@@ -27,9 +27,6 @@ class NWGraph {
             .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
-
-        // this.gameState = null
-        // this.nodeGroups = null
         
 	}
 
@@ -43,6 +40,9 @@ class NWGraph {
             .attr("stroke-width", strokeWidth)
 
         this.links.exit().remove()
+
+        // update traffic info on all links, new and old alike
+        this.links.classed("traffic", d => d.traffic.length>0)
 	}
 
 	makeNodeGroups() {
@@ -90,6 +90,20 @@ class NWGraph {
         		  .style("fill-opacity", 0)
         	}
         })
+
+		// update node-main classes for new and old nodes alike
+        this.nodeGroups.select(".node-main")
+			.classed("node-poe", d => d.poes.length>0)
+			.classed("player-connected", d => d.connectedPlayers.length>0)
+			.classed("traffic", d => d.traffic.length>0)
+			.transition(t)
+			.style("fill", d => {
+				if (d.poes.length>0)
+					return d.poes[0].team.name
+				return "white"
+			})
+			// visualizing remoteness only
+			// .style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})
 	}
 
 	drawNodeLabels() {
@@ -99,6 +113,54 @@ class NWGraph {
 	       .attr("font-size",15)
 	       .attr("class", "node-label")
 	       .text(d=>"ID: " + d.id)
+	}
+
+	drawModules() {
+		this.nodeGroups.each(function(d) {
+	       	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
+				.data(d.modList)
+
+
+			const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
+			const nodeRadius = parentRadius
+
+			// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+			const modRad = nodeBaseRadius/2.5
+			const spacing = modRad*3
+			const angleInc = 70*0.017453; //convert to radian
+
+			modules.exit()
+				.transition(t)
+				.attr("r", 0)
+				.remove()
+
+			modules.enter()
+				   .append("circle")
+				   .attr("class", "node-module")
+	   			   .style("fill", d => d.team.name)
+	   			   .style("fill-opacity", d => {
+	   			   		console.log("making module of fill at:" , d);
+	   			   		return d.health/d.maxHealth
+	   			   	})
+		           .style("stroke", "black")
+		           .style("stroke-width", 2)
+		           .attr("opacity", 0)
+		           .attr("r", d => modRad)
+		           // .attr("cy", -nodeRadius/2)
+		           .transition(t)
+		           .style("opacity", 1)
+		           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
+		           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
+
+		    // update all modules
+		    modules.transition(t)
+				.style("fill", d => d.team.name)
+			    .style("fill-opacity", d => {
+			   		console.log("making module of fill at:" , d);
+			   		return d.health/d.maxHealth
+			    })
+
+		})
 	}
 
 	update(newState) {
@@ -124,6 +186,9 @@ class NWGraph {
 		this.makeNodeGroups()
         this.drawNodeContent()
         this.drawNodeLabels()
+        this.drawModules()
+
+
 
         var ticked = function() {
             self.links
@@ -176,14 +241,6 @@ class NWGraph {
 			 .ease(d3.easeLinear)
 			 .duration(800)
 			 .style("background-color", startColor)
-	}
-
-	reveal() {
-		// TODO don't do this after first reveal
-		// console.log('force layout settled');
-		this.svg.selectAll(".nodes, line").transition()
-		   .duration(400)
-		   .style("opacity", 1)
 	}
 
 	static arrayifyModules(nodeMap) {
@@ -291,10 +348,10 @@ class NWGraph {
 					if (route.nodes[0].id != route.endpoint.id){
 						let thisEdgeID
 						if (i > 0) {
-							thisEdgeID = makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
+							thisEdgeID = NWGraph.makeEdgeID(route.nodes[i].id, route.nodes[i-1].id)
 						} else {
 							// otherwise add traffic between last node and target
-							thisEdgeID = makeEdgeID(route.nodes[0].id, route.endpoint.id)
+							thisEdgeID = NWGraph.makeEdgeID(route.nodes[0].id, route.endpoint.id)
 						}
 
 						NWGraph.getEdgeIn(thisEdgeID, gameState.map.edges).traffic.push(player)
