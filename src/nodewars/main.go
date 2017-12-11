@@ -21,7 +21,7 @@ func main() {
 
 	if prod == "" { // aka env var not set
 		log.Fatal(
-			http.ListenAndServe(":80", mux))
+			http.ListenAndServe(":8080", mux))
 	}
 
 	go http.ListenAndServe(":80", http.HandlerFunc(redirect))
