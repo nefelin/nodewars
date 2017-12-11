@@ -16,7 +16,7 @@ let nodeGroups = null,
 	layout = null,
 	simulation = null
 
-function alertFlash(color) {
+function alertFlash(color, targetNode) {
 	const startColor = svg.style("background-color")
 
 	svg.transition()
@@ -26,6 +26,19 @@ function alertFlash(color) {
 		 .duration(800)
 		 .style("background-color", startColor)
 
+	// var tnode = d3.select("#node-main-4" + targetNode)
+	// console.log("tnode", tnode)
+	// tnode
+	// 	 .append("circle")
+	// 	 .attr("r", 100)
+	// 	 .style("fill", color)
+	// 	 .style("fill-opacity", .5)
+	// 	 .transition()
+	// 	 .ease(d3.easeLinear)
+	// 	 .duration(800)
+	// 	 .attr("r", 1000)
+
+	// console.log('flash', tnode)
 }
 
 function reveal() {

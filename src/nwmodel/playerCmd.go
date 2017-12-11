@@ -490,7 +490,7 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 	gm.broadcastState()
 	gm.broadcastAlertFlash(p.Team.Name)
 	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
-	return psSuccess(fmt.Sprintf("Module constructed in [%s], Healht: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
+	return psSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
 
 func cmdNewMap(p *Player, args []string, playerCode string) Message {
