@@ -16,7 +16,7 @@ func main() {
 
 	// Start Webserver
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", http.FileServer(http.Dir("public")))
+	mux.HandleFunc("/", http.FileServer(http.Dir("public")).ServeHTTP)
 	mux.HandleFunc("/ws", nwmodel.HandleConnections)
 
 	if prod == "" { // aka env var not set
@@ -30,7 +30,7 @@ func main() {
 }
 
 func redirect(w http.ResponseWriter, req *http.Request) {
-	target := "https://" + req.Host + req.URL.path
+	target := "https://" + req.Host + req.URL.Path
 	if len(req.URL.RawQuery) > 0 {
 		target += "?" + req.URL.RawQuery
 	}
