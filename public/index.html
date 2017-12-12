@@ -61,8 +61,8 @@
 
 	#terminal {
 		/*order:0;*/
-		flex-grow:10;
-		height: 100%;
+		flex-grow:2;
+		/*height: 100%;*/
 		width: 100%;
 	}
 
@@ -124,8 +124,8 @@
 	<!-- <div id="splitter-horizontal"></div> -->
 	<!-- <div id="term-column"> -->
 		
-		<div id="terminal"></div>
-		<div id="team-flag"></div>
+	<div id="terminal"></div>
+	<div id="team-flag"></div>
 	<!-- </div> -->
 </div>
 
@@ -138,6 +138,7 @@
 const graphViz = new NWGraph('#graph')
 Split(['#main-row', '#terminal'], {
 	direction: 'vertical',
+	sizes: [75, 35],
     elementStyle: function (dimension, size, gutterSize) {
         return {
             'flex-basis': 'calc(' + size + '% - ' + gutterSize + 'px)'

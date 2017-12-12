@@ -187,6 +187,10 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 
 	// Clear map specific data:
 	gm.POEs = make(map[playerID]*node)
+	for _, t := range gm.Teams {
+		t.poe = nil
+	}
+	// log.Println(gm.POEs)
 
 	// send our new state
 	gm.broadcastState()
