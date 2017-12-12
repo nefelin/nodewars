@@ -126,7 +126,7 @@ func newRandMap(n int) *nodeMap {
 	// for len(newMap.POEs) < 2 {
 	// 	newMap.addPoes(rand.Intn(nodeCount))
 	// }
-
+	log.Printf("newRandMap nodes: %v", newMap.Nodes)
 	return &newMap
 }
 
@@ -449,6 +449,12 @@ func (n *node) addConnection(m *node) {
 			return
 		}
 	}
+
+	if m.ID == n.ID {
+		return
+	}
+
+	log.Printf("Adding: %d to %d's connections", m.ID, n.ID)
 	n.Connections = append(n.Connections, m.ID)
 	m.Connections = append(m.Connections, n.ID)
 }
