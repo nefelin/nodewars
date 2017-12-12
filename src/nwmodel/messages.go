@@ -24,6 +24,7 @@ const (
 
 	editStateStr   = "editorState"
 	promptStateStr = "promptState"
+	graphStateStr  = "graphState"
 
 	pseudoStr    = "pseudoServer"
 	serverStr    = "server"
@@ -52,12 +53,12 @@ func psPrompt(p *Player, m string) string {
 	}
 
 	// pose question
-	p.outgoing <- question
+	p.Outgoing <- question
 
 	// wait for response
 	var res Message
 
-	err := p.socket.ReadJSON(&res)
+	err := p.Socket.ReadJSON(&res)
 	if err != nil {
 		log.Printf("error: %v", err)
 		return "error"
@@ -124,6 +125,14 @@ func editStateMsg(msg string) Message {
 func promptStateMsg(msg string) Message {
 	return Message{
 		Type:   promptStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
+func graphStateMsg(msg string) Message {
+	return Message{
+		Type:   graphStateStr,
 		Sender: serverStr,
 		Data:   msg,
 	}

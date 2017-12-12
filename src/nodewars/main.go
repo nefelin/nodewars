@@ -3,8 +3,8 @@ package main
 import (
 	"log"
 	"net/http"
-	"nwmodel"
 	"os"
+	"protocol"
 )
 
 func main() {
@@ -12,12 +12,17 @@ func main() {
 	keyfile := os.Getenv("KEYFILE")
 	prod := os.Getenv("PROD")
 
-	log.Println("Starting " + nwmodel.VersionTag + " server...")
+	log.Println("Starting " + protocol.VersionTag + " server...")
+
+	d := protocol.NewDispatcher()
 
 	// Start Webserver
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", http.FileServer(http.Dir("public")).ServeHTTP)
-	mux.HandleFunc("/ws", nwmodel.HandleConnections)
+	mux.HandleFunc("/ws",
+		func(w http.ResponseWriter, req *http.Request) {
+			protocol.HandleConnections(w, req, d)
+		})
 
 	if prod == "" { // aka env var not set
 		log.Fatal(

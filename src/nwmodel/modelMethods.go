@@ -1,6 +1,7 @@
 package nwmodel
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -34,7 +35,7 @@ func newModule(p *Player, response ChallengeResponse, lang string) *module {
 		// testID:    testID,
 		language:  lang,
 		builder:   p.name(),
-		Team:      p.Team,
+		TeamName:  p.TeamName,
 		Health:    response.passed(),
 		MaxHealth: len(response.PassFail),
 	}
@@ -73,24 +74,30 @@ func newNodeMap() nodeMap {
 	}
 }
 
-// Instantiation with values ------------------------------------------------------------------
+// Instantiation with values -----------------------------------------------------------------
 
 // NewDefaultModel Generic game model
 func NewDefaultModel() *GameModel {
 	m := newRandMap(10)
 	t := makeDummyTeams()
 	p := make(map[playerID]*Player)
-	// r := make(map[playerID]*route)
 	poes := make(map[playerID]*node)
 
-	return &GameModel{
+	aChan := make(chan Message, 100)
+
+	gm := &GameModel{
 		Map:     m,
 		Teams:   t,
 		Players: p,
 		// Routes:  r,
 		POEs:      poes,
 		languages: getLanguages(),
+		aChan:     aChan,
 	}
+
+	go actionConsumer(gm)
+
+	return gm
 }
 
 func makeDummyTeams() map[teamName]*team {
@@ -178,7 +185,7 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 
 	// Tell everyone to clear their maps
 	for _, p := range gm.Players {
-		p.outgoing <- Message{
+		p.Outgoing <- Message{
 			Type:   "graphReset",
 			Sender: serverStr,
 			Data:   "",
@@ -196,28 +203,26 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 	gm.broadcastState()
 }
 
-// RegisterPlayer adds a new player to our world model
-func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
-	// create player with this websocket
-	newP := newPlayer(ws)
-
-	// add this player to our registry
-
-	gm.Players[newP.ID] = newP
-
-	return newP
-}
-
 func (gm *GameModel) broadcastState() {
 	for _, player := range gm.Players {
-		player.outgoing <- calcStateMsgForPlayer(player)
+		state := gm.calcState(player)
+		player.Outgoing <- graphStateMsg(state)
 	}
+}
+
+func (gm *GameModel) calcState(p *Player) string {
+	stateMsg, err := json.Marshal(gm)
+
+	if err != nil {
+		log.Println(err)
+	}
+	return string(stateMsg)
 }
 
 func (gm *GameModel) broadcastAlertFlash(color string) {
 	// TODO abstract this to messages
 	for _, player := range gm.Players {
-		player.outgoing <- Message{
+		player.Outgoing <- Message{
 			Type:   "alertFlash",
 			Sender: serverStr,
 			Data:   color,
@@ -230,7 +235,7 @@ func (gm *GameModel) psBroadcast(msg Message) {
 	msg.Sender = "pseudoServer"
 
 	for _, player := range gm.Players {
-		player.outgoing <- msg
+		player.Outgoing <- msg
 	}
 }
 
@@ -243,7 +248,7 @@ func (gm *GameModel) psBroadcastExcept(p *Player, msg Message) {
 		if player == p {
 			continue
 		}
-		player.outgoing <- msg
+		player.Outgoing <- msg
 	}
 }
 
@@ -280,19 +285,18 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	return nil
 }
 
-func (gm *GameModel) setPlayerName(p *Player, n string) error {
+// func (gm *GameModel) setPlayerName(p *Player, n string) error {
 
-	// check to see if name is in use
-	for _, player := range gm.Players {
-
-		if player.Name == n {
-			return errors.New("Name '" + n + "' already in use")
-		}
-	}
-	// if not, set it and return no error
-	p.Name = n
-	return nil
-}
+// 	// check to see if name is in use
+// 	for _, player := range gm.Players {
+// 		if player.Name == n {
+// 			return errors.New("Name '" + n + "' already in use")
+// 		}
+// 	}
+// 	// if not, set it and return no error
+// 	p.Name = n
+// 	return nil
+// }
 
 func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 	// TODO move this node validity check to a nodeMap method
@@ -313,8 +317,8 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; !ok {
 		return errors.New("player '" + p.Name + "' is not registered")
 	}
-	if p.Team != nil {
-		p.Team.removePlayer(p)
+	if p.TeamName != "" {
+		gm.Teams[p.TeamName].removePlayer(p)
 	}
 
 	// clean up POE
@@ -334,13 +338,17 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 	// log.Printf("assignPlayerToTeam, player: %v", p)
 	if team, ok := gm.Teams[tn]; !ok {
 		return errors.New("The team '" + tn + "' does not exist")
-	} else if p.Team != nil {
-		return errors.New("Already on the " + p.Team.Name + " team")
+	} else if p.TeamName != "" {
+		return errors.New("Already on the " + p.TeamName + " team")
 	} else if team.isFull() {
 		return errors.New("team: " + tn + " is full")
 	}
 
-	gm.Teams[tn].addPlayer(p)
+	t := gm.Teams[tn]
+	t.addPlayer(p)
+	if t.poe != nil {
+		gm.setPlayerPOE(p, t.poe.ID)
+	}
 
 	return nil
 }
@@ -363,7 +371,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 
 	target := gm.Map.Nodes[n]
 
-	routeNodes := gm.Map.routeToNode(p.Team, source, target)
+	routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
 	if routeNodes != nil {
 		// log.Println("Successful Connect")
 		// log.Printf("Route to target: %v", routeNodes)
@@ -393,7 +401,7 @@ func (gm *GameModel) breakConnection(p *Player) {
 		p.Route = nil
 
 		// TODO this should only happen if connection was severed non-voluntarily...
-		p.outgoing <- psError(errors.New("Connection interrupted!"))
+		p.Outgoing <- psError(errors.New("Connection interrupted!"))
 	}
 
 	// detach from any slots
@@ -402,10 +410,48 @@ func (gm *GameModel) breakConnection(p *Player) {
 	}
 }
 
+func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
+	// if the module no longer supports routing for this modules team
+	if !n.allowsRoutingFor(t) {
+		for _, player := range gm.Players {
+			// check each player who is on team's route
+			if player.TeamName == t.Name {
+				// and if it contained that node, break the players connection
+				if _, ok := player.Route.containsNode(n); ok {
+					gm.breakConnection(player)
+				}
+			}
+		}
+		// if this is a POE, announce that teams elimination
+		if t.poe == n {
+			gm.psBroadcast(psAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
+
+		}
+
+	}
+}
+
+func (gm *GameModel) setLanguage(p *Player, l string) error {
+
+	for lang := range gm.languages {
+		if l == lang {
+			p.language = strings.ToLower(l)
+
+			p.Outgoing <- Message{
+				Type:   "languageState",
+				Sender: "server",
+				Data:   p.language,
+			}
+			return nil
+		}
+	}
+	return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")
+}
+
 // module methods -------------------------------------------------------------------------
 
 func (m module) isFriendlyTo(t *team) bool {
-	if m.Team == t {
+	if m.TeamName == t.Name {
 		return true
 	}
 	return false
@@ -428,18 +474,6 @@ func (n *node) initSlots() {
 		n.slots = append(n.slots, newSlot)
 	}
 }
-
-// TODO deprecate this for modslot approach
-// func (n node) capacity() int {
-// 	return len(n.Connections)
-// }
-
-// func (n node) isFull() bool {
-// 	if len(n.Modules) > n.capacity()-1 {
-// 		return true
-// 	}
-// 	return false
-// }
 
 // addConnection is reciprocol
 func (n *node) addConnection(m *node) {
@@ -497,15 +531,9 @@ func (n *node) removeModule(slotIndex int) error {
 		return errors.New("Slot is empty")
 	}
 
-	// track old team so we can evaluate traffic after
-	oldModsTeam := slot.module.Team
-
 	//remove module from node and empty slot
 	delete(n.Modules, slot.module.id)
 	slot.module = nil
-
-	// evalTrafficForTeam makes sure all players that were routing through this node are still able to do so
-	n.evalTrafficForTeam(oldModsTeam)
 
 	// assign new task to slot
 	slot.challenge = getRandomTest()
@@ -513,27 +541,7 @@ func (n *node) removeModule(slotIndex int) error {
 
 }
 
-func (n *node) evalTrafficForTeam(t *team) {
-	// if the module no longer supports routing for this modules team
-	if !n.allowsRoutingFor(t) {
-		for _, player := range gm.Players {
-			// check each player who is on team's route
-			if player.Team == t {
-				// and if it contained that node, break the players connection
-				if _, ok := player.Route.containsNode(n); ok {
-					gm.breakConnection(player)
-				}
-			}
-		}
-		// if this is a POE, announce that teams elimination
-		if t.poe == n {
-			gm.psBroadcast(psAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
-
-		}
-
-	}
-}
-
+// TODO this is broken:
 func (n *node) addPlayer(p *Player) {
 	n.playersHere = append(n.playersHere, p)
 }
@@ -766,36 +774,6 @@ func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 		}
 
 		nodePool := m.newSearchField(t, source)
-		// log.Printf("nodePool: %v", nodePool)
-		// unchecked := make(map[*node]bool) // TODO this should be a priority queue for efficiency
-		// dist := make(map[*node]int)
-		// prev := make(map[*node]*node)
-
-		// seen := make(map[*node]bool)
-		// tocheck := make([]*node, 1)
-		// tocheck[0] = source
-
-		// for len(tocheck) > 0 {
-		// 	thisNode := tocheck[0]
-		// 	tocheck = tocheck[1:]
-
-		// 	// log.Printf("this: %v", thisNode)
-		// 	if thisNode.allowsRoutingFor(p.Team) {
-		// 		unchecked[thisNode] = true
-		// 		dist[thisNode] = 1000
-		// 		seen[thisNode] = true
-		// 		for _, nodeID := range thisNode.Connections {
-		// 			// log.Printf("nodeid: %v", nodeID)
-		// 			if !seen[m.Nodes[nodeID]] {
-		// 				tocheck = append(tocheck, m.Nodes[nodeID])
-
-		// 			}
-		// 			// log.Printf("tocheck %v", tocheck)
-		// 		}
-		// 	}
-		// }
-
-		// log.Printf("unchecked %v", unchecked)
 
 		nodePool.dist[source] = 0
 
@@ -857,12 +835,12 @@ func getBestNode(pool map[*node]bool, distMap map[*node]int) *node {
 
 // player methods -------------------------------------------------------------------------------
 // TODO this is in the wrong place
-func newPlayer(ws *websocket.Conn) *Player {
+func NewPlayer(ws *websocket.Conn) *Player {
 	ret := &Player{
 		ID:       playerIDCount,
 		Name:     "",
-		socket:   ws,
-		outgoing: make(chan Message),
+		Socket:   ws,
+		Outgoing: make(chan Message),
 		slotNum:  -1,
 	}
 
@@ -874,8 +852,8 @@ func newPlayer(ws *websocket.Conn) *Player {
 func (p *Player) prompt() string {
 	promptEndChar := ">"
 	prompt := fmt.Sprintf("(%s)", p.name())
-	if p.Team != nil {
-		prompt += fmt.Sprintf(":%s:", p.Team.Name)
+	if p.TeamName != "" {
+		prompt += fmt.Sprintf(":%s:", p.TeamName)
 	}
 	if p.Route != nil {
 		prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
@@ -890,23 +868,6 @@ func (p *Player) prompt() string {
 	return prompt
 }
 
-func (p *Player) setLanguage(l string) error {
-
-	for lang := range gm.languages {
-		if l == lang {
-			p.language = strings.ToLower(l)
-
-			p.outgoing <- Message{
-				Type:   "languageState",
-				Sender: "server",
-				Data:   p.language,
-			}
-			return nil
-		}
-	}
-	return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")
-}
-
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) slot() *modSlot {
 	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.slots) {
@@ -917,22 +878,15 @@ func (p *Player) slot() *modSlot {
 }
 
 func (p *Player) name() string {
-	rand.Seed(int64(p.ID))
 	for p.Name == "" {
-
-		propName := "player_" + strconv.Itoa(rand.Intn(100))
-		err := gm.setPlayerName(p, propName)
-
-		if err != nil {
-			log.Println(err)
-		}
+		p.Name = "player_" + strconv.Itoa(p.ID)
 	}
 
 	return p.Name
 }
 
 func (p Player) hasTeam() bool {
-	if p.Team == nil {
+	if p.TeamName == "" {
 		return false
 	}
 	return true
@@ -971,21 +925,18 @@ func (t *team) broadcast(msg Message) {
 	msg.Sender = "pseudoServer"
 
 	for player := range t.players {
-		player.outgoing <- msg
+		player.Outgoing <- msg
 	}
 }
 
 func (t *team) addPlayer(p *Player) {
 	t.players[p] = true
-	p.Team = t
-	if t.poe != nil {
-		gm.setPlayerPOE(p, t.poe.ID)
-	}
+	p.TeamName = t.Name
 }
 
 func (t *team) removePlayer(p *Player) {
 	delete(t.players, p)
-	p.Team = nil
+	p.TeamName = ""
 }
 
 // func (t *team) setPoe(n *node) {
@@ -1017,7 +968,7 @@ func (t team) String() string {
 }
 
 func (p Player) String() string {
-	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.name(), p.Team)
+	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.name(), p.TeamName)
 }
 
 func (r route) String() string {
@@ -1035,7 +986,7 @@ func (r route) String() string {
 }
 
 func (m module) forMsg() string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.Team.Name, m.builder, m.language, m.Health, m.MaxHealth)
+	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
 }
 
 func (n node) forMsg() string {

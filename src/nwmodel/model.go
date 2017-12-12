@@ -22,7 +22,7 @@ type GameModel struct {
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
-	// sync.Mutex
+	aChan     chan Message
 }
 
 type route struct {
@@ -60,7 +60,7 @@ type module struct {
 	builder   string // `json:"creator"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
-	Team      *team  `json:"team"`
+	TeamName  string `json:"team"`
 }
 
 type team struct {
@@ -74,13 +74,13 @@ type team struct {
 
 // Player ...
 type Player struct {
-	ID       playerID `json:"id"`
-	Name     string   `json:"name"`
-	Team     *team    `json:"team"`
-	Route    *route   `json:"route"`
-	socket   *websocket.Conn
-	outgoing chan Message
-	language string // current working language
-	stdin    string // stdin buffer for testing
-	slotNum  int    // currently attached to slotNum of current node
+	ID       playerID        `json:"id"`
+	Name     string          `json:"name"`
+	TeamName string          `json:"team"`
+	Route    *route          `json:"route"`
+	Socket   *websocket.Conn `json:"-"`
+	Outgoing chan Message    `json:"-"`
+	language string          // current working language
+	stdin    string          // stdin buffer for testing
+	slotNum  int             // currently attached to slotNum of current node
 }

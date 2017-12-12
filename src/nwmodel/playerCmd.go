@@ -9,7 +9,8 @@ import (
 	"strings"
 )
 
-type playerCommand func(p *Player, args []string, code string) Message
+// type playerCommand func(p *Player, gm *GameModel, args []string, code string) Message
+type playerCommand func(*Player, *GameModel, []string, string) Message
 
 var msgMap = map[string]playerCommand{
 	// chat functions
@@ -62,31 +63,55 @@ var msgMap = map[string]playerCommand{
 
 	"who": cmdWho,
 
-	"ls":          cmdLs, // list modules/slot. out of spec but for expediency
-	"listmod":     cmdLs, // list modules/slot. out of spec but for expediency
-	"sp":          cmdSetPOE,
-	"teampoe":     cmdSetPOE,
-	"boilerplate": cmdLoadBoilerplate,
-	"bp":          cmdLoadBoilerplate,
+	"ls":      cmdLs, // list modules/slot. out of spec but for expediency
+	"listmod": cmdLs, // list modules/slot. out of spec but for expediency
+	"sp":      cmdSetPOE,
+	"teampoe": cmdSetPOE,
+	// "boilerplate": cmdLoadBoilerplate,
+	// "bp":          cmdLoadBoilerplate,
 }
 
-func cmdHandler(m *Message, p *Player) Message {
-	// when we receive a message
-	// log.Println("Splitting...")
-	msg := strings.Split(m.Data, " ")
+func actionConsumer(gm *GameModel) {
+	for {
+		m := <-gm.aChan
+		senderID, err := strconv.Atoi(m.Sender)
 
-	// log.Println("Finding handlerFunc...")
-	if handlerFunc, ok := msgMap[msg[0]]; ok {
+		if err != nil {
+			log.Println(err)
+		}
 
-		// log.Println("Calling handlerFunc")
-		return handlerFunc(p, msg[1:], m.Code)
+		p := gm.Players[senderID]
+
+		msg := strings.Split(m.Data, " ")
+
+		// log.Println("Finding handlerFunc...")
+		if handlerFunc, ok := msgMap[msg[0]]; ok {
+			// log.Println("Calling handlerFunc")
+			res := handlerFunc(p, gm, msg[1:], m.Code)
+			if res.Data != "" {
+				p.Outgoing <- res
+			}
+		}
 	}
-
-	return psUnknown(msg[0])
-
 }
 
-func cmdYell(p *Player, args []string, c string) Message {
+// func cmdHandler(m *Message, p *Player) Message {
+// 	// when we receive a message
+// 	// log.Println("Splitting...")
+// 	msg := strings.Split(m.Data, " ")
+
+// 	// log.Println("Finding handlerFunc...")
+// 	if handlerFunc, ok := msgMap[msg[0]]; ok {
+
+// 		// log.Println("Calling handlerFunc")
+// 		return handlerFunc(p, msg[1:], m.Code)
+// 	}
+
+// 	return psUnknown(msg[0])
+
+// }
+
+func cmdYell(p *Player, gm *GameModel, args []string, c string) Message {
 
 	chatMsg := p.name() + " > " + strings.Join(args, " ")
 
@@ -97,7 +122,7 @@ func cmdYell(p *Player, args []string, c string) Message {
 	return Message{}
 }
 
-func cmdTell(p *Player, args []string, c string) Message {
+func cmdTell(p *Player, gm *GameModel, args []string, c string) Message {
 
 	var recip *Player
 	for _, player := range gm.Players {
@@ -112,7 +137,7 @@ func cmdTell(p *Player, args []string, c string) Message {
 
 	chatMsg := p.name() + " > " + strings.Join(args[1:], " ")
 
-	recip.outgoing <- Message{
+	recip.Outgoing <- Message{
 		Type:   "(private)",
 		Data:   chatMsg,
 		Sender: pseudoStr,
@@ -120,14 +145,14 @@ func cmdTell(p *Player, args []string, c string) Message {
 	return Message{}
 }
 
-func cmdTc(p *Player, args []string, c string) Message {
-	if p.Team == nil {
+func cmdTc(p *Player, gm *GameModel, args []string, c string) Message {
+	if p.TeamName == "" {
 		return msgNoTeam
 	}
 
 	chatMsg := p.name() + "> " + strings.Join(args, " ")
 
-	p.Team.broadcast(Message{
+	gm.Teams[p.TeamName].broadcast(Message{
 		Type: "(team)",
 		Data: chatMsg,
 	})
@@ -135,14 +160,14 @@ func cmdTc(p *Player, args []string, c string) Message {
 
 }
 
-func cmdTeam(p *Player, args []string, c string) Message {
+func cmdTeam(p *Player, gm *GameModel, args []string, c string) Message {
 	// log.Println("cmdTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 {
-		if p.Team == nil {
+		if p.TeamName == "" {
 			return msgNoTeam
 		}
-		return psSuccess(("You're on the " + p.Team.Name + " team"))
+		return psSuccess(("You're on the " + p.TeamName + " team"))
 	}
 
 	err := gm.assignPlayerToTeam(p, teamName(args[0]))
@@ -150,15 +175,16 @@ func cmdTeam(p *Player, args []string, c string) Message {
 		return psError(err)
 	}
 
-	p.outgoing <- Message{
+	p.Outgoing <- Message{
 		Type:   "teamState",
 		Sender: "server",
 		Data:   args[0],
 	}
 
-	if p.Team.poe != nil {
-		log.Printf("player joined team, tryin to log into %v", p.Team.poe.ID)
-		_, err = gm.tryConnectPlayerToNode(p, p.Team.poe.ID)
+	tp := gm.Teams[p.TeamName].poe
+	if tp != nil {
+		log.Printf("player joined team, tryin to log into %v", tp.ID)
+		_, err = gm.tryConnectPlayerToNode(p, tp.ID)
 		if err != nil {
 			log.Println(err)
 		}
@@ -168,25 +194,36 @@ func cmdTeam(p *Player, args []string, c string) Message {
 	return psSuccess("You're on the " + args[0] + " team")
 }
 
-func cmdLanguage(p *Player, args []string, c string) Message {
+func cmdLanguage(p *Player, gm *GameModel, args []string, c string) Message {
 	if len(args) == 0 {
 		return psSuccess("Your name is " + p.language)
 	}
 
-	err := p.setLanguage(args[0])
+	err := gm.setLanguage(p, args[0])
 	if err != nil {
 		return psError(err)
 	}
 
 	// if the player's attached somewhere, update the buffer
 	if p.slotNum != -1 {
-		p.outgoing <- editStateMsg(boilerPlateFor(p) + challengeBufferFor(p))
+		if p.slot().module.TeamName != p.TeamName {
+			return psError(errors.New("Can't change language on enemy module"))
+		}
+		pSlot := p.slot()
+		langDetails := gm.languages[p.language]
+		boilerplate := langDetails.Boilerplate
+		comment := langDetails.CommentPrefix
+		sampleIO := pSlot.challenge.SampleIO
+		description := pSlot.challenge.Description
+
+		editText := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+		p.Outgoing <- editStateMsg(editText)
 	}
 
 	return psSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 
-func cmdListLanguages(p *Player, args []string, c string) Message {
+func cmdListLanguages(p *Player, gm *GameModel, args []string, c string) Message {
 	msgContent := ""
 
 	for k := range gm.languages {
@@ -196,26 +233,27 @@ func cmdListLanguages(p *Player, args []string, c string) Message {
 	return psMessage(msgContent)
 }
 
-func cmdLoadBoilerplate(p *Player, args []string, c string) Message {
-	p.outgoing <- editStateMsg(boilerPlateFor(p))
-	return psSuccess(fmt.Sprintf("%s boilerplate loaded", p.language))
-}
+// func cmdLoadBoilerplate(p *Player, gm *GameModel, args []string, c string) Message {
+// 	p.Outgoing <- editStateMsg(boilerPlateFor(p))
+// 	return psSuccess(fmt.Sprintf("%s boilerplate loaded", p.language))
+// }
 
-func cmdName(p *Player, args []string, c string) Message {
+func cmdName(p *Player, gm *GameModel, args []string, c string) Message {
 	if len(args) == 0 {
 		return psSuccess("Your name is " + p.name())
 	}
 
-	err := gm.setPlayerName(p, args[0])
-	if err != nil {
-		return psError(err)
+	for _, player := range gm.Players {
+		if args[0] == player.Name {
+			return psError(fmt.Errorf("The name '%s' is already taken", args[0]))
+		}
 	}
 
 	return psSuccess("Name set to '" + p.name() + "'")
 }
 
-func cmdConnect(p *Player, args []string, c string) Message {
-	if p.Team == nil {
+func cmdConnect(p *Player, gm *GameModel, args []string, c string) Message {
+	if p.TeamName == "" {
 		return psError(errors.New("Join a team first"))
 	}
 
@@ -241,7 +279,7 @@ func cmdConnect(p *Player, args []string, c string) Message {
 	return psSuccess(fmt.Sprintf("Connected to established : %s", route.forMsg()))
 }
 
-func cmdWho(p *Player, args []string, c string) Message {
+func cmdWho(p *Player, gm *GameModel, args []string, c string) Message {
 	// lists all players in the current node
 	// if p.Route.Endpoint == nil {
 	// 	return psError(errors.New(noConnectStr))
@@ -281,7 +319,7 @@ func cmdWho(p *Player, args []string, c string) Message {
 	return psMessage(whoStr)
 }
 
-func cmdLs(p *Player, args []string, c string) Message {
+func cmdLs(p *Player, gm *GameModel, args []string, c string) Message {
 	if p.Route == nil {
 		return msgNoConnection
 	}
@@ -306,8 +344,8 @@ func cmdLs(p *Player, args []string, c string) Message {
 	return psMessage(retMsg)
 }
 
-func cmdSetPOE(p *Player, args []string, c string) Message {
-	if p.Team == nil {
+func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) Message {
+	if p.TeamName == "" {
 		return msgNoTeam
 	}
 
@@ -316,7 +354,7 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 		return psError(fmt.Errorf("expected integer, got '%v'", args[0]))
 	}
 
-	err = gm.setTeamPoe(p.Team, newPOE)
+	err = gm.setTeamPoe(gm.Teams[p.TeamName], newPOE)
 	if err != nil {
 		return psError(err)
 	}
@@ -325,7 +363,7 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	// fix this TODO
 	_ = gm.POEs[p.ID].addModule(newModule(p, ChallengeResponse{}, p.language), 0)
 
-	for player := range p.Team.players {
+	for player := range gm.Teams[p.TeamName].players {
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
 	}
 
@@ -333,10 +371,10 @@ func cmdSetPOE(p *Player, args []string, c string) Message {
 	// which is happening right now as a result of setTeamPoe
 
 	gm.broadcastState()
-	return psSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.Team.Name, newPOE))
+	return psSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.TeamName, newPOE))
 }
 
-func cmdStdin(p *Player, args []string, playerCode string) Message {
+func cmdStdin(p *Player, gm *GameModel, args []string, c string) Message {
 	// disallow blank stdin
 	if p.stdin == "" {
 		p.stdin = "default stdin"
@@ -351,14 +389,14 @@ func cmdStdin(p *Player, args []string, playerCode string) Message {
 	return psMessage("stdin set to: " + p.stdin)
 }
 
-func cmdTestCode(p *Player, args []string, playerCode string) Message {
+func cmdTestCode(p *Player, gm *GameModel, args []string, c string) Message {
 
 	if len(args) > 0 {
 		p.stdin = strings.Join(args, " ")
 	}
 
 	// TODO handle compiler error
-	if playerCode == "" {
+	if c == "" {
 		return psError(errors.New("No code submitted"))
 	}
 
@@ -367,14 +405,14 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 	}
 
 	// passed error checks on args
-	p.outgoing <- psBegin(fmt.Sprintf("Running test with stdin: %v", p.stdin))
+	p.Outgoing <- psBegin(fmt.Sprintf("Running test with stdin: %v", p.stdin))
 
 	// disallow blank stdin
 	if p.stdin == "" {
 		p.stdin = "default stdin"
 	}
 
-	response := getOutput(p.language, playerCode, p.stdin)
+	response := getOutput(p.language, c, p.stdin)
 
 	if response.Message.Type == "error" {
 		return psError(errors.New(response.Message.Data))
@@ -384,7 +422,7 @@ func cmdTestCode(p *Player, args []string, playerCode string) Message {
 }
 
 // TODO refactor cmdAttach for clarity and redundancy
-func cmdAttach(p *Player, args []string, playerCode string) Message {
+func cmdAttach(p *Player, gm *GameModel, args []string, c string) Message {
 	slotNum, err := validateOneIntArg(args)
 	if err != nil {
 		return psError(err)
@@ -400,9 +438,9 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 
 	// if the slot has an enemy module, player's language is set to that module's
 	langLock := false
-	if pSlot.module != nil && pSlot.module.Team != p.Team {
+	if pSlot.module != nil && pSlot.module.TeamName != p.TeamName {
 		langLock = true
-		p.setLanguage(pSlot.module.language)
+		gm.setLanguage(p, pSlot.module.language)
 	}
 
 	// Send slot info to edit buffer
@@ -416,15 +454,17 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	description := pSlot.challenge.Description
 
 	resp := psPrompt(p, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
+
 	if resp != "n" && resp != "no" {
 		editMessage := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+
 		if langLock {
 			editMessage += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().module.language))
 		}
 
-		p.outgoing <- editStateMsg(editMessage)
+		p.Outgoing <- editStateMsg(editMessage)
 	} else {
-		msgPostfix = "\n" + challengeBufferFor(p)
+		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 	}
 
 	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v", slotNum, pSlot.forMsg())
@@ -436,28 +476,43 @@ func cmdAttach(p *Player, args []string, playerCode string) Message {
 	return psSuccess(retText)
 }
 
-func boilerPlateFor(p *Player) string {
-	langDetails := gm.languages[p.language]
-	return langDetails.Boilerplate
-}
+// func buildEditBuffer(gm *GameModel, p *Player) {
+// 	langDetails := gm.languages[p.language]
+// 	boilerplate := langDetails.Boilerplate
+// 	comment := langDetails.CommentPrefix
+// 	sampleIO := pSlot.challenge.SampleIO
+// 	description := pSlot.challenge.Description
 
-func challengeBufferFor(p *Player) string {
-	langDetails := gm.languages[p.language]
-	pSlot := p.slot()
-	if pSlot == nil {
-		return ""
-	}
+// 	resp := psPrompt(p, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
+// 	if resp != "n" && resp != "no" {
+// 		editMessage := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+// 		if langLock {
+// 			editMessage += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().module.language))
+// 		}
+// }
 
-	comment := langDetails.CommentPrefix
-	sampleIO := pSlot.challenge.SampleIO
-	description := pSlot.challenge.Description
-	return fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
-}
+// func boilerPlateFor(p *Player) string {
+// 	langDetails := gm.languages[p.language]
+// 	return langDetails.Boilerplate
+// }
 
-func cmdMake(p *Player, args []string, playerCode string) Message {
+// func challengeBufferFor(p *Player) string {
+// 	langDetails := gm.languages[p.language]
+// 	pSlot := p.slot()
+// 	if pSlot == nil {
+// 		return ""
+// 	}
+
+// 	comment := langDetails.CommentPrefix
+// 	sampleIO := pSlot.challenge.SampleIO
+// 	description := pSlot.challenge.Description
+// 	return fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
+// }
+
+func cmdMake(p *Player, gm *GameModel, args []string, c string) Message {
 
 	// TODO handle compiler error
-	if playerCode == "" {
+	if c == "" {
 		return psError(errors.New("No code submitted"))
 	}
 
@@ -468,14 +523,14 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 	}
 
 	// enforce module language
-	if slot.module != nil && slot.module.Team != p.Team && slot.module.language != p.language {
+	if slot.module != nil && slot.module.TeamName != p.TeamName && slot.module.language != p.language {
 		psError(fmt.Errorf("This module is written in %s, your code must be written in %s", slot.module.language, slot.module.language))
 	}
 
 	// passed error checks on args
-	p.outgoing <- psBegin("Compiling...")
+	p.Outgoing <- psBegin("Compiling...")
 
-	response := submitTest(slot.challenge.ID, p.language, playerCode)
+	response := submitTest(slot.challenge.ID, p.language, c)
 
 	if response.Message.Type == "error" {
 		return psError(errors.New(response.Message.Data))
@@ -489,13 +544,13 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 
 	if slot.module != nil {
 		// in case we're refactoring a friendly module
-		if slot.module.Team == p.Team {
+		if slot.module.TeamName == p.TeamName {
 
 			slot.module.Health = newModHealth
 			slot.module.language = p.language
 
 			gm.broadcastState()
-			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
+			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.Name, p.TeamName, p.Route.Endpoint.ID)))
 			return psSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.module.Health, slot.module.MaxHealth, slot.module.language))
 		}
 
@@ -508,12 +563,13 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 			return psAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
 
 		case newModHealth > slot.module.Health:
-			oldTeam := slot.module.Team
-			slot.module.Team = p.Team
+			oldTeam := gm.Teams[slot.module.TeamName]
+			slot.module.TeamName = p.TeamName
 			slot.module.Health = newModHealth
+			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 			gm.broadcastState()
-			gm.broadcastAlertFlash(p.Team.Name)
-			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.Team.Name, oldTeam.Name, p.Route.Endpoint.ID)))
+			gm.broadcastAlertFlash(p.TeamName)
+			gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
 			return psSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
 		}
 
@@ -525,12 +581,12 @@ func cmdMake(p *Player, args []string, playerCode string) Message {
 		return psError(err)
 	}
 	gm.broadcastState()
-	gm.broadcastAlertFlash(p.Team.Name)
-	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.Team.Name, p.Route.Endpoint.ID)))
+	gm.broadcastAlertFlash(p.TeamName)
+	gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.TeamName, p.Route.Endpoint.ID)))
 	return psSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
 
-func cmdNewMap(p *Player, args []string, playerCode string) Message {
+func cmdNewMap(p *Player, gm *GameModel, args []string, c string) Message {
 	// TODO fix d3 to update...
 	nodeCount, err := validateOneIntArg(args)
 	if err != nil {
@@ -539,7 +595,7 @@ func cmdNewMap(p *Player, args []string, playerCode string) Message {
 
 	nodeIDCount = 0
 	gm.Map = newRandMap(nodeCount)
-	p.outgoing <- Message{
+	p.Outgoing <- Message{
 		Type:   "graphReset",
 		Sender: serverStr,
 		Data:   "",
@@ -548,7 +604,7 @@ func cmdNewMap(p *Player, args []string, playerCode string) Message {
 	return psSuccess("Generating new map...")
 }
 
-func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
+func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) Message {
 
 	slot := p.slot()
 
@@ -561,7 +617,7 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 	}
 
 	// if we're removing a friendly module, just do it:
-	if p.Team == slot.module.Team {
+	if p.TeamName == slot.module.TeamName {
 		resp := psPrompt(p, "Friendly module, confirm removal? (y/n)")
 		if resp == "y" || resp == "ye" || resp == "yes" {
 			err := p.Route.Endpoint.removeModule(p.slotNum)
@@ -569,23 +625,24 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 				return psError(err)
 			}
 
+			gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
 			gm.broadcastState()
 			return psSuccess("Module removed")
 		}
 		return psError(errors.New("removal aborted"))
 	}
 
-	if playerCode == "" {
+	if c == "" {
 		return psError(errors.New("No code submitted"))
 	}
 
 	// All checks passed:
 	// passed error checks on args
 
-	p.outgoing <- psBegin("Removing module...")
+	p.Outgoing <- psBegin("Removing module...")
 
 	log.Printf("remove cID: %v", slot.challenge.ID)
-	response := submitTest(slot.challenge.ID, p.language, playerCode)
+	response := submitTest(slot.challenge.ID, p.language, c)
 
 	if response.Message.Type == "error" {
 		return psError(errors.New(response.Message.Data))
@@ -596,16 +653,16 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 	log.Printf("response to submitted test: %v", response)
 
 	if newModHealth >= slot.module.Health {
-		oldTeamName := slot.module.Team.Name
+		oldTeam := gm.Teams[slot.module.TeamName]
 
 		err := p.Route.Endpoint.removeModule(p.slotNum)
 		if err != nil {
 			return psError(err)
 		}
-
+		gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 		gm.broadcastState()
-		gm.broadcastAlertFlash(p.Team.Name)
-		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.Name, p.Team.Name, oldTeamName, p.Route.Endpoint.ID)))
+		gm.broadcastAlertFlash(p.TeamName)
+		gm.psBroadcastExcept(p, psAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.Name, p.TeamName, oldTeam, p.Route.Endpoint.ID)))
 		return psSuccess("Module removed")
 
 	}
@@ -617,7 +674,7 @@ func cmdRemoveModule(p *Player, args []string, playerCode string) Message {
 
 }
 
-func cmdLoadMod(p *Player, args []string, c string) Message {
+func cmdLoadMod(p *Player, gm *GameModel, args []string, c string) Message {
 	return Message{}
 }
 
