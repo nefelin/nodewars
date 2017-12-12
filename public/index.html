@@ -135,7 +135,7 @@
 <script>
 'use strict';
 
-const nodeMap = new NWGraph('#graph')
+const graphViz = new NWGraph('#graph')
 Split(['#main-row', '#terminal'], {
 	direction: 'vertical',
     elementStyle: function (dimension, size, gutterSize) {
@@ -254,15 +254,15 @@ function parseGraphState(msg) {
 
 	const newState = JSON.parse(msg.data)
 	console.log('updateGraph called with state:', newState)
-	// console.log("nodeMap before arrayifyNodeMap:", newState.nodeMap)
-	// let nodeMap = arrayifyNodeMap(newState.nodeMap)
-	// console.log("nodeMap after arrayifyNodeMap:", newState.nodeMap)
+	// console.log("graphViz before arrayifyNodeMap:", newState.graphViz)
+	// let graphViz = arrayifyNodeMap(newState.graphViz)
+	// console.log("graphViz after arrayifyNodeMap:", newState.graphViz)
 	// if (msg.type == "initGraphState") {
-	// 	// console.log("initing with nodemap", nodeMap)
-	// 	initGraph(nodeMap)
+	// 	// console.log("initing with graphViz", graphViz)
+	// 	initGraph(graphViz)
 	// } 
-	nodeMap.update(newState)
-	nodeMap.draw()
+	graphViz.update(newState)
+	graphViz.draw()
 }
 
 function updateLanguage(newLang) {
@@ -298,7 +298,7 @@ function parseServerMessages(e) {
 		case "server":
 			switch(msg.type) {
 				case "alertFlash":
-					alertFlash(msg.data)
+					graphViz.alertFlash(msg.data)
 					break
 
 				case "graphState": 
