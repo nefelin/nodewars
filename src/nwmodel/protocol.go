@@ -81,8 +81,8 @@ func HandleConnections(w http.ResponseWriter, r *http.Request) {
 
 	// send initial state
 	// log.Println("Sending initial state message to player...")
-	// thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
-	thisPlayer.outgoing <- initStateMsgForPlayer(thisPlayer)
+	thisPlayer.outgoing <- calcStateMsgForPlayer(thisPlayer)
+	// thisPlayer.outgoing <- initStateMsgForPlayer(thisPlayer)
 
 	// Handle socket stream
 	for {

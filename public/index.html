@@ -301,11 +301,11 @@ function parseServerMessages(e) {
 					graphViz.alertFlash(msg.data)
 					break
 
-				case "graphState": 
-					parseGraphState(msg)
-					
+				case "graphReset":
+					graphViz.reset()
+					break
 
-				case "initGraphState": 
+				case "graphState": 
 					parseGraphState(msg)
 					break
 

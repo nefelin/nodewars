@@ -539,6 +539,11 @@ func cmdNewMap(p *Player, args []string, playerCode string) Message {
 
 	nodeIDCount = 0
 	gm.Map = newRandMap(nodeCount)
+	p.outgoing <- Message{
+		Type:   "graphReset",
+		Sender: serverStr,
+		Data:   "",
+	}
 	gm.broadcastState()
 	return psSuccess("Generating new map...")
 }

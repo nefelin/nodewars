@@ -27,7 +27,23 @@ class NWGraph {
             .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
-        
+
+	}
+
+	reset() {
+		this.stopped = true
+
+		// this.simulation = d3.forceSimulation()
+  //           .force("link", d3.forceLink().distance(nodeBaseRadius*4))
+  //           .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
+  //           .force("charge", d3.forceManyBody().strength(-300))
+  //           .force("center", d3.forceCenter(width / 2, height / 2))
+
+		this.simulation.stop()
+		this.links.remove()
+		this.nodeGroups.remove()
+
+		this.gameState = null
 	}
 
 	drawLinks() {
@@ -47,7 +63,7 @@ class NWGraph {
         // this.links.classed("traffic", d => d.traffic.length>0)
 	}
 
-	makeNodeGroups() {
+	drawNodeGroups() {
 		const self = this
 		const update = this.svg.selectAll(".node-group").data(this.gameState.map.nodes)
 		const enter = update.enter()
@@ -103,7 +119,8 @@ class NWGraph {
 			.style("fill", d => {
 				if (d.poes.length>0)
 					return d.poes[0].team.name
-				return "white"
+				// return "white"
+				return d3.hsl(300, 1*d.remoteness, 1*d.remoteness)
 			})
 
 			// .style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})
@@ -171,6 +188,9 @@ class NWGraph {
 
 	update(newState) {
 		console.log("NWGraph updating...")
+
+		const self = this
+
 		NWGraph.makeEdges(newState.map)
 		NWGraph.attachPOEs(newState)
 		NWGraph.attachRoutes(newState)
@@ -182,21 +202,14 @@ class NWGraph {
 		}
 
 		this.gameState = newState
-		console.log("NWGraph state post update:", this.gameState)
-	}
 
-	draw() {
-		const self = this
-		// Order of these is important as D3 handles z-index by draw order only
-		this.drawLinks()
-		this.makeNodeGroups()
-        // this.drawNodeContent()
-        this.drawNodeLabels()
-        this.drawModules()
+		if (this.stopped){
+			this.simulation.alpha(1)
+			this.simulation.restart()
+			this.stopped = false
+		}
 
-
-
-        var ticked = function() {
+		var ticked = function() {
             self.links
                 .attr("x1", function(d) { return d.source.x; })
                 .attr("y1", function(d) { return d.source.y; })
@@ -211,8 +224,18 @@ class NWGraph {
             .on("tick", ticked);
     
         this.simulation.force("link")
-            .links(this.gameState.map.edges);  
+            .links(this.gameState.map.edges); 
+		// console.log("NWGraph state post update:", this.gameState)
+	}
 
+	draw() {
+		// const self = this
+
+		// Order of these is important as D3 handles z-index by draw order only
+		this.drawLinks()
+		this.drawNodeGroups()
+        this.drawNodeLabels()
+        this.drawModules()
 
 	}
 
