@@ -117,10 +117,11 @@ class NWGraph {
 			.classed("traffic", d => d.traffic.length>0)
 			.transition(t)
 			.style("fill", d => {
+				console.log(d)
 				if (d.poes.length>0)
 					return d.poes[0].team.name
 				// return "white"
-				return d3.hsl(300, 1*d.remoteness, 1*d.remoteness)
+				return d3.hsl(300, 1*d.remoteness+(d.connections.length*.2), 1*d.remoteness+(d.connections.length*.1))
 			})
 
 			// .style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})

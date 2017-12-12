@@ -60,11 +60,7 @@ func NewNode() *node {
 	return &node{
 		ID:          id,
 		Connections: connections,
-		// Capacity:    3,
-		Modules: modules,
-		// Traffic:          make([]*Player, 0),
-		// POE:              make([]*Player, 0),
-		// ConnectedPlayers: make([]*Player, 0),
+		Modules:     modules,
 	}
 }
 
@@ -176,6 +172,25 @@ func newDefaultMap() *nodeMap {
 }
 
 // GameModel methods --------------------------------------------------------------------------
+
+func (gm *GameModel) resetMap(m *nodeMap) {
+	gm.Map = m
+
+	// Tell everyone to clear their maps
+	for _, p := range gm.Players {
+		p.outgoing <- Message{
+			Type:   "graphReset",
+			Sender: serverStr,
+			Data:   "",
+		}
+	}
+
+	// Clear map specific data:
+	gm.POEs = make(map[playerID]*node)
+
+	// send our new state
+	gm.broadcastState()
+}
 
 // RegisterPlayer adds a new player to our world model
 func (gm *GameModel) RegisterPlayer(ws *websocket.Conn) *Player {
@@ -411,16 +426,16 @@ func (n *node) initSlots() {
 }
 
 // TODO deprecate this for modslot approach
-func (n node) capacity() int {
-	return len(n.Connections)
-}
+// func (n node) capacity() int {
+// 	return len(n.Connections)
+// }
 
-func (n node) isFull() bool {
-	if len(n.Modules) > n.capacity()-1 {
-		return true
-	}
-	return false
-}
+// func (n node) isFull() bool {
+// 	if len(n.Modules) > n.capacity()-1 {
+// 		return true
+// 	}
+// 	return false
+// }
 
 // addConnection is reciprocol
 func (n *node) addConnection(m *node) {
