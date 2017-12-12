@@ -10,7 +10,7 @@ const width = 640,
 	  strokeWidth = 2
 
 const t = d3.transition()
-      .duration(750)
+      .duration(1000)
 
 
 class NWGraph {
@@ -31,37 +31,35 @@ class NWGraph {
 	}
 
 	drawLinks() {
-		this.links = this.svg.selectAll('.edge')
-        	.data(this.gameState.map.edges)
-        	.enter()
+		const update = this.svg.selectAll('.edge').data(this.gameState.map.edges)
+
+		this.links = update.enter()
             .append("line")
             .attr("class", d => "edge edgeID-" + d.id)
             .attr("stroke", "black")
             .attr("stroke-width", strokeWidth)
+          .merge(update)
+            .classed("traffic", d => d.traffic.length>0)
 
-        this.links.exit().remove()
+        update.exit().remove()
 
         // update traffic info on all links, new and old alike
-        this.links.classed("traffic", d => d.traffic.length>0)
+        // this.links.classed("traffic", d => d.traffic.length>0)
 	}
 
 	makeNodeGroups() {
-		this.nodeGroups = this.svg.selectAll(".node-group")
-        	.data(this.gameState.map.nodes)
-        	.enter()
+		const self = this
+		const update = this.svg.selectAll(".node-group").data(this.gameState.map.nodes)
+		const enter = update.enter()
         	.append("g")
             .attr("class", "node-group")
+            // .merge(update)
             .call(d3.drag()
                 .on("start", this.dragstarted.bind(this))
                 .on("drag", this.dragged.bind(this))
                 .on("end", this.dragended.bind(this))); 
-
-        this.nodeGroups.exit().remove()
-	}
-
-	drawNodeContent() {
-		const self = this
-		this.nodeGroups.each(function(d) {
+            
+		enter.each(function(d) {
         	const radius = nodeBaseRadius+d.connections.length*nodeRadiusMultiplier
 
         	// add backing to hide main's transparency when animating POEs
@@ -91,7 +89,12 @@ class NWGraph {
         	}
         })
 
+		this.nodeGroups = enter.merge(update)
+
+        update.exit().remove()
+
 		// update node-main classes for new and old nodes alike
+
         this.nodeGroups.select(".node-main")
 			.classed("node-poe", d => d.poes.length>0)
 			.classed("player-connected", d => d.connectedPlayers.length>0)
@@ -102,8 +105,11 @@ class NWGraph {
 					return d.poes[0].team.name
 				return "white"
 			})
-			// visualizing remoteness only
+
 			// .style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})
+
+        
+
 	}
 
 	drawNodeLabels() {
@@ -152,11 +158,11 @@ class NWGraph {
 		           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
 		           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
 
-		    // update all modules
+		    // update new modules
 		    modules.transition(t)
 				.style("fill", d => d.team.name)
 			    .style("fill-opacity", d => {
-			   		console.log("making module of fill at:" , d);
+			   		// console.log("making module of fill at:" , d);
 			   		return d.health/d.maxHealth
 			    })
 
@@ -184,7 +190,7 @@ class NWGraph {
 		// Order of these is important as D3 handles z-index by draw order only
 		this.drawLinks()
 		this.makeNodeGroups()
-        this.drawNodeContent()
+        // this.drawNodeContent()
         this.drawNodeLabels()
         this.drawModules()
 
@@ -309,8 +315,13 @@ class NWGraph {
 			for (let connectionID of nodeMap.nodes[i].connections) {
 				let edgeID = NWGraph.makeEdgeID(i, connectionID)
 
-				if (!seenEdges[edgeID])
+				if (!seenEdges[edgeID]){
+					//TODO wtf is this?
+					// console.log('edge object', {id:edgeID, source:i, target:connectionID})
 					seenEdges[edgeID] = {id:edgeID, source:i, target:connectionID}
+					// console.log("seenEdges[edgeID]", seenEdges[edgeID])
+					// console.log("seenEdges[edgeID]", seenEdges)
+				}
 			}
 		}
 
