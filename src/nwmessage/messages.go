@@ -2,10 +2,6 @@ package nwmessage
 
 import (
 	"fmt"
-	"log"
-	"strings"
-
-	"github.com/gorilla/websocket"
 )
 
 // Message is our basic message struct
@@ -35,27 +31,27 @@ const (
 	terminatorStr = "\n"
 )
 
-func PsPrompt(c chan Message, ws *websocket.Conn, m string) string {
-	question := Message{
-		Type:   confirmStr,
-		Sender: pseudoStr,
-		Data:   m,
-	}
+// func PsPrompt(c chan Message, ws *websocket.Conn, m string) string {
+// 	question := Message{
+// 		Type:   confirmStr,
+// 		Sender: pseudoStr,
+// 		Data:   m,
+// 	}
 
-	// pose question
-	c <- question
+// 	// pose question
+// 	c <- question
 
-	// wait for response
-	var res Message
+// 	// wait for response
+// 	var res Message
 
-	err := ws.ReadJSON(&res)
-	if err != nil {
-		log.Printf("error: %v", err)
-		return "error"
-	}
+// 	err := ws.ReadJSON(&res)
+// 	if err != nil {
+// 		log.Printf("error: %v", err)
+// 		return "error"
+// 	}
 
-	return strings.ToLower(res.Data)
-}
+// 	return strings.ToLower(res.Data)
+// }
 
 func PsError(e error) Message {
 	return Message{

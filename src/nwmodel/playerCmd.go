@@ -627,7 +627,8 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 	// if we're removing a friendly module, just do it:
 	if p.TeamName == slot.module.TeamName {
-		resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Friendly module, confirm removal? (y/n)")
+		// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Friendly module, confirm removal? (y/n)")
+		resp := "y"
 		if resp == "y" || resp == "ye" || resp == "yes" {
 			err := p.Route.Endpoint.removeModule(p.slotNum)
 			if err != nil {
