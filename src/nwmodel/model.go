@@ -14,7 +14,7 @@ type teamName = string
 
 // incrementing ID counters
 var playerIDCount playerID
-var nodeIDCount nodeID
+
 var moduleIDCount modID
 
 // GameModel holds all state information
@@ -33,10 +33,11 @@ type route struct {
 }
 
 type nodeMap struct {
-	Nodes    []*node         `json:"nodes"`
-	POEs     map[nodeID]bool `json:"poes"`
-	diameter float64
-	radius   float64
+	Nodes       []*node         `json:"nodes"`
+	POEs        map[nodeID]bool `json:"poes"`
+	diameter    float64
+	radius      float64
+	nodeIDCount nodeID
 }
 
 type node struct {

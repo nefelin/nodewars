@@ -606,7 +606,8 @@ func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		return nwmessage.PsError(err)
 	}
 
-	nodeIDCount = 0
+	// nodeIdcount should be irrelevant since its now tied to maps
+	// nodeIDCount = 0
 	gm.Map = newRandMap(nodeCount)
 	p.Outgoing <- nwmessage.GraphReset()
 	gm.broadcastState()

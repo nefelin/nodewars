@@ -52,19 +52,19 @@ func NewTeam(n teamName) *team {
 }
 
 // NewNode ...
-func NewNode() *node {
-	id := nodeIDCount
-	nodeIDCount++
+// func NewNode() *node {
+// 	id := nodeIDCount
+// 	nodeIDCount++
 
-	connections := make([]int, 0)
-	modules := make(map[modID]*module)
+// 	connections := make([]int, 0)
+// 	modules := make(map[modID]*module)
 
-	return &node{
-		ID:          id,
-		Connections: connections,
-		Modules:     modules,
-	}
-}
+// 	return &node{
+// 		ID:          id,
+// 		Connections: connections,
+// 		Modules:     modules,
+// 	}
+// }
 
 func newNodeMap() nodeMap {
 	return nodeMap{
@@ -113,9 +113,10 @@ func newRandMap(n int) *nodeMap {
 	nodeCount := n
 	newMap := newNodeMap()
 
-	for i := 0; i < nodeCount; i++ {
-		newMap.addNodes(NewNode())
-	}
+	// for i := 0; i < nodeCount; i++ {
+	// 	newMap.addNodes(newMap.NewNode())
+	// }
+	newMap.addNodes(nodeCount)
 
 	for i := 0; i < nodeCount; i++ {
 		if i < nodeCount-1 {
@@ -140,18 +141,20 @@ func newRandMap(n int) *nodeMap {
 func newDefaultMap() *nodeMap {
 	newMap := newNodeMap()
 
-	NODECOUNT := 12
+	nodecount := 12
 
-	for i := 0; i < NODECOUNT; i++ {
-		//Make new nodes
-		newMap.addNodes(NewNode())
-	}
+	// for i := 0; i < nodecount; i++ {
+	// 	//Make new nodes
+	// 	newMap.addNodes(newMap.NewNode())
+	// }
 
-	for i := 0; i < NODECOUNT; i++ {
+	newMap.addNodes(nodecount)
+
+	for i := 0; i < nodecount; i++ {
 		//Make new edges
 		targ1, targ2 := -1, -1
 
-		if i < NODECOUNT-3 {
+		if i < nodecount-3 {
 			targ1 = i + 3
 		}
 
@@ -697,9 +700,36 @@ func (m *nodeMap) initPoes(n int) {
 
 }
 
-func (m *nodeMap) addNodes(ns ...*node) {
-	for _, node := range ns {
-		m.Nodes = append(m.Nodes, node)
+// func (m *nodeMap) NewNode() *node {
+// 	id := m.nodeIDCount
+// 	m.nodeIDCount++
+
+// 	connections := make([]int, 0)
+// 	modules := make(map[modID]*module)
+
+// 	return &node{
+// 		ID:          id,
+// 		Connections: connections,
+// 		Modules:     modules,
+// 	}
+// }
+
+func (m *nodeMap) addNodes(count int) {
+	for i := 0; i < count; i++ {
+		id := m.nodeIDCount
+		m.nodeIDCount++
+
+		connections := make([]int, 0)
+		modules := make(map[modID]*module)
+
+		newNode := &node{
+			ID:          id,
+			Connections: connections,
+			Modules:     modules,
+		}
+
+		m.Nodes = append(m.Nodes, newNode)
+
 	}
 }
 
