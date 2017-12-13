@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"nwmessage"
 	"os"
 )
 
@@ -25,7 +26,7 @@ type SubmissionRequest struct {
 
 type ChallengeResponse struct {
 	PassFail map[string]string `json:"passFail"`
-	Message  Message           `json:"message"`
+	Message  nwmessage.Message `json:"message"`
 }
 
 type LanguageDetails struct {

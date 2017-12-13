@@ -1,6 +1,8 @@
 package nwmodel
 
 import (
+	"nwmessage"
+
 	"github.com/gorilla/websocket"
 )
 
@@ -22,7 +24,7 @@ type GameModel struct {
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
-	aChan     chan Message
+	aChan     chan nwmessage.Message
 }
 
 type route struct {
@@ -44,7 +46,7 @@ type node struct {
 	Modules     map[modID]*module `json:"modules"`
 	slots       []*modSlot
 	Remoteness  float64 `json:"remoteness"`
-	playersHere []*Player
+	playersHere []string
 }
 
 // TODO rethink I don't like that this setup exposes test information
@@ -74,13 +76,13 @@ type team struct {
 
 // Player ...
 type Player struct {
-	ID       playerID        `json:"id"`
-	Name     string          `json:"name"`
-	TeamName string          `json:"team"`
-	Route    *route          `json:"route"`
-	Socket   *websocket.Conn `json:"-"`
-	Outgoing chan Message    `json:"-"`
-	language string          // current working language
-	stdin    string          // stdin buffer for testing
-	slotNum  int             // currently attached to slotNum of current node
+	ID       playerID               `json:"id"`
+	Name     string                 `json:"name"`
+	TeamName string                 `json:"team"`
+	Route    *route                 `json:"route"`
+	Socket   *websocket.Conn        `json:"-"`
+	Outgoing chan nwmessage.Message `json:"-"`
+	language string                 // current working language
+	stdin    string                 // stdin buffer for testing
+	slotNum  int                    // currently attached to slotNum of current node
 }

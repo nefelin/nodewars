@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
-
+	"nwmessage"
 	"nwmodel"
+	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -75,10 +75,11 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
 	go outgoingRelay(thisPlayer)
+	thisPlayer.Outgoing <- nwmessage.PromptState("lobby>")
 
 	// Handle socket stream
 	for {
-		var msg nwmodel.Message
+		var msg nwmessage.Message
 
 		err := ws.ReadJSON(&msg)
 		if err != nil {
@@ -104,22 +105,20 @@ func outgoingRelay(p *nwmodel.Player) {
 
 // Response are sometimes handled as imperatives, sometimes only effect state and
 // are visible after entire stateMessage update. Pick a paradigm TODO
-func incomingHandler(d *Dispatcher, msg nwmodel.Message, p *nwmodel.Player) {
+func incomingHandler(d *Dispatcher, msg nwmessage.Message, p *nwmodel.Player) {
 	// Tie message with player name
 	msg.Sender = strconv.Itoa(p.ID)
 	switch msg.Type {
 
 	case "playerCmd":
-		d.recv(msg)
+		d.Recv(msg)
 		// d.getRoom(p.ID).recv(msg)
 		// res := cmdHandler(msg, p)
 		// if res.Data != "" {
 		// 	p.outgoing <- res
 		// }
 
-		// p.outgoing <- promptStateMsg(p.prompt())
-
 	default:
-		p.Outgoing <- nwmodel.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}
+		p.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"nwmessage"
 	"sort"
 	"strconv"
 	"strings"
@@ -83,7 +84,7 @@ func NewDefaultModel() *GameModel {
 	p := make(map[playerID]*Player)
 	poes := make(map[playerID]*node)
 
-	aChan := make(chan Message, 100)
+	aChan := make(chan nwmessage.Message, 100)
 
 	gm := &GameModel{
 		Map:     m,
@@ -133,7 +134,6 @@ func newRandMap(n int) *nodeMap {
 	// for len(newMap.POEs) < 2 {
 	// 	newMap.addPoes(rand.Intn(nodeCount))
 	// }
-	log.Printf("newRandMap nodes: %v", newMap.Nodes)
 	return &newMap
 }
 
@@ -180,16 +180,16 @@ func newDefaultMap() *nodeMap {
 
 // GameModel methods --------------------------------------------------------------------------
 
+func (gm *GameModel) Recv(msg nwmessage.Message) {
+	gm.aChan <- msg
+}
+
 func (gm *GameModel) resetMap(m *nodeMap) {
 	gm.Map = m
 
 	// Tell everyone to clear their maps
 	for _, p := range gm.Players {
-		p.Outgoing <- Message{
-			Type:   "graphReset",
-			Sender: serverStr,
-			Data:   "",
-		}
+		p.Outgoing <- nwmessage.GraphReset()
 	}
 
 	// Clear map specific data:
@@ -206,7 +206,7 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 func (gm *GameModel) broadcastState() {
 	for _, player := range gm.Players {
 		state := gm.calcState(player)
-		player.Outgoing <- graphStateMsg(state)
+		player.Outgoing <- nwmessage.GraphState(state)
 	}
 }
 
@@ -222,16 +222,12 @@ func (gm *GameModel) calcState(p *Player) string {
 func (gm *GameModel) broadcastAlertFlash(color string) {
 	// TODO abstract this to messages
 	for _, player := range gm.Players {
-		player.Outgoing <- Message{
-			Type:   "alertFlash",
-			Sender: serverStr,
-			Data:   color,
-		}
+		player.Outgoing <- nwmessage.AlertFlash(color)
 	}
 }
 
 // send a pseudoServer message to all players
-func (gm *GameModel) psBroadcast(msg Message) {
+func (gm *GameModel) psBroadcast(msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for _, player := range gm.Players {
@@ -240,7 +236,7 @@ func (gm *GameModel) psBroadcast(msg Message) {
 }
 
 // broadcast to all but one player
-func (gm *GameModel) psBroadcastExcept(p *Player, msg Message) {
+func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for _, player := range gm.Players {
@@ -312,11 +308,27 @@ func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 	return false
 }
 
+// AddPlayer ...
+func (gm *GameModel) AddPlayer(p *Player) error {
+	if _, ok := gm.Players[p.ID]; ok {
+		return errors.New("player '" + p.Name + "' is already in this game")
+	}
+	gm.Players[p.ID] = p
+	gm.setLanguage(p, "python")
+	// send initiall map state
+	p.Outgoing <- nwmessage.GraphState(gm.calcState(p))
+
+	// send initial prompt state
+	p.Outgoing <- nwmessage.PromptState(p.prompt())
+	return nil
+}
+
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; !ok {
 		return errors.New("player '" + p.Name + "' is not registered")
 	}
+
 	if p.TeamName != "" {
 		gm.Teams[p.TeamName].removePlayer(p)
 	}
@@ -375,6 +387,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 	if routeNodes != nil {
 		// log.Println("Successful Connect")
 		// log.Printf("Route to target: %v", routeNodes)
+		gm.breakConnection(p, false)
 		route := gm.establishConnection(p, routeNodes, target) // This should add player traffic to each intermediary and establish a connection on n
 		return route, nil
 	}
@@ -393,15 +406,16 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 	// return gm.Routes[p.ID]
 }
 
-func (gm *GameModel) breakConnection(p *Player) {
+func (gm *GameModel) breakConnection(p *Player, alert bool) {
 	// if _, exists := gm.Routes[p.ID]; exists {
 	if p.Route != nil {
 		p.Route.Endpoint.removePlayer(p)
 		// delete(gm.Routes, p.ID)
 		p.Route = nil
 
-		// TODO this should only happen if connection was severed non-voluntarily...
-		p.Outgoing <- psError(errors.New("Connection interrupted!"))
+		if alert {
+			p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
+		}
 	}
 
 	// detach from any slots
@@ -418,13 +432,13 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 			if player.TeamName == t.Name {
 				// and if it contained that node, break the players connection
 				if _, ok := player.Route.containsNode(n); ok {
-					gm.breakConnection(player)
+					gm.breakConnection(player, true)
 				}
 			}
 		}
 		// if this is a POE, announce that teams elimination
 		if t.poe == n {
-			gm.psBroadcast(psAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
+			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
 
 		}
 
@@ -437,7 +451,7 @@ func (gm *GameModel) setLanguage(p *Player, l string) error {
 		if l == lang {
 			p.language = strings.ToLower(l)
 
-			p.Outgoing <- Message{
+			p.Outgoing <- nwmessage.Message{
 				Type:   "languageState",
 				Sender: "server",
 				Data:   p.language,
@@ -488,7 +502,6 @@ func (n *node) addConnection(m *node) {
 		return
 	}
 
-	log.Printf("Adding: %d to %d's connections", m.ID, n.ID)
 	n.Connections = append(n.Connections, m.ID)
 	m.Connections = append(m.Connections, n.ID)
 }
@@ -543,15 +556,15 @@ func (n *node) removeModule(slotIndex int) error {
 
 // TODO this is broken:
 func (n *node) addPlayer(p *Player) {
-	n.playersHere = append(n.playersHere, p)
+	n.playersHere = append(n.playersHere, p.Name)
 }
 
 func (n *node) removePlayer(p *Player) {
-	n.playersHere = cutPFromSlice(n.playersHere, p)
+	n.playersHere = cutStrFromSlice(n.playersHere, p.Name)
 }
 
 // helper function for removing player from slice of players
-func cutPFromSlice(s []*Player, p *Player) []*Player {
+func cutStrFromSlice(s []string, p string) []string {
 	for i, thisP := range s {
 		if p == thisP {
 			// swaps the last element with the found element and returns with the last element cut
@@ -563,6 +576,19 @@ func cutPFromSlice(s []*Player, p *Player) []*Player {
 	log.Println("Player not found in slice")
 	return s
 }
+
+// func cutPFromSlice(s []*Player, p *Player) []*Player {
+// 	for i, thisP := range s {
+// 		if p == thisP {
+// 			// swaps the last element with the found element and returns with the last element cut
+// 			s[len(s)-1], s[i] = s[i], s[len(s)-1]
+// 			return s[:len(s)-1]
+// 		}
+// 	}
+// 	// log.Printf("CutPlayer returning: %v", s)
+// 	log.Println("Player not found in slice")
+// 	return s
+// }
 
 // nodeMap methods -----------------------------------------------------------------------------
 
@@ -737,10 +763,11 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 	tocheck := make([]*node, 1)
 	tocheck[0] = source
 
+	log.Println("searchField initialized, populating...")
 	for len(tocheck) > 0 {
 		thisNode := tocheck[0]
 		tocheck = tocheck[1:]
-
+		log.Println("check")
 		// log.Printf("this: %v", thisNode)
 		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
 		if t == nil || thisNode.allowsRoutingFor(t) {
@@ -840,7 +867,7 @@ func NewPlayer(ws *websocket.Conn) *Player {
 		ID:       playerIDCount,
 		Name:     "",
 		Socket:   ws,
-		Outgoing: make(chan Message),
+		Outgoing: make(chan nwmessage.Message),
 		slotNum:  -1,
 	}
 
@@ -921,7 +948,7 @@ func (t team) isFull() bool {
 	return true
 }
 
-func (t *team) broadcast(msg Message) {
+func (t *team) broadcast(msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for player := range t.players {

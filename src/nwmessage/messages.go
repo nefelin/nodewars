@@ -1,9 +1,11 @@
-package nwmodel
+package nwmessage
 
 import (
 	"fmt"
 	"log"
 	"strings"
+
+	"github.com/gorilla/websocket"
 )
 
 // Message is our basic message struct
@@ -33,19 +35,7 @@ const (
 	terminatorStr = "\n"
 )
 
-var msgNoTeam = Message{
-	Type:   errorStr,
-	Sender: pseudoStr,
-	Data:   "No team assignment",
-}
-
-var msgNoConnection = Message{
-	Type:   errorStr,
-	Sender: pseudoStr,
-	Data:   "No connection",
-}
-
-func psPrompt(p *Player, m string) string {
+func PsPrompt(c chan Message, ws *websocket.Conn, m string) string {
 	question := Message{
 		Type:   confirmStr,
 		Sender: pseudoStr,
@@ -53,12 +43,12 @@ func psPrompt(p *Player, m string) string {
 	}
 
 	// pose question
-	p.Outgoing <- question
+	c <- question
 
 	// wait for response
 	var res Message
 
-	err := p.Socket.ReadJSON(&res)
+	err := ws.ReadJSON(&res)
 	if err != nil {
 		log.Printf("error: %v", err)
 		return "error"
@@ -67,7 +57,7 @@ func psPrompt(p *Player, m string) string {
 	return strings.ToLower(res.Data)
 }
 
-func psError(e error) Message {
+func PsError(e error) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
@@ -75,7 +65,8 @@ func psError(e error) Message {
 	}
 }
 
-func psUnknown(cmd string) Message {
+// PS prefixed messages are printed to the users pseudoterminal
+func PsUnknown(cmd string) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
@@ -83,14 +74,15 @@ func psUnknown(cmd string) Message {
 	}
 }
 
-func psMessage(msg string) Message {
+// PsNeutral returns a typeless message, pseudo terminal then prints without prefix
+func PsNeutral(msg string) Message {
 	return Message{
 		Sender: pseudoStr,
 		Data:   msg + terminatorStr,
 	}
 }
 
-func psAlert(msg string) Message {
+func PsAlert(msg string) Message {
 	return Message{
 		Type:   alertStr,
 		Sender: pseudoStr,
@@ -98,7 +90,7 @@ func psAlert(msg string) Message {
 	}
 }
 
-func psSuccess(msg string) Message {
+func PsSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,
 		Sender: pseudoStr,
@@ -106,7 +98,7 @@ func psSuccess(msg string) Message {
 	}
 }
 
-func psBegin(msg string) Message {
+func PsBegin(msg string) Message {
 	return Message{
 		Type:   beginStr,
 		Sender: pseudoStr,
@@ -114,7 +106,41 @@ func psBegin(msg string) Message {
 	}
 }
 
-func editStateMsg(msg string) Message {
+func PsChat(msg string, context string) Message {
+	return Message{
+		Type:   context,
+		Data:   msg,
+		Sender: pseudoStr,
+	}
+}
+
+func PsNoTeam() Message {
+	return Message{
+		Type:   errorStr,
+		Sender: pseudoStr,
+		Data:   "No team assignment",
+	}
+}
+
+func PsNoConnection() Message {
+	return Message{
+		Type:   errorStr,
+		Sender: pseudoStr,
+		Data:   "No connection",
+	}
+}
+
+// messages with server as Sender trigger action in the front end but are not show in the pseudoterminal
+
+func AlertFlash(color string) Message {
+	return Message{
+		Type:   "alertFlash",
+		Sender: serverStr,
+		Data:   color,
+	}
+}
+
+func EditState(msg string) Message {
 	return Message{
 		Type:   editStateStr,
 		Sender: serverStr,
@@ -122,7 +148,7 @@ func editStateMsg(msg string) Message {
 	}
 }
 
-func promptStateMsg(msg string) Message {
+func PromptState(msg string) Message {
 	return Message{
 		Type:   promptStateStr,
 		Sender: serverStr,
@@ -130,7 +156,7 @@ func promptStateMsg(msg string) Message {
 	}
 }
 
-func graphStateMsg(msg string) Message {
+func GraphState(msg string) Message {
 	return Message{
 		Type:   graphStateStr,
 		Sender: serverStr,
@@ -138,6 +164,10 @@ func graphStateMsg(msg string) Message {
 	}
 }
 
-// var nwmessages = interface{
-// 	NoTeam: Message{"error:", "pseudoServer", "You have no team"},
-// }
+func GraphReset() Message {
+	return Message{
+		Type:   "graphReset",
+		Sender: serverStr,
+		Data:   "",
+	}
+}
