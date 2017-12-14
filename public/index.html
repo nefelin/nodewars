@@ -6,7 +6,6 @@
 	<script src="libs/d3.js"></script>
 	<script src="libs/jquery.terminal/js/jquery-1.7.1.min.js"></script>
     <script src="libs/jquery.terminal/js/jquery.terminal.min.js"></script>
-    <!-- <script src="https://rawgit.com/RickStrahl/jquery-resizable/master/src/jquery-resizable.js"></script> -->
     <script src="https://unpkg.com/split.js/split.min.js"></script>
     <link href="libs/jquery.terminal/css/jquery.terminal.css" rel="stylesheet"/>
     <script src="libs/ace-builds/src/ace.js" type="text/javascript" charset="utf-8">
@@ -342,7 +341,11 @@ function parseServerMessages(e) {
 	}
 }
 
-const ws = new WebSocket('ws://' + window.location.host + '/ws');
+let ws_protocol = 'ws://'
+if (location.protocol == 'https:')
+	ws_protocol = 'wss://'
+
+const ws = new WebSocket(ws_protocol + window.location.host + '/ws');
 
 
 function handshake() {
@@ -420,7 +423,7 @@ jQuery(function($, term) {
     			this.echo(cmdList)
     		} else {
     			const txt = prettifyCommand(cmd)
-				console.log("HELP",txt)
+				// console.log("HELP",txt)
 				if (txt){
 					this.echo(txt)
 				} else {
