@@ -206,7 +206,7 @@ func cmdLanguage(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 
 	// if the player's attached somewhere, update the buffer
 	if p.slotNum != -1 {
-		if p.slot().module.TeamName != p.TeamName {
+		if p.slot().module != nil && p.slot().module.TeamName != p.TeamName {
 			return nwmessage.PsError(errors.New("Can't change language on enemy module"))
 		}
 		pSlot := p.slot()
