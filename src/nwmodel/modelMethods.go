@@ -211,9 +211,15 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 }
 
 func (gm *GameModel) broadcastState() {
-	for _, player := range gm.Players {
-		state := gm.calcState(player)
-		player.Outgoing <- nwmessage.GraphState(state)
+	for _, p := range gm.Players {
+		state := gm.calcState(p)
+		p.Outgoing <- nwmessage.GraphState(state)
+	}
+}
+
+func (gm *GameModel) broadcastGraphReset() {
+	for _, p := range gm.Players {
+		p.Outgoing <- nwmessage.GraphReset()
 	}
 }
 
@@ -509,6 +515,21 @@ func (n *node) addConnection(m *node) {
 	m.Connections = append(m.Connections, n.ID)
 }
 
+func (n *node) remConnection(ni nodeID) {
+	n.Connections = cutIntFromSlice(ni, n.Connections)
+}
+
+func cutIntFromSlice(p int, s []int) []int {
+	for i, thisP := range s {
+		if p == thisP {
+			// swaps the last element with the found element and returns with the last element cut
+			s[len(s)-1], s[i] = s[i], s[len(s)-1]
+			return s[:len(s)-1]
+		}
+	}
+	return s
+}
+
 func (n *node) allowsRoutingFor(t *team) bool {
 	// t == nil means we don't care...
 	if t == nil {
@@ -562,11 +583,11 @@ func (n *node) addPlayer(p *Player) {
 }
 
 func (n *node) removePlayer(p *Player) {
-	n.playersHere = cutStrFromSlice(n.playersHere, p.GetName())
+	n.playersHere = cutStrFromSlice(p.GetName(), n.playersHere)
 }
 
 // helper function for removing player from slice of players
-func cutStrFromSlice(s []string, p string) []string {
+func cutStrFromSlice(p string, s []string) []string {
 	for i, thisP := range s {
 		if p == thisP {
 			// swaps the last element with the found element and returns with the last element cut
@@ -575,7 +596,7 @@ func cutStrFromSlice(s []string, p string) []string {
 		}
 	}
 	// log.Printf("CutPlayer returning: %v", s)
-	log.Println("Player not found in slice")
+	// log.Println("Player not found in slice")
 	return s
 }
 
@@ -732,6 +753,61 @@ func (m *nodeMap) addNodes(count int) {
 	}
 }
 
+func (m *nodeMap) removeNodes(ns []int) {
+	for _, id := range ns {
+		// look at connections and remove any connections point to node
+		for _, conn := range m.Nodes[id].Connections {
+			m.Nodes[conn].remConnection(id)
+		}
+
+		// remove from the Map.Nodes list
+		m.Nodes[id] = nil
+	}
+
+	// fix holes in the slice
+	m.Nodes = fillNodeSliceHoles(m.Nodes)
+
+	// fix node ID count
+	m.nodeIDCount -= len(ns)
+}
+
+func fillNodeSliceHoles(ns []*node) []*node {
+	// for every node i the node slice
+	for i, n := range ns {
+		// when we find a nil slot
+		if n == nil {
+			j := 1
+			// if the last element is also nil
+			for ns[len(ns)-j] == nil {
+				// keep backing up till we find a non nil
+				j++
+				// if we wind up where we started skip and just cut the nils out of the list
+				if len(ns)-j == i {
+					break
+				}
+			}
+			// once we've found a non nil to swap, swap
+			ns[i], ns[len(ns)-j] = ns[len(ns)-j], ns[i]
+
+			if ns[i] != nil {
+				// fix connections and ids
+				for _, connI := range ns[i].Connections {
+					// for each of our old connections, remove pointer to our old location
+					ns[connI].remConnection(ns[i].ID)
+
+					// add a fresh connection to our updated location
+					ns[connI].Connections = append(ns[connI].Connections, i)
+				}
+				// fix our id to match our new index
+				ns[i].ID = i
+			}
+			// cut the (should be all nils) tail off the slice
+			ns = ns[:len(ns)-j]
+		}
+	}
+	return ns
+}
+
 func (m *nodeMap) connectNodes(n1, n2 nodeID) error {
 	// Check existence of both elements
 	if m.nodeExists(n1) && m.nodeExists(n2) {
@@ -760,7 +836,6 @@ func (m *nodeMap) nodesConnections(n *node) []*node {
 	for _, nodeID := range n.Connections {
 		res = append(res, m.Nodes[nodeID])
 	}
-
 	return res
 }
 

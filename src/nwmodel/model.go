@@ -25,6 +25,7 @@ type GameModel struct {
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
 	aChan     chan nwmessage.Message
+	mapLocked bool
 }
 
 type route struct {
@@ -41,19 +42,16 @@ type nodeMap struct {
 }
 
 type node struct {
-	ID          nodeID   `json:"id"` // keys and ids is redundant TODO
-	Connections []nodeID `json:"connections"`
-	// address map concurrency TODO
+	ID          nodeID            `json:"id"` // keys and ids is redundant? TODO
+	Connections []nodeID          `json:"connections"`
 	Modules     map[modID]*module `json:"modules"`
 	slots       []*modSlot
 	Remoteness  float64 `json:"remoteness"`
 	playersHere []string
 }
 
-// TODO rethink I don't like that this setup exposes test information
-// throughout the map to the client.
 type modSlot struct {
-	challenge Challenge // Should we just send this and let front end handle displaying on comannd? seems more in-paradigm to send only on request.
+	challenge Challenge
 	module    *module
 }
 

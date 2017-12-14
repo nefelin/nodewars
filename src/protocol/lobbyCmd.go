@@ -24,6 +24,7 @@ var lobbyCmdList = map[string]playerCmd{
 
 	"name": cmdSetName,
 
+	"ng":      cmdNewGame,
 	"new":     cmdNewGame,
 	"newgame": cmdNewGame,
 }
@@ -46,7 +47,7 @@ func actionConsumer(d *Dispatcher) {
 
 		msg := strings.Split(m.Data, " ")
 
-		log.Println("recvd messg")
+		// log.Println("recvd messg")
 		if handlerFunc, ok := superCmdList[msg[0]]; ok {
 			// if the player's in a
 			gameName, ok := d.locations[pID]

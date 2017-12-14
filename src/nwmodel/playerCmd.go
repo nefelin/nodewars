@@ -13,7 +13,7 @@ import (
 // type playerCommand func(p *Player, gm *GameModel, args []string, code string) nwmessage.Message
 type playerCommand func(*Player, *GameModel, []string, string) nwmessage.Message
 
-var msgMap = map[string]playerCommand{
+var gameCmdList = map[string]playerCommand{
 	// chat functions
 	"y":        cmdYell,
 	"yell":     cmdYell,
@@ -57,7 +57,7 @@ var msgMap = map[string]playerCommand{
 	"att":    cmdAttach,
 	"attach": cmdAttach,
 
-	"nm": cmdNewMap,
+	// "nm": cmdNewMap,
 	// what am I attached to? what's my task? what's my language set to?
 	// "st":   cmdStatus,
 	// "stat": cmdStatus,
@@ -85,9 +85,18 @@ func actionConsumer(gm *GameModel) {
 
 		msg := strings.Split(m.Data, " ")
 
-		// log.Println("Finding handlerFunc...")
-		if handlerFunc, ok := msgMap[msg[0]]; ok {
-			// log.Println("Calling handlerFunc")
+		if handlerFunc, ok := mapCmdList[msg[0]]; ok {
+			if gm.mapLocked {
+				// make this message more situation agnostic TODO
+				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
+				continue
+			}
+			// if the games not locked, allow map to me modified.
+			res := handlerFunc(p, gm, msg[1:], m.Code)
+			if res.Data != "" {
+				p.Outgoing <- res
+			}
+		} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
 			res := handlerFunc(p, gm, msg[1:], m.Code)
 			if res.Data != "" {
 				p.Outgoing <- res
@@ -98,22 +107,6 @@ func actionConsumer(gm *GameModel) {
 		p.Outgoing <- nwmessage.PromptState(p.prompt())
 	}
 }
-
-// func cmdHandler(m *nwmessage.Message, p *Player) nwmessage.Message {
-// 	// when we receive a message
-// 	// log.Println("Splitting...")
-// 	msg := strings.Split(m.Data, " ")
-
-// 	// log.Println("Finding handlerFunc...")
-// 	if handlerFunc, ok := msgMap[msg[0]]; ok {
-
-// 		// log.Println("Calling handlerFunc")
-// 		return handlerFunc(p, msg[1:], m.Code)
-// 	}
-
-// 	return psUnknown(msg[0])
-
-// }
 
 func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
@@ -327,9 +320,8 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
 	}
 
-	// TODO connect players on POE set. that means we have to create the module before each player's POE gets set...
-	// which is happening right now as a result of setTeamPoe
-
+	// disallow further map tinkering
+	gm.mapLocked = true
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.TeamName, newPOE))
 }
@@ -554,25 +546,25 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	return nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
 
-func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	// TODO fix d3 to update...
-	for _, t := range gm.Teams {
-		if t.poe != nil {
-			return nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
-		}
-	}
-	nodeCount, err := validateOneIntArg(args)
-	if err != nil {
-		return nwmessage.PsError(err)
-	}
+// func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// 	// TODO fix d3 to update...
+// 	for _, t := range gm.Teams {
+// 		if t.poe != nil {
+// 			return nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
+// 		}
+// 	}
+// 	nodeCount, err := validateOneIntArg(args)
+// 	if err != nil {
+// 		return nwmessage.PsError(err)
+// 	}
 
-	// nodeIdcount should be irrelevant since its now tied to maps
-	// nodeIDCount = 0
-	gm.Map = newRandMap(nodeCount)
-	p.Outgoing <- nwmessage.GraphReset()
-	gm.broadcastState()
-	return nwmessage.PsSuccess("Generating new map...")
-}
+// 	// nodeIdcount should be irrelevant since its now tied to maps
+// 	// nodeIDCount = 0
+// 	gm.Map = newRandMap(nodeCount)
+// 	p.Outgoing <- nwmessage.GraphReset()
+// 	gm.broadcastState()
+// 	return nwmessage.PsSuccess("Generating new map...")
+// }
 
 func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
