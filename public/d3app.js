@@ -119,7 +119,7 @@ class NWGraph {
 			.style("fill", d => {
 				console.log(d)
 				if (d.poes.length>0)
-					return d.poes[0].team.name
+					return d.poes[0].team
 				// return "white"
 				return d3.hsl(300, 1*d.remoteness+(d.connections.length*.2), 1*d.remoteness+(d.connections.length*.1))
 			})
@@ -161,7 +161,7 @@ class NWGraph {
 			modules.enter()
 				   .append("circle")
 				   .attr("class", "node-module")
-	   			   .style("fill", d => d.team.name)
+	   			   .style("fill", d => d.team)
 	   			   .style("fill-opacity", d => {
 	   			   		console.log("making module of fill at:" , d);
 	   			   		return d.health/d.maxHealth
@@ -178,7 +178,7 @@ class NWGraph {
 
 		    // update new modules
 		    modules.transition(t)
-				.style("fill", d => d.team.name)
+				.style("fill", d => d.team)
 			    .style("fill-opacity", d => {
 			   		// console.log("making module of fill at:" , d);
 			   		return d.health/d.maxHealth
