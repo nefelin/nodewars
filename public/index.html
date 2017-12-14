@@ -54,9 +54,10 @@
 
 	#team-flag {
 		/*order:1;*/
+		/*z-index: 10;*/
 		width:100%;
 		height:8px;
-		background-color: black
+		background-color: black;
 	}
 
 	#terminal {
@@ -323,7 +324,12 @@ function parseServerMessages(e) {
 					break
 				
 				case "teamState":
-					$("#team-flag").css("background-color", msg.data)
+					if (msg.data == "")
+						$("#team-flag").css("background-color", "black")
+					else {
+						$("#team-flag").css("background-color", msg.data)
+					}
+					break
 
 				default:
 					console.log("(server) ", msg.type, ":", msg.data)

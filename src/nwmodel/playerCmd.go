@@ -24,7 +24,7 @@ var msgMap = map[string]playerCommand{
 
 	// // player settings
 	"team": cmdTeam,
-	"name": cmdName,
+	"name": cmdSetName,
 
 	// // world interaction
 	"con":     cmdConnect,
@@ -117,7 +117,7 @@ func actionConsumer(gm *GameModel) {
 
 func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
-	chatMsg := p.name() + " > " + strings.Join(args, " ")
+	chatMsg := p.GetName() + " > " + strings.Join(args, " ")
 
 	gm.psBroadcast(nwmessage.Message{
 		Type: "(global)",
@@ -130,7 +130,7 @@ func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 	var recip *Player
 	for _, player := range gm.Players {
-		if player.Name == args[0] {
+		if player.GetName() == args[0] {
 			recip = player
 		}
 	}
@@ -139,7 +139,7 @@ func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
 	}
 
-	chatMsg := p.name() + " > " + strings.Join(args[1:], " ")
+	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
 
 	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
 	return nwmessage.Message{}
@@ -150,7 +150,7 @@ func cmdTc(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 		return nwmessage.PsNoTeam()
 	}
 
-	chatMsg := p.name() + "> " + strings.Join(args, " ")
+	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
 
 	gm.Teams[p.TeamName].broadcast(nwmessage.Message{
 		Type: "(team)",
@@ -159,7 +159,9 @@ func cmdTc(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 	return nwmessage.Message{}
 
 }
-
+func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	return nwmessage.PsError(errors.New("Can't change name mid-game"))
+}
 func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	// log.Println("cmdTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
@@ -175,12 +177,6 @@ func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(err)
 	}
 
-	p.Outgoing <- nwmessage.Message{
-		Type:   "teamState",
-		Sender: "server",
-		Data:   args[0],
-	}
-
 	tp := gm.Teams[p.TeamName].poe
 	if tp != nil {
 		log.Printf("player joined team, tryin to log into %v", tp.ID)
@@ -191,6 +187,7 @@ func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		gm.broadcastState()
 	}
 
+	p.Outgoing <- nwmessage.TeamState(p.TeamName)
 	return nwmessage.PsSuccess("You're on the " + args[0] + " team")
 }
 
@@ -233,25 +230,6 @@ func cmdListLanguages(p *Player, gm *GameModel, args []string, c string) nwmessa
 	return nwmessage.PsNeutral(msgContent)
 }
 
-// func cmdLoadBoilerplate(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-// 	p.Outgoing <- editStateMsg(boilerPlateFor(p))
-// 	return psSuccess(fmt.Sprintf("%s boilerplate loaded", p.language))
-// }
-
-func cmdName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	if len(args) == 0 {
-		return nwmessage.PsSuccess("Your name is " + p.name())
-	}
-
-	for _, player := range gm.Players {
-		if args[0] == player.Name {
-			return nwmessage.PsError(fmt.Errorf("The name '%s' is already taken", args[0]))
-		}
-	}
-
-	return nwmessage.PsSuccess("Name set to '" + p.name() + "'")
-}
-
 func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsError(errors.New("Join a team first"))
@@ -280,24 +258,6 @@ func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 }
 
 func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	// lists all players in the current node
-	// if p.Route.Endpoint == nil {
-	// 	return psError(errors.New(noConnectStr))
-	// }
-
-	// // TODO maintain a list of connected players at either node or slot
-	// pHere := ""
-	// for _, otherPlayer := range gm.Players {
-	// 	if otherPlayer.Route != nil {
-	// 		if otherPlayer.Route.Endpoint == p.Route.Endpoint {
-	// 			playerDesc := otherPlayer.name()
-	// 			if otherPlayer.slotNum > -1 {
-	// 				playerDesc += " at slot: " + strconv.Itoa(otherPlayer.slotNum)
-	// 			}
-	// 			pHere += playerDesc + "\n"
-	// 		}
-	// 	}
-	// }
 
 	// Sort team names
 	whoStr := ""
@@ -312,7 +272,7 @@ func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 		t := gm.Teams[n]
 		whoStr += n + ":\n"
 		for mem := range t.players {
-			whoStr += "\t" + mem.Name + "\n"
+			whoStr += "\t" + mem.GetName() + "\n"
 		}
 	}
 
@@ -330,7 +290,7 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
 		for _, playerName := range pHere {
-			if playerName != p.Name {
+			if playerName != p.GetName() {
 				names = append(names, playerName)
 			}
 		}
@@ -558,7 +518,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 			slot.module.language = p.language
 
 			gm.broadcastState()
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.Name, p.TeamName, p.Route.Endpoint.ID)))
+			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
 			return nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.module.Health, slot.module.MaxHealth, slot.module.language))
 		}
 
@@ -577,7 +537,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 			gm.broadcastState()
 			gm.broadcastAlertFlash(p.TeamName)
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.Name, p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
 			return nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
 		}
 
@@ -590,7 +550,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	}
 	gm.broadcastState()
 	gm.broadcastAlertFlash(p.TeamName)
-	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.Name, p.TeamName, p.Route.Endpoint.ID)))
+	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
 	return nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
 }
 
@@ -673,7 +633,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 		gm.broadcastState()
 		gm.broadcastAlertFlash(p.TeamName)
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.Name, p.TeamName, oldTeam, p.Route.Endpoint.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam, p.Route.Endpoint.ID)))
 		return nwmessage.PsSuccess("Module removed")
 
 	}

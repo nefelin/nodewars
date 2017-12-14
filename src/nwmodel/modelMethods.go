@@ -35,7 +35,7 @@ func newModule(p *Player, response ChallengeResponse, lang string) *module {
 		id: id,
 		// testID:    testID,
 		language:  lang,
-		builder:   p.name(),
+		builder:   p.GetName(),
 		TeamName:  p.TeamName,
 		Health:    response.passed(),
 		MaxHealth: len(response.PassFail),
@@ -183,6 +183,10 @@ func newDefaultMap() *nodeMap {
 
 // GameModel methods --------------------------------------------------------------------------
 
+func (gm *GameModel) GetPlayers() map[playerID]*Player {
+	return gm.Players
+}
+
 func (gm *GameModel) Recv(msg nwmessage.Message) {
 	gm.aChan <- msg
 }
@@ -293,7 +297,7 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 // 		}
 // 	}
 // 	// if not, set it and return no error
-// 	p.Name = n
+// 	p.GetName() = n
 // 	return nil
 // }
 
@@ -314,7 +318,7 @@ func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
 // AddPlayer ...
 func (gm *GameModel) AddPlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; ok {
-		return errors.New("player '" + p.Name + "' is already in this game")
+		return errors.New("player '" + p.GetName() + "' is already in this game")
 	}
 	gm.Players[p.ID] = p
 	gm.setLanguage(p, "python")
@@ -329,22 +333,18 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; !ok {
-		return errors.New("player '" + p.Name + "' is not registered")
+		return errors.New("player '" + p.GetName() + "' is not registered")
 	}
 
 	if p.TeamName != "" {
 		gm.Teams[p.TeamName].removePlayer(p)
 	}
 
-	// clean up POE
-
 	delete(gm.POEs, p.ID)
 
-	// Clean up route
-	// delete(gm.Routes, p.ID)
-
-	// Clean up player
 	delete(gm.Players, p.ID)
+
+	p.Outgoing <- nwmessage.GraphReset()
 
 	return nil
 }
@@ -382,7 +382,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 		return nil, fmt.Errorf("%v is not a valid node", n)
 	}
 
-	// log.Printf("player %v attempting to connect to node %v from POE %v", p.Name, n, gm.POEs[p.ID].ID)
+	// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, gm.POEs[p.ID].ID)
 
 	target := gm.Map.Nodes[n]
 
@@ -557,13 +557,12 @@ func (n *node) removeModule(slotIndex int) error {
 
 }
 
-// TODO this is broken:
 func (n *node) addPlayer(p *Player) {
-	n.playersHere = append(n.playersHere, p.Name)
+	n.playersHere = append(n.playersHere, p.GetName())
 }
 
 func (n *node) removePlayer(p *Player) {
-	n.playersHere = cutStrFromSlice(n.playersHere, p.Name)
+	n.playersHere = cutStrFromSlice(n.playersHere, p.GetName())
 }
 
 // helper function for removing player from slice of players
@@ -793,11 +792,9 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 	tocheck := make([]*node, 1)
 	tocheck[0] = source
 
-	log.Println("searchField initialized, populating...")
 	for len(tocheck) > 0 {
 		thisNode := tocheck[0]
 		tocheck = tocheck[1:]
-		log.Println("check")
 		// log.Printf("this: %v", thisNode)
 		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
 		if t == nil || thisNode.allowsRoutingFor(t) {
@@ -895,7 +892,7 @@ func getBestNode(pool map[*node]bool, distMap map[*node]int) *node {
 func NewPlayer(ws *websocket.Conn) *Player {
 	ret := &Player{
 		ID:       playerIDCount,
-		Name:     "",
+		name:     "",
 		Socket:   ws,
 		Outgoing: make(chan nwmessage.Message),
 		slotNum:  -1,
@@ -908,7 +905,7 @@ func NewPlayer(ws *websocket.Conn) *Player {
 
 func (p *Player) prompt() string {
 	promptEndChar := ">"
-	prompt := fmt.Sprintf("(%s)", p.name())
+	prompt := fmt.Sprintf("(%s)", p.GetName())
 	if p.TeamName != "" {
 		prompt += fmt.Sprintf(":%s:", p.TeamName)
 	}
@@ -934,14 +931,20 @@ func (p *Player) slot() *modSlot {
 	return p.Route.Endpoint.slots[p.slotNum]
 }
 
-func (p *Player) name() string {
-	for p.Name == "" {
-		p.Name = "player_" + strconv.Itoa(p.ID)
+// GetName returns the players name if they have one, assigns one if they don't
+func (p *Player) GetName() string {
+	for p.name == "" {
+		p.name = "player_" + strconv.Itoa(p.ID)
 	}
 
-	return p.Name
+	return p.name
 }
 
+func (p *Player) SetName(n string) {
+	p.name = n
+}
+
+// hasTeam is deprecated I think TOD
 func (p Player) hasTeam() bool {
 	if p.TeamName == "" {
 		return false
@@ -949,12 +952,13 @@ func (p Player) hasTeam() bool {
 	return true
 }
 
-func (p Player) hasName() bool {
-	if p.Name == "" {
-		return false
-	}
-	return true
-}
+// hasName is deprecated I think
+// func (p Player) hasName() bool {
+// 	if p.GetName() == "" {
+// 		return false
+// 	}
+// 	return true
+// }
 
 // route methods --------------------------------------------
 func (r route) containsNode(n *node) (int, bool) {
@@ -994,6 +998,7 @@ func (t *team) addPlayer(p *Player) {
 func (t *team) removePlayer(p *Player) {
 	delete(t.players, p)
 	p.TeamName = ""
+	p.Outgoing <- nwmessage.TeamState("")
 }
 
 // func (t *team) setPoe(n *node) {
@@ -1019,13 +1024,13 @@ func (n node) modIDs() []modID {
 func (t team) String() string {
 	var playerList []string
 	for player := range t.players {
-		playerList = append(playerList, string(player.Name))
+		playerList = append(playerList, string(player.GetName()))
 	}
 	return fmt.Sprintf("( <team> {Name: %v, Players:%v} )", t.Name, playerList)
 }
 
 func (p Player) String() string {
-	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.name(), p.TeamName)
+	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.GetName(), p.TeamName)
 }
 
 func (r route) String() string {

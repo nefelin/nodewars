@@ -78,7 +78,7 @@ type team struct {
 // Player ...
 type Player struct {
 	ID       playerID               `json:"id"`
-	Name     string                 `json:"name"`
+	name     string                 `json:"name"`
 	TeamName string                 `json:"team"`
 	Route    *route                 `json:"route"`
 	Socket   *websocket.Conn        `json:"-"`

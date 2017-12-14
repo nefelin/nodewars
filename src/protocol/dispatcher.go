@@ -28,7 +28,7 @@ type Room interface {
 	Recv(msg nwmessage.Message)
 	AddPlayer(p *nwmodel.Player) error
 	RemovePlayer(p *nwmodel.Player) error
-	// getStateForP(pID int)
+	GetPlayers() map[int]*nwmodel.Player
 }
 
 func NewDispatcher() *Dispatcher {
@@ -50,15 +50,25 @@ func NewLobby() Lobby {
 	return l
 }
 
+// TODO handle errors for add/remove player
+func (l *Lobby) AddPlayer(p *nwmodel.Player) error {
+	l.players[p.ID] = p
+	log.Printf("lobbyplayers: %v", l.players)
+	// p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>") causing lock here, probably dispatcher goroutine isnt running yet
+	return nil
+}
+
+func (l *Lobby) RemovePlayer(p *nwmodel.Player) error {
+	delete(l.players, p.ID)
+	return nil
+}
+
+func (l *Lobby) GetPlayers() map[int]*nwmodel.Player {
+	return l.players
+}
+
 func (d *Dispatcher) Recv(m nwmessage.Message) {
-	// pID, _ := strconv.Atoi(m.Sender)
-	// gameID, ok := d.locations[pID]
-
-	// if !ok || gameID == "lobby" {
 	d.Lobby.aChan <- m
-	// } else {
-
-	// }
 }
 
 // func (l *Lobby) recv(m nwmessage.Message) {
@@ -86,13 +96,9 @@ func (d *Dispatcher) Recv(m nwmessage.Message) {
 // 	}
 // }
 
-// func (d *Dispatcher) getRoom(pID int) Room {
-// 	return d.games[d.players[pID].ID]
-// }
-
 func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
 	p := nwmodel.NewPlayer(ws)
-	d.Lobby.players[p.ID] = p
+	d.Lobby.AddPlayer(p)
 
 	return p
 }

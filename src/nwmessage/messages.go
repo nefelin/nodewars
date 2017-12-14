@@ -23,6 +23,8 @@ const (
 	editStateStr   = "editorState"
 	promptStateStr = "promptState"
 	graphStateStr  = "graphState"
+	teamStateStr   = "teamState"
+	graphResetStr  = "graphReset"
 
 	pseudoStr    = "pseudoServer"
 	serverStr    = "server"
@@ -144,14 +146,6 @@ func EditState(msg string) Message {
 	}
 }
 
-func PromptState(msg string) Message {
-	return Message{
-		Type:   promptStateStr,
-		Sender: serverStr,
-		Data:   msg,
-	}
-}
-
 func GraphState(msg string) Message {
 	return Message{
 		Type:   graphStateStr,
@@ -162,8 +156,24 @@ func GraphState(msg string) Message {
 
 func GraphReset() Message {
 	return Message{
-		Type:   "graphReset",
+		Type:   graphResetStr,
 		Sender: serverStr,
 		Data:   "",
+	}
+}
+
+func PromptState(msg string) Message {
+	return Message{
+		Type:   promptStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
+func TeamState(msg string) Message {
+	return Message{
+		Type:   teamStateStr,
+		Sender: serverStr,
+		Data:   msg,
 	}
 }

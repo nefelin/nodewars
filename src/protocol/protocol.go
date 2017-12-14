@@ -96,7 +96,7 @@ func outgoingRelay(p *nwmodel.Player) {
 	for {
 		msg := <-p.Outgoing
 		if err := p.Socket.WriteJSON(msg); err != nil {
-			log.Printf("error dispatching message to %v", p.Name)
+			log.Printf("error dispatching message to %v", p.GetName())
 			// scrubPlayerSocket(p)
 			return
 		}
