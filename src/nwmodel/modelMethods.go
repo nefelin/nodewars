@@ -617,11 +617,20 @@ func cutStrFromSlice(p string, s []string) []string {
 
 func (m *nodeMap) initAllNodes() {
 
+	m.initAllSlots()
+
+	m.initAllRemoteness()
+
+}
+
+func (m *nodeMap) initAllSlots() {
 	// initialize each node's slots
 	for _, node := range m.Nodes {
 		node.initSlots()
 	}
+}
 
+func (m *nodeMap) initAllRemoteness() {
 	// initialize each nodes remoteness.
 	for _, node := range m.Nodes {
 		node.Remoteness = float64(m.findNodeEccentricity(node))
@@ -638,7 +647,6 @@ func (m *nodeMap) initAllNodes() {
 		node.Remoteness = node.Remoteness / m.diameter
 		// log.Printf("Node %d, remoteness: %d", node.ID, node.Remoteness)
 	}
-
 }
 
 func (m *nodeMap) findNodeEccentricity(n *node) int {
@@ -734,7 +742,8 @@ func (m *nodeMap) initPoes(n int) {
 // 	}
 // }
 
-func (m *nodeMap) addNodes(count int) {
+func (m *nodeMap) addNodes(count int) []*node {
+	enter := make([]*node, count)
 	for i := 0; i < count; i++ {
 		id := m.nodeIDCount
 		m.nodeIDCount++
@@ -748,9 +757,10 @@ func (m *nodeMap) addNodes(count int) {
 			Modules:     modules,
 		}
 
+		enter[i] = newNode
 		m.Nodes = append(m.Nodes, newNode)
-
 	}
+	return enter
 }
 
 func (m *nodeMap) removeNodes(ns []int) {
@@ -773,21 +783,23 @@ func (m *nodeMap) removeNodes(ns []int) {
 
 func fillNodeSliceHoles(ns []*node) []*node {
 	// for every node i the node slice
-	for i, n := range ns {
+	for i := 0; i < len(ns); i++ {
+		// for i, n := range ns {
+		n := ns[i]
 		// when we find a nil slot
 		if n == nil {
-			j := 1
+			j := len(ns) - 1
 			// if the last element is also nil
-			for ns[len(ns)-j] == nil {
+			for ns[j] == nil {
 				// keep backing up till we find a non nil
-				j++
+				j--
 				// if we wind up where we started skip and just cut the nils out of the list
-				if len(ns)-j == i {
+				if j == i {
 					break
 				}
 			}
 			// once we've found a non nil to swap, swap
-			ns[i], ns[len(ns)-j] = ns[len(ns)-j], ns[i]
+			ns[i], ns[j] = ns[j], ns[i]
 
 			if ns[i] != nil {
 				// fix connections and ids
@@ -802,7 +814,7 @@ func fillNodeSliceHoles(ns []*node) []*node {
 				ns[i].ID = i
 			}
 			// cut the (should be all nils) tail off the slice
-			ns = ns[:len(ns)-j]
+			ns = ns[:j]
 		}
 	}
 	return ns

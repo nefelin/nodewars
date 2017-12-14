@@ -27,31 +27,77 @@ var mapCmdList = map[string]playerCommand{
 
 	// flower
 
-	// "ap": cmdAddPoes,
+	"ap": cmdAddPoes,
 
-	// "bake": cmdBakeSlots,
+	"bake": cmdBakeSlots,
 
 	// slot node_num, [criteria] what (takes challenge of this but not that, etc...)
 }
 
 func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	var gnodeCount int
+	var nodeCount int
 	if len(args) == 0 {
-		gnodeCount = 1
-	} else {
-		nodeCount, err := strconv.Atoi(args[0])
+		// return nwmessage.PsError(errors.New("Need either one or two arguments, received zero"))
+		args = append(args, "1")
+	}
+
+	nodeCount, err := strconv.Atoi(args[0])
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
+
+	linkTo := -1
+	if len(args) > 1 {
+		linkTo, err = strconv.Atoi(args[1])
 		if err != nil {
 			return nwmessage.PsError(err)
 		}
-		gnodeCount = nodeCount
 	}
 
-	gm.Map.addNodes(gnodeCount)
+	enter := gm.Map.addNodes(nodeCount)
+
+	if linkTo > -1 {
+		for _, node := range enter {
+			node.addConnection(gm.Map.Nodes[linkTo])
+		}
+	}
 
 	gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
-	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", gnodeCount))
+	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
+}
+
+func cmdAddPoes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	targs := make([]int, len(args))
+
+	for i := range targs {
+		// log.Printf("i in loop: %d", i)
+		targetNode, err := strconv.Atoi(args[i])
+		// log.Printf("targetNode: %d", targetNode)
+		if err != nil {
+			return nwmessage.PsError(err)
+		}
+		if !gm.Map.nodeExists(targetNode) {
+			return nwmessage.PsError(fmt.Errorf("Node %d does not exist", targetNode))
+		}
+		targs[i] = targetNode
+	}
+
+	gm.Map.addPoes(targs...)
+
+	gm.broadcastGraphReset()
+	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
+	gm.broadcastState()
+	return nwmessage.PsSuccess(fmt.Sprintf("Added poes to nodes %v", targs))
+}
+
+func cmdBakeSlots(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	gm.Map.initAllNodes()
+	gm.broadcastGraphReset()
+	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was baked and is ready to play"))
+	gm.broadcastState()
+	return nwmessage.PsSuccess(fmt.Sprintf("Map baked and ready to play"))
 }
 
 func cmdRemoveNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
@@ -88,9 +134,9 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.M
 
 	targ := make([]int, 2)
 	for i := range targ {
-		log.Printf("i in loop: %d", i)
+		// log.Printf("i in loop: %d", i)
 		targetNode, err := strconv.Atoi(args[i])
-		log.Printf("targetNode: %d", targetNode)
+		// log.Printf("targetNode: %d", targetNode)
 		if err != nil {
 			return nwmessage.PsError(err)
 		}
