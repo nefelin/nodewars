@@ -750,6 +750,7 @@ func (m *nodeMap) addNodes(count int) []*node {
 			Connections: connections,
 			Modules:     modules,
 			Remoteness:  100,
+			Slots:       make([]*modSlot, 0),
 		}
 
 		enter[i] = newNode

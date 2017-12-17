@@ -279,6 +279,7 @@ function updateEditorContent(newContent) {
 let userPrompt = "nodewars>"
 function parseServerMessages(e) {
 	const msg = JSON.parse(e.data);
+	console.log("received: ", msg)
 	switch (msg.sender) {
 		case "pseudoServer":
 			// write to terminal

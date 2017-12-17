@@ -5,9 +5,9 @@
 // TODO grab width and height from parent container. Esp on resize
 const width = 640,
 	  height = 480,
-	  nodeBaseRadius = 16,
-	  nodeRadiusMultiplier = nodeBaseRadius/4,
-	  strokeWidth = 2
+	  NODE_BASE_RADIUS = 16,
+	  NODE_RAD_MULTIPLIER = NODE_BASE_RADIUS/4,
+	  BASE_STROKE_WIDTH = 2
 
 const t = d3.transition()
       .duration(1000)
@@ -23,7 +23,7 @@ class NWGraph {
 		    .attr('height', "100%")
 
 		this.simulation = d3.forceSimulation()
-            .force("link", d3.forceLink().distance(nodeBaseRadius*4))
+            .force("link", d3.forceLink().distance(NODE_BASE_RADIUS*4))
             .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
@@ -47,7 +47,7 @@ class NWGraph {
             .append("line")
             .attr("class", d => "edge edgeID-" + d.id)
             .attr("stroke", "black")
-            .attr("stroke-width", strokeWidth)
+            .attr("stroke-width", BASE_STROKE_WIDTH)
           .merge(update)
             .classed("traffic", d => d.traffic.length>0)
 
@@ -70,7 +70,7 @@ class NWGraph {
                 .on("end", this.dragended.bind(this))); 
             
 		enter.each(function(d) {
-        	const radius = nodeBaseRadius+d.connections.length*nodeRadiusMultiplier
+        	const radius = NODE_BASE_RADIUS+d.connections.length*NODE_RAD_MULTIPLIER
 
         	// add backing to hide main's transparency when animating POEs
         	d3.select(this).append("circle")
@@ -129,43 +129,52 @@ class NWGraph {
 	}	
 
 	drawNodeLabels() {
-		const nodeRadius = 
+		// const nodeRadius = 
 		this.nodeLabels = this.nodeGroups.append("text")
 	       // .attr("dx", function(d) {
 	       		// console.log("nodegroup?", this.parentNode)
 	       		// d3.select(this.parentNode).select(".node-main").attr("r")*.8
 	        // })
-	       // .attr("dy", function(d) {
-	       		// d3.select(this.parentNode).select(".node-main").attr("r")-20
-	       	// }) // better spacing algorithm TODO
+	       .attr("dy", function(d) {
+		       	// console.log("this", d3.select(this).getBoundingClientRect())
+		       	// console.log("this getBBox", d3.select(this).node().getBBox())
+		       	// console.log("this getBoundingCliRect", d3.select(this).node().getBoundingClientRect())
+	       		// const textBounds = d3.select(this).node().getBBox()
+	       		const parentRad = d3.select(this.parentNode).select(".node-main").attr("r")
+	       		const thisPos =  -parentRad-12
+	       		return thisPos
+	       	}) 
 	       .attr("text-anchor", "middle")
 	       .attr("alignment-baseline", "middle")
-	       .attr("font-size", function(d) {
-	       		return d3.select(this.parentNode).select(".node-main").attr("r")
-	       })
+	       .attr("font-size", "20")
 	       .attr("class", "node-label")
 	       .text(d=>d.id)
 	       // .style("opacity", .3)
-	       .style("stroke-width", "1px")
-	       .style("stroke", "black")
-	       .style("fill", "none")
 	}
 
 	drawSlots() {
 		this.nodeGroups.each(function(d) {
 			const slots = d3.select(this).selectAll(".mod-slot")
 				.data(d.slots)
-
-			console.log("slots d: ", d)
-
-			const nodeRadius = d3.select(this).select(".node-main").attr("r");
-			console.log("parent", d3.select(this))
-			console.log(nodeRadius)
 			
-			const modRad = nodeBaseRadius/2.5
+			const parentD = d
+			// console.log("slots d: ", d)
+	
+			const thisGroup = d3.select(this)
+			const nodeRadius = thisGroup.select(".node-main").attr("r");
+
+			// console.log("parent", d3.select(this))
+			// console.log(nodeRadius)
+
+			const modRad = NODE_BASE_RADIUS/2.5
 			const slotRad = modRad/4
+			const slotWidth = 10
+			const slotHeight = 10
+			const spacing = 5
+			const colCount = 2
 			// const spacing = modRad*3
 			// const angleInc = 70*0.017453; //convert to radian
+
 			const angleInc = (360/d.slots.length)*0.017453
 			
 			slots.exit()
@@ -174,79 +183,90 @@ class NWGraph {
 					.remove()
 
 			slots.enter()
-				   .append("circle")
+				   .append("rect")
 				   .attr("class", "mod-slot")
-	   			   .style("fill", d => d.module == null ? "white" : d.module.team)
-	   			   .style("fill-opacity", d => d.module == null ? 0 : d.health/d.maxHealth)
-	   			   .style("stroke-opacity", d => d.module == null ? .2 : 1)
+	   			   .style("fill", d => {
+						// console.log("slot d", d)
+	   			   		return d.module == null ? "white" : d.module.team
+	   				})
+	   			   .style("fill-opacity", d => d.module == null ? .3 : d.module.health/d.module.maxHealth)
+	   			   .style("stroke-opacity", d => d.module == null ? .8 : 1)
 		           .style("stroke", "black")
 		           .style("stroke-width", 2)
 		           .attr("opacity", 0)
-		           .attr("r", d => d.module == null ? slotRad : modRad)
+		           .attr("width", d => d.module == null ? slotWidth : slotWidth)
+		           .attr("height", d => d.module == null ? slotHeight : slotHeight)
 		           .transition(t)
 		           .style("opacity", 1)
-		           .attr("cx", (d,i) => (nodeRadius - modRad - 10) * Math.cos(-1.5708+angleInc*i))
-		           .attr("cy", (d,i) => (nodeRadius - modRad - 10) * Math.sin(-1.5708+angleInc*i))
+		           .attr("x", (d,i) => ((nodeRadius/2.2) * Math.cos(-1.5708+angleInc*i))-5)
+		           .attr("y", (d,i) => ((nodeRadius/2.2) * Math.sin(-1.5708+angleInc*i))-5)
+		           // .attr("x", (d,i) => {
+		           // 		const offset = -(colCount * slotWidth + (colCount-1)*spacing)/2
+		           // 		return offset+(slotWidth+spacing)*(i%colCount)
+		           // 	})
+		           // .attr("y", (d,i) => {
+		           // 		const rows = Math.ceil(parentD.slots.length/colCount)
+		           // 		const offset = -(rows * slotHeight + (rows-1)*spacing)/2/2 // Should need last /2, something is off TODO
+		           // 		return offset+(-slotHeight/2)+(Math.floor(i/2)*(slotHeight+spacing))
+		           // })
+		           
 
 		    // update new slots
 		    slots.transition(t)
-				.style("fill", d => d.team)
-			    .style("fill-opacity", d => {
-			   		// console.log("making module of fill at:" , d);
-			   		return d.health/d.maxHealth
-			    })
-
+				.style("fill", d => d.module == null ? "white" : d.module.team)
+			    .style("fill-opacity", d => d.module == null ? .3 : d.module.health/d.module.maxHealth)
+			    .style("stroke-opacity", d => d.module == null ? .8 : 1)
 		})
 	}
 
-	drawModules() {
-		this.nodeGroups.each(function(d) {
-	       	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
-				.data(d.modList)
+	// drawModules() {
+	// 	this.nodeGroups.each(function(d) {
+	//        	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
+	// 			.data(d.modList)
 
-			// console.log("modules: ", modules)
+	// 		// console.log("modules: ", modules)
 
-			const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
-			const nodeRadius = parentRadius
+	// 		const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
+	// 		const nodeRadius = parentRadius
 
-			// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
-			const modRad = nodeBaseRadius/2.5
-			// const spacing = modRad*3
-			const angleInc = 70*0.017453; //convert to radian
+	// 		// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+	// 		const modRad = nodeBaseRadius/2.5
+	// 		// const spacing = modRad*3
+	// 		const angleInc = 70*0.017453; //convert to radian
 
-			modules.exit()
-				.transition(t)
-				.attr("r", 0)
-				.remove()
+	// 		modules.exit()
+	// 			.transition(t)
+	// 			.attr("r", 0)
+	// 			.remove()
 
-			modules.enter()
-				   .append("circle")
-				   .attr("class", "node-module")
-	   			   .style("fill", d => d.team)
-	   			   .style("fill-opacity", d => {
-	   			   		console.log("making module of fill at:" , d);
-	   			   		return d.health/d.maxHealth
-	   			   	})
-		           .style("stroke", "black")
-		           .style("stroke-width", 2)
-		           .attr("opacity", 0)
-		           .attr("r", d => modRad)
-		           // .attr("cy", -nodeRadius/2)
-		           .transition(t)
-		           .style("opacity", 1)
-		           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
-		           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
+	// 		modules.enter()
+	// 			   .append("circle")
+	// 			   .attr("class", "node-module")
+	//    			   .style("fill", d => d.team)
+	//    			   .style("fill-opacity", d => {
+	//    			   		console.log("making module of fill at:" , d);
+	//    			   		return d.health/d.maxHealth
+	//    			   	})
+	// 	           .style("stroke", "black")
+	// 	           .style("stroke-width", 2)
+	// 	           .attr("opacity", 0)
+	// 	           .attr("r", d => modRad)
+	// 	           // .attr("cy", -nodeRadius/2)
+	// 	           .transition(t)
+	// 	           .style("opacity", 1)
+	// 	           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
+	// 	           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
 
-		    // update new modules
-		    modules.transition(t)
-				.style("fill", d => d.team)
-			    .style("fill-opacity", d => {
-			   		// console.log("making module of fill at:" , d);
-			   		return d.health/d.maxHealth
-			    })
+	// 	    // update new modules
+	// 	    modules.transition(t)
+	// 			.style("fill", d => d.team)
+	// 		    .style("fill-opacity", d => {
+	// 		   		// console.log("making module of fill at:" , d);
+	// 		   		return d.health/d.maxHealth
+	// 		    })
 
-		})
-	}
+	// 	})
+	// }
 
 	update(newState) {
 		console.log("NWGraph updating...")
