@@ -284,8 +284,13 @@ function parseServerMessages(e) {
 			// write to terminal
 			if (msg.type == "")
 				terminal.echo(msg.data)
-			else if (msg.type == "dialogue")
-			terminal.echo(msg.data)
+			else if (msg.type == "dialogue"){
+				// TODO seems like terminal.read isn't behaving right, look at code and check if it has anything to do with being on dev branch
+				terminal.echo(msg.data)
+				terminal.read("", function(r){
+					sendMsg(r)
+				})
+			}
 			else
 				terminal.echo(msg.type + ": " + msg.data)
 			break
@@ -298,6 +303,9 @@ function parseServerMessages(e) {
 
 				case "startDialogue":
 					terminal.pause()
+					// while (terminal.paused()) {
+						
+					// }
 					break
 				
 				case "endDialogue":

@@ -86,7 +86,7 @@ func actionConsumer(gm *GameModel) {
 		msg := strings.Split(m.Data, " ")
 
 		if p.dialogue != nil {
-			p.dialogue.Run(msg[0])
+			p.Outgoing <- p.dialogue.Run(msg[0])
 		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
 			if gm.mapLocked {
 				// make this message more situation agnostic TODO
@@ -587,7 +587,10 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		if len(args) == 0 {
 			args = append(args, "")
 		}
+
 		flag := args[0]
+
+		log.Printf("cmdRemoveModule flag: %v", flag)
 		switch {
 		case flag == "":
 			beginRemoveModuleConf(p, gm)
@@ -672,9 +675,7 @@ func validateOneIntArg(args []string) (int, error) {
 
 // Async Confirmation Dialogues
 func beginRemoveModuleConf(p *Player, gm *GameModel) {
-	// p.Outgoing <- nwmessage.StartDialogue()
 	p.Outgoing <- nwmessage.PsDialogue("Removing friendly module, (y)es to confirm\nany other key to abort: ")
-	// p.Outgoing <- nwmessage.EndDialogue()
 	p.dialogue = nwmessage.NewDialogue([]nwmessage.Fn{
 		func(d *nwmessage.Dialogue, s string) nwmessage.Message {
 			if s == "y" || s == "ye" || s == "yes" {
@@ -685,9 +686,7 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 
 			p.dialogue = nil
 
-			cmdRemoveModule(p, gm, []string{d.GetProp("flag")}, "")
-
-			return nwmessage.Message{}
+			return cmdRemoveModule(p, gm, []string{d.GetProp("flag")}, "")
 		},
 	})
 }
