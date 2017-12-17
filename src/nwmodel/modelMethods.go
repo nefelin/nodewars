@@ -342,6 +342,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 		return errors.New("player '" + p.GetName() + "' is not registered")
 	}
 
+	// remove player infor from gamemodel
 	if p.TeamName != "" {
 		gm.Teams[p.TeamName].removePlayer(p)
 	}
@@ -349,6 +350,12 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	delete(gm.POEs, p.ID)
 
 	delete(gm.Players, p.ID)
+
+	// remove game infor from player object
+
+	p.TeamName = ""
+	p.Route = nil
+	p.slotNum = -1
 
 	p.Outgoing <- nwmessage.GraphReset()
 
