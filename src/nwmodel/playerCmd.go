@@ -85,7 +85,9 @@ func actionConsumer(gm *GameModel) {
 
 		msg := strings.Split(m.Data, " ")
 
-		if handlerFunc, ok := mapCmdList[msg[0]]; ok {
+		if p.dialogue != nil {
+			p.dialogue.Run(msg[0])
+		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
 			if gm.mapLocked {
 				// make this message more situation agnostic TODO
 				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
@@ -196,7 +198,7 @@ func cmdLanguage(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 
 	// if the player's attached somewhere, update the buffer
 	if p.slotNum != -1 {
-		if p.slot().module != nil && p.slot().module.TeamName != p.TeamName {
+		if p.slot().Module != nil && p.slot().Module.TeamName != p.TeamName {
 			return nwmessage.PsError(errors.New("Can't change language on enemy module"))
 		}
 		pSlot := p.slot()
@@ -273,6 +275,7 @@ func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 }
 
 func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+
 	if p.Route == nil {
 		return nwmessage.PsNoConnection()
 	}
@@ -388,7 +391,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	case p.Route == nil:
 		return nwmessage.PsNoConnection()
 
-	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
+	case slotNum > len(p.Route.Endpoint.Slots)-1 || slotNum < 0:
 		return nwmessage.PsError(fmt.Errorf("Slot '%v' does not exist", slotNum))
 	}
 
@@ -398,9 +401,9 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 
 	// if the slot has an enemy module, player's language is set to that module's
 	langLock := false
-	if pSlot.module != nil && pSlot.module.TeamName != p.TeamName {
+	if pSlot.Module != nil && pSlot.Module.TeamName != p.TeamName {
 		langLock = true
-		gm.setLanguage(p, pSlot.module.language)
+		gm.setLanguage(p, pSlot.Module.language)
 	}
 
 	// Send slot info to edit buffer
@@ -419,7 +422,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		editText := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
 
 		if langLock {
-			editText += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().module.language))
+			editText += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().Module.language))
 		}
 
 		p.Outgoing <- nwmessage.EditState(editText)
@@ -431,7 +434,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	retText += msgPostfix
 	if langLock {
 		// TODO add this message to codebox
-		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.module.language)
+		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.Module.language)
 	}
 	return nwmessage.PsSuccess(retText)
 }
@@ -447,7 +450,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 // 	if resp != "n" && resp != "no" {
 // 		editnwmessage.Message := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
 // 		if langLock {
-// 			editnwmessage.Message += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().module.language))
+// 			editnwmessage.Message += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().Module.language))
 // 		}
 // }
 
@@ -483,8 +486,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	}
 
 	// enforce module language
-	if slot.module != nil && slot.module.TeamName != p.TeamName && slot.module.language != p.language {
-		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", slot.module.language, slot.module.language))
+	if slot.Module != nil && slot.Module.TeamName != p.TeamName && slot.Module.language != p.language {
+		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", slot.Module.language, slot.Module.language))
 	}
 
 	// passed error checks on args
@@ -502,35 +505,35 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
 	}
 
-	if slot.module != nil {
+	if slot.Module != nil {
 		// in case we're refactoring a friendly module
-		if slot.module.TeamName == p.TeamName {
+		if slot.Module.TeamName == p.TeamName {
 
-			slot.module.Health = newModHealth
-			slot.module.language = p.language
+			slot.Module.Health = newModHealth
+			slot.Module.language = p.language
 
 			gm.broadcastState()
 			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-			return nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.module.Health, slot.module.MaxHealth, slot.module.language))
+			return nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.Module.Health, slot.Module.MaxHealth, slot.Module.language))
 		}
 
 		// hostile module
 		switch {
-		case newModHealth < slot.module.Health:
-			return nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth))
+		case newModHealth < slot.Module.Health:
+			return nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth))
 
-		case newModHealth == slot.module.Health:
+		case newModHealth == slot.Module.Health:
 			return nwmessage.PsAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
 
-		case newModHealth > slot.module.Health:
-			oldTeam := gm.Teams[slot.module.TeamName]
-			slot.module.TeamName = p.TeamName
-			slot.module.Health = newModHealth
+		case newModHealth > slot.Module.Health:
+			oldTeam := gm.Teams[slot.Module.TeamName]
+			slot.Module.TeamName = p.TeamName
+			slot.Module.Health = newModHealth
 			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 			gm.broadcastState()
 			gm.broadcastAlertFlash(p.TeamName)
 			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
-			return nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.module.Health, slot.module.MaxHealth))
+			return nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.Module.Health, slot.Module.MaxHealth))
 		}
 
 	}
@@ -543,7 +546,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	gm.broadcastState()
 	gm.broadcastAlertFlash(p.TeamName)
 	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-	return nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.module.language, slot.module.Health, slot.module.MaxHealth))
+	return nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.Module.language, slot.Module.Health, slot.Module.MaxHealth))
 }
 
 // func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
@@ -579,10 +582,18 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 	}
 
 	// if we're removing a friendly module, just do it:
-	if p.TeamName == slot.module.TeamName {
-		// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Friendly module, confirm removal? (y/n)")
-		resp := "y"
-		if resp == "y" || resp == "ye" || resp == "yes" {
+	if p.TeamName == slot.Module.TeamName {
+		// TODO hacky, refactor
+		if len(args) == 0 {
+			args = append(args, "")
+		}
+		flag := args[0]
+		switch {
+		case flag == "":
+			beginRemoveModuleConf(p, gm)
+			return nwmessage.Message{}
+
+		case flag == "-y" || flag == "-ye" || flag == "-yes":
 			err := p.Route.Endpoint.removeModule(p.slotNum)
 			if err != nil {
 				return nwmessage.PsError(err)
@@ -591,8 +602,13 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
 			gm.broadcastState()
 			return nwmessage.PsSuccess("Module removed")
+
+		case flag == "-no":
+			return nwmessage.PsError(errors.New("Removal aborted"))
+
+		default:
+			return nwmessage.PsError(errors.New("Unknown flag, use -y for automatic confirmation"))
 		}
-		return nwmessage.PsError(errors.New("removal aborted"))
 	}
 
 	if c == "" {
@@ -615,8 +631,8 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 	log.Printf("response to submitted test: %v", response)
 
-	if newModHealth >= slot.module.Health {
-		oldTeam := gm.Teams[slot.module.TeamName]
+	if newModHealth >= slot.Module.Health {
+		oldTeam := gm.Teams[slot.Module.TeamName]
 
 		err := p.Route.Endpoint.removeModule(p.slotNum)
 		if err != nil {
@@ -632,7 +648,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 	return nwmessage.PsError(fmt.Errorf(
 		"Solution too weak: %d/%d, need %d/%d to remove",
-		response.passed(), len(response.PassFail), slot.module.Health, slot.module.MaxHealth,
+		response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth,
 	))
 
 }
@@ -654,6 +670,28 @@ func validateOneIntArg(args []string) (int, error) {
 	return target, nil
 }
 
+// Async Confirmation Dialogues
+func beginRemoveModuleConf(p *Player, gm *GameModel) {
+	// p.Outgoing <- nwmessage.StartDialogue()
+	p.Outgoing <- nwmessage.PsDialogue("Removing friendly module, (y)es to confirm\nany other key to abort: ")
+	// p.Outgoing <- nwmessage.EndDialogue()
+	p.dialogue = nwmessage.NewDialogue([]nwmessage.Fn{
+		func(d *nwmessage.Dialogue, s string) nwmessage.Message {
+			if s == "y" || s == "ye" || s == "yes" {
+				d.SetProp("flag", "-yes")
+			} else {
+				d.SetProp("flag", "-no")
+			}
+
+			p.dialogue = nil
+
+			cmdRemoveModule(p, gm, []string{d.GetProp("flag")}, "")
+
+			return nwmessage.Message{}
+		},
+	})
+}
+
 // func validateSlotIs(wants string, p *Player, slotNum int) error {
 // 	// check validity of player.Route and slot number
 // 	switch {
@@ -666,12 +704,12 @@ func validateOneIntArg(args []string) (int, error) {
 
 // 	switch wants {
 // 	case "full":
-// 		if p.Route.Endpoint.slots[slotNum].module == nil {
+// 		if p.Route.Endpoint.slots[slotNum].Module == nil {
 // 			return fmt.Errorf("slot '%v' is empty", slotNum)
 // 		}
 // 		return nil
 // 	case "empty":
-// 		if p.Route.Endpoint.slots[slotNum].module != nil {
+// 		if p.Route.Endpoint.slots[slotNum].Module != nil {
 // 			return fmt.Errorf("slot '%v' is full", slotNum)
 // 		}
 // 		return nil
@@ -687,7 +725,7 @@ func validateOneIntArg(args []string) (int, error) {
 // 	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
 // 		return fmt.Errorf("Slot '%v' does not exist", slotNum)
 
-// 	case p.Route.Endpoint.slots[slotNum].module == nil:
+// 	case p.Route.Endpoint.slots[slotNum].Module == nil:
 // 		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
 // 		return fmt.Errorf("slot '%v' is empty", slotNum)
 // 	}

@@ -45,14 +45,15 @@ type node struct {
 	ID          nodeID            `json:"id"` // keys and ids is redundant? TODO
 	Connections []nodeID          `json:"connections"`
 	Modules     map[modID]*module `json:"modules"`
-	slots       []*modSlot
-	Remoteness  float64 `json:"remoteness"`
+	Slots       []*modSlot        `json:"slots"`
+	Remoteness  float64           `json:"remoteness"`
 	playersHere []string
 }
 
 type modSlot struct {
 	challenge Challenge
-	module    *module
+	Type      string  `json:"type"`
+	Module    *module `json:"module"`
 }
 
 type module struct {
@@ -84,4 +85,5 @@ type Player struct {
 	language string                 // current working language
 	stdin    string                 // stdin buffer for testing
 	slotNum  int                    // currently attached to slotNum of current node
+	dialogue *nwmessage.Dialogue    // this holds any dialogue the players in the middle of
 }

@@ -4,6 +4,7 @@
 	<link rel="shortcut icon" href="favicon.ico" type="image/x-icon"> 
 	<title>NodeWars SuperMegaAlpha</title>
 	<script src="libs/d3.js"></script>
+	<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
 	<script src="libs/jquery.terminal/js/jquery-1.7.1.min.js"></script>
     <script src="libs/jquery.terminal/js/jquery.terminal.min.js"></script>
     <script src="https://unpkg.com/split.js/split.min.js"></script>
@@ -280,26 +281,27 @@ function parseServerMessages(e) {
 	const msg = JSON.parse(e.data);
 	switch (msg.sender) {
 		case "pseudoServer":
-			
-			// if server asks for confirmation, pose a question to user and send the response... 
-			if (msg.type == "confirmation") {
-				terminal.read(msg.data, (d) => {
-					sendMsg(d)
-				})
-				break
-			}
 			// write to terminal
-			let txt = msg.type + " " + msg.data
-			// sometimes msg.type is blank, so trim
-			txt = txt.trim()
-			// trim lost us our nice formatting, so add a newline
-			terminal.echo(txt + "\n")			
+			if (msg.type == "")
+				terminal.echo(msg.data)
+			else if (msg.type == "dialogue")
+			terminal.echo(msg.data)
+			else
+				terminal.echo(msg.type + ": " + msg.data)
 			break
 
 		case "server":
 			switch(msg.type) {
 				case "alertFlash":
 					graphViz.alertFlash(msg.data)
+					break
+
+				case "startDialogue":
+					terminal.pause()
+					break
+				
+				case "endDialogue":
+					terminal.resume()
 					break
 
 				case "graphReset":
@@ -493,6 +495,7 @@ jQuery(function($, term) {
         },
 
     }, {
+    	pauseEvents: false,
     	fontSize:40,
         height: 100,
         greetings: "Welcome to\n" + logo + "\nv" + versionNum,

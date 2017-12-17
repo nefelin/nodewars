@@ -483,7 +483,7 @@ func (m module) isFriendlyTo(t *team) bool {
 // modSlot methods -------------------------------------------------------------------------
 
 func (m modSlot) isFull() bool {
-	if m.module == nil {
+	if m.Module == nil {
 		return false
 	}
 	return true
@@ -494,7 +494,7 @@ func (m modSlot) isFull() bool {
 func (n *node) initSlots() {
 	for range n.Connections {
 		newSlot := newModSlot()
-		n.slots = append(n.slots, newSlot)
+		n.Slots = append(n.Slots, newSlot)
 	}
 }
 
@@ -547,30 +547,30 @@ func (n *node) allowsRoutingFor(t *team) bool {
 // TODO fix awckward redundancy of modules and slots
 func (n *node) addModule(m *module, slotIndex int) error {
 
-	slot := n.slots[slotIndex]
-	if slot.module == nil {
+	slot := n.Slots[slotIndex]
+	if slot.Module == nil {
 		n.Modules[m.id] = m
-		slot.module = m
+		slot.Module = m
 		return nil
 	}
 	return errors.New("Slot not empty")
 }
 
 func (n *node) removeModule(slotIndex int) error {
-	if slotIndex < 0 || slotIndex > len(n.slots)-1 {
+	if slotIndex < 0 || slotIndex > len(n.Slots)-1 {
 		return errors.New("No valid attachment")
 	}
 
-	slot := n.slots[slotIndex]
+	slot := n.Slots[slotIndex]
 	log.Printf("removeModule slot: %v", slot)
 
-	if slot.module == nil {
+	if slot.Module == nil {
 		return errors.New("Slot is empty")
 	}
 
 	//remove module from node and empty slot
-	delete(n.Modules, slot.module.id)
-	slot.module = nil
+	delete(n.Modules, slot.Module.id)
+	slot.Module = nil
 
 	// assign new task to slot
 	slot.challenge = getRandomTest()
@@ -616,11 +616,8 @@ func cutStrFromSlice(p string, s []string) []string {
 // nodeMap methods -----------------------------------------------------------------------------
 
 func (m *nodeMap) initAllNodes() {
-
 	m.initAllSlots()
-
 	m.initAllRemoteness()
-
 }
 
 func (m *nodeMap) initAllSlots() {
@@ -668,16 +665,6 @@ func (m *nodeMap) findNodeEccentricity(n *node) int {
 	// log.Printf("Farthest node from %d: %d", n.ID, farthesNode)
 	return maxDist
 }
-
-// func (m *nodeMap) openPoes() int {
-// 	var count int
-// 	for _, open := range m.POEs {
-// 		if open {
-// 			count++
-// 		}
-// 	}
-// 	return count
-// }
 
 func (m *nodeMap) addPoes(ns ...nodeID) {
 	for _, id := range ns {
@@ -755,6 +742,7 @@ func (m *nodeMap) addNodes(count int) []*node {
 			ID:          id,
 			Connections: connections,
 			Modules:     modules,
+			Remoteness:  100,
 		}
 
 		enter[i] = newNode
@@ -991,6 +979,10 @@ func NewPlayer(ws *websocket.Conn) *Player {
 }
 
 func (p *Player) prompt() string {
+	if p.dialogue != nil {
+		return ""
+	}
+
 	promptEndChar := ">"
 	prompt := fmt.Sprintf("(%s)", p.GetName())
 	if p.TeamName != "" {
@@ -1011,11 +1003,11 @@ func (p *Player) prompt() string {
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) slot() *modSlot {
-	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.slots) {
+	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.Slots) {
 		return nil
 	}
 
-	return p.Route.Endpoint.slots[p.slotNum]
+	return p.Route.Endpoint.Slots[p.slotNum]
 }
 
 // GetName returns the players name if they have one, assigns one if they don't
@@ -1141,7 +1133,7 @@ func (m module) forMsg() string {
 func (n node) forMsg() string {
 
 	slotList := ""
-	for i, slot := range n.slots {
+	for i, slot := range n.Slots {
 		slotList += "\n" + strconv.Itoa(i) + ":" + slot.forMsg()
 	}
 
@@ -1150,8 +1142,8 @@ func (n node) forMsg() string {
 
 func (m modSlot) forMsg() string {
 	switch {
-	case m.module != nil:
-		return "(" + m.module.forMsg() + ")"
+	case m.Module != nil:
+		return "(" + m.Module.forMsg() + ")"
 	default:
 		return "( -empty- )"
 	}
@@ -1160,8 +1152,8 @@ func (m modSlot) forMsg() string {
 // func (m modSlot) forProbe() string {
 // 	var header string
 // 	switch {
-// 	case m.module != nil:
-// 		header = "( " + m.module.forMsg() + " )\n"
+// 	case m.Module != nil:
+// 		header = "( " + m.Module.forMsg() + " )\n"
 // 	default:
 // 		header = "( -empty- )\n"
 // 	}

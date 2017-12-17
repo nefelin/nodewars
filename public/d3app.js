@@ -33,12 +33,6 @@ class NWGraph {
 	reset() {
 		this.stopped = true
 
-		// this.simulation = d3.forceSimulation()
-  //           .force("link", d3.forceLink().distance(nodeBaseRadius*4))
-  //           .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
-  //           .force("charge", d3.forceManyBody().strength(-300))
-  //           .force("center", d3.forceCenter(width / 2, height / 2))
-
 		this.simulation.stop()
 		this.links.remove()
 		this.nodeGroups.remove()
@@ -117,26 +111,92 @@ class NWGraph {
 			.classed("traffic", d => d.traffic.length>0)
 			.transition(t)
 			.style("fill", d => {
-				console.log(d)
+				// console.log(d)
 				if (d.poes.length>0)
 					return d.poes[0].team
+				return d3.hsl(165, 1*d.remoteness*.6, 1*(1-d.remoteness*.9)).brighter(3)
+				// return d3.interpolateBuGn(d.remoteness*.8+Math.random()/15)
+				// return d3.interpolateSpectral(d.remoteness*.6+Math.random()/15)
 				// return "white"
-				return d3.hsl(300, 1*d.remoteness+(d.connections.length*.2), 1*d.remoteness+(d.connections.length*.1))
+				// return d3.hsl(160+(30*d.remoteness), (d.remoteness+(d.connections.length*.2)), (1-d.remoteness)+(d.connections.length*.1)).brighter(3)
+				// return d3.hsl(d.remoteness*300, d.remoteness, 1-d.remoteness*.4)
+				// return d3.hsl(250, (d.remoteness+(d.connections.length*.2)), sigmoid((1-d.remoteness)+(d.connections.length*.1)))
 			})
-
-			// .style("fill", d => {console.log(d.remoteness);return d3.hsl(1*d.remoteness, 1*d.remoteness, 1*d.remoteness)})
-
-        
-
 	}
 
+	sigmoid(t) {
+	    return 1/(1+Math.pow(Math.E, -t));
+	}	
+
 	drawNodeLabels() {
+		const nodeRadius = 
 		this.nodeLabels = this.nodeGroups.append("text")
-	       .attr("dx", -nodeBaseRadius*.8)
-	       .attr("dy", -nodeBaseRadius-20) // better spacing algorithm TODO
-	       .attr("font-size",15)
+	       // .attr("dx", function(d) {
+	       		// console.log("nodegroup?", this.parentNode)
+	       		// d3.select(this.parentNode).select(".node-main").attr("r")*.8
+	        // })
+	       // .attr("dy", function(d) {
+	       		// d3.select(this.parentNode).select(".node-main").attr("r")-20
+	       	// }) // better spacing algorithm TODO
+	       .attr("text-anchor", "middle")
+	       .attr("alignment-baseline", "middle")
+	       .attr("font-size", function(d) {
+	       		return d3.select(this.parentNode).select(".node-main").attr("r")
+	       })
 	       .attr("class", "node-label")
-	       .text(d=>"ID: " + d.id)
+	       .text(d=>d.id)
+	       // .style("opacity", .3)
+	       .style("stroke-width", "1px")
+	       .style("stroke", "black")
+	       .style("fill", "none")
+	}
+
+	drawSlots() {
+		this.nodeGroups.each(function(d) {
+			const slots = d3.select(this).selectAll(".mod-slot")
+				.data(d.slots)
+
+			console.log("slots d: ", d)
+
+			const nodeRadius = d3.select(this).select(".node-main").attr("r");
+			console.log("parent", d3.select(this))
+			console.log(nodeRadius)
+			
+			const modRad = nodeBaseRadius/2.5
+			const slotRad = modRad/4
+			// const spacing = modRad*3
+			// const angleInc = 70*0.017453; //convert to radian
+			const angleInc = (360/d.slots.length)*0.017453
+			
+			slots.exit()
+					.transition(t)
+					.attr("r", 0)
+					.remove()
+
+			slots.enter()
+				   .append("circle")
+				   .attr("class", "mod-slot")
+	   			   .style("fill", d => d.module == null ? "white" : d.module.team)
+	   			   .style("fill-opacity", d => d.module == null ? 0 : d.health/d.maxHealth)
+	   			   .style("stroke-opacity", d => d.module == null ? .2 : 1)
+		           .style("stroke", "black")
+		           .style("stroke-width", 2)
+		           .attr("opacity", 0)
+		           .attr("r", d => d.module == null ? slotRad : modRad)
+		           .transition(t)
+		           .style("opacity", 1)
+		           .attr("cx", (d,i) => (nodeRadius - modRad - 10) * Math.cos(-1.5708+angleInc*i))
+		           .attr("cy", (d,i) => (nodeRadius - modRad - 10) * Math.sin(-1.5708+angleInc*i))
+
+		    // update new slots
+		    slots.transition(t)
+				.style("fill", d => d.team)
+			    .style("fill-opacity", d => {
+			   		// console.log("making module of fill at:" , d);
+			   		return d.health/d.maxHealth
+			    })
+
+		})
 	}
 
 	drawModules() {
@@ -144,13 +204,14 @@ class NWGraph {
 	       	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
 				.data(d.modList)
 
+			// console.log("modules: ", modules)
 
 			const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
 			const nodeRadius = parentRadius
 
 			// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
 			const modRad = nodeBaseRadius/2.5
-			const spacing = modRad*3
+			// const spacing = modRad*3
 			const angleInc = 70*0.017453; //convert to radian
 
 			modules.exit()
@@ -236,7 +297,9 @@ class NWGraph {
 		this.drawLinks()
 		this.drawNodeGroups()
         this.drawNodeLabels()
-        this.drawModules()
+
+        // this.drawModules()
+        this.drawSlots()
 
 	}
 

@@ -15,19 +15,17 @@ var mapCmdList = map[string]playerCommand{
 
 	"an": cmdAddNodes,
 
-	"rn": cmdRemoveNodes,
+	"as": cmdAddString,
+	// "rn": cmdRemoveNodes,
 
 	"ln": cmdLinkNodes,
 
 	//remoteness?????
 
-	// ring
-
-	// line
-
-	// flower
+	// ring redundant with line?
 
 	"ap": cmdAddPoes,
+	// "rp": cmdRemPoes,
 
 	"bake": cmdBakeSlots,
 
@@ -35,6 +33,35 @@ var mapCmdList = map[string]playerCommand{
 }
 
 func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	var nodeCount int
+	if len(args) != 2 {
+		return nwmessage.PsError(errors.New("Need (2) args, a quantity to generate and a node to anchor to"))
+		// args = append(args, "1")
+	}
+
+	nodeCount, err := strconv.Atoi(args[0])
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
+
+	linkTo, err := strconv.Atoi(args[1])
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
+
+	enter := gm.Map.addNodes(nodeCount)
+
+	for _, node := range enter {
+		node.addConnection(gm.Map.Nodes[linkTo])
+	}
+
+	gm.broadcastGraphReset()
+	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
+	gm.broadcastState()
+	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
+}
+
+func cmdAddString(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	var nodeCount int
 	if len(args) == 0 {
 		// return nwmessage.PsError(errors.New("Need either one or two arguments, received zero"))
@@ -46,21 +73,26 @@ func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 		return nwmessage.PsError(err)
 	}
 
-	linkTo := -1
-	if len(args) > 1 {
-		linkTo, err = strconv.Atoi(args[1])
-		if err != nil {
-			return nwmessage.PsError(err)
-		}
+	linkTo, err := strconv.Atoi(args[1])
+	if err != nil {
+		return nwmessage.PsError(err)
 	}
 
 	enter := gm.Map.addNodes(nodeCount)
 
-	if linkTo > -1 {
-		for _, node := range enter {
+	for i, node := range enter {
+		if i == len(enter)-1 {
 			node.addConnection(gm.Map.Nodes[linkTo])
+		} else {
+			node.addConnection(enter[i+1])
 		}
 	}
+
+	// if linkTo > -1 {
+	// 	for _, node := range enter {
+	// 		node.addConnection(gm.Map.Nodes[linkTo])
+	// 	}
+	// }
 
 	gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
@@ -186,6 +218,7 @@ func cmdNewBlankMap(p *Player, gm *GameModel, args []string, c string) nwmessage
 	// nodeIDCount = 0
 	newBlankMap := newNodeMap()
 	gm.Map = &newBlankMap
+	_ = gm.Map.addNodes(1)
 	gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()

@@ -13,53 +13,41 @@ type Message struct {
 } // TODO fix code submission to append to other data, this is unnecessary
 
 const (
-	alertStr   = "alert:"
-	errorStr   = "error:"
-	successStr = "success:"
-	beginStr   = "begin:"
-	confirmStr = "confirmation"
-	// yesnoStr   = "(y/n)"
+	alertStr       = "alert"
+	errorStr       = "error"
+	successStr     = "success"
+	beginStr       = "begin"
+	dialogueMsgStr = "dialogue"
 
-	editStateStr   = "editorState"
-	promptStateStr = "promptState"
-	graphStateStr  = "graphState"
-	teamStateStr   = "teamState"
-	graphResetStr  = "graphReset"
+	editStateStr     = "editorState"
+	promptStateStr   = "promptState"
+	graphStateStr    = "graphState"
+	teamStateStr     = "teamState"
+	graphResetStr    = "graphReset"
+	startDialogueStr = "startDialogue"
+	endDialogueStr   = "endDialogue"
 
-	pseudoStr    = "pseudoServer"
-	serverStr    = "server"
+	pseudoStr = "pseudoServer"
+	serverStr = "server"
+
 	noConnectStr = "No connection"
 
 	terminatorStr = "\n"
 )
 
-// func PsPrompt(c chan Message, ws *websocket.Conn, m string) string {
-// 	question := Message{
-// 		Type:   confirmStr,
-// 		Sender: pseudoStr,
-// 		Data:   m,
-// 	}
-
-// 	// pose question
-// 	c <- question
-
-// 	// wait for response
-// 	var res Message
-
-// 	err := ws.ReadJSON(&res)
-// 	if err != nil {
-// 		log.Printf("error: %v", err)
-// 		return "error"
-// 	}
-
-// 	return strings.ToLower(res.Data)
-// }
+func PsDialogue(msg string) Message {
+	return Message{
+		Type:   dialogueMsgStr,
+		Sender: pseudoStr,
+		Data:   msg,
+	}
+}
 
 func PsError(e error) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   fmt.Sprint(e),
+		Data:   fmt.Sprint(e) + terminatorStr,
 	}
 }
 
@@ -108,7 +96,7 @@ func PsChat(msg string, context string) Message {
 	return Message{
 		Type:   context,
 		Data:   msg,
-		Sender: pseudoStr,
+		Sender: pseudoStr + terminatorStr,
 	}
 }
 
@@ -116,7 +104,7 @@ func PsNoTeam() Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   "No team assignment",
+		Data:   "No team assignment" + terminatorStr,
 	}
 }
 
@@ -124,7 +112,7 @@ func PsNoConnection() Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   "No connection",
+		Data:   "No connection" + terminatorStr,
 	}
 }
 
@@ -167,6 +155,20 @@ func PromptState(msg string) Message {
 		Type:   promptStateStr,
 		Sender: serverStr,
 		Data:   msg,
+	}
+}
+
+func StartDialogue() Message {
+	return Message{
+		Type:   startDialogueStr,
+		Sender: serverStr,
+	}
+}
+
+func EndDialogue() Message {
+	return Message{
+		Type:   startDialogueStr,
+		Sender: serverStr,
 	}
 }
 
