@@ -198,17 +198,17 @@ class NWGraph {
 		           .attr("height", d => d.module == null ? slotHeight : slotHeight)
 		           .transition(t)
 		           .style("opacity", 1)
-		           .attr("x", (d,i) => ((nodeRadius/2.2) * Math.cos(-1.5708+angleInc*i))-5)
-		           .attr("y", (d,i) => ((nodeRadius/2.2) * Math.sin(-1.5708+angleInc*i))-5)
-		           // .attr("x", (d,i) => {
-		           // 		const offset = -(colCount * slotWidth + (colCount-1)*spacing)/2
-		           // 		return offset+(slotWidth+spacing)*(i%colCount)
-		           // 	})
-		           // .attr("y", (d,i) => {
-		           // 		const rows = Math.ceil(parentD.slots.length/colCount)
-		           // 		const offset = -(rows * slotHeight + (rows-1)*spacing)/2/2 // Should need last /2, something is off TODO
-		           // 		return offset+(-slotHeight/2)+(Math.floor(i/2)*(slotHeight+spacing))
-		           // })
+		           // .attr("x", (d,i) => ((nodeRadius/3) * Math.cos(-1.5708+angleInc*i))-5)
+		           // .attr("y", (d,i) => ((nodeRadius/3) * Math.sin(-1.5708+angleInc*i))-5)
+		           .attr("x", (d,i) => {
+		           		const offset = -(colCount * slotWidth + (colCount-1)*spacing)/2
+		           		return offset+(slotWidth+spacing)*(i%colCount)
+		           	})
+		           .attr("y", (d,i) => {
+		           		const rows = Math.ceil(parentD.slots.length/colCount)
+		           		const offset = -(rows * slotHeight + (rows-1)*spacing)/2/2 // Should need last /2, something is off TODO
+		           		return offset+(-slotHeight/2)+(Math.floor(i/2)*(slotHeight+spacing))
+		           })
 		           
 
 		    // update new slots
