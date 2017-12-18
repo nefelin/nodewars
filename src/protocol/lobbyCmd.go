@@ -194,5 +194,5 @@ func cmdListGames(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mes
 		gameList += gameName + "\n"
 	}
 
-	return nwmessage.PsNeutral("Available games:\n" + gameList)
+	return nwmessage.PsNeutral(strings.TrimSpace("Available games:\n" + gameList))
 }
