@@ -499,9 +499,10 @@ func (m modSlot) isFull() bool {
 // node methods -------------------------------------------------------------------------------
 
 func (n *node) initSlots() {
-	for range n.Connections {
+	n.Slots = make([]*modSlot, len(n.Connections))
+	for i := range n.Connections {
 		newSlot := newModSlot()
-		n.Slots = append(n.Slots, newSlot)
+		n.Slots[i] = newSlot
 	}
 }
 
