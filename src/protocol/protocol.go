@@ -13,7 +13,7 @@ import (
 )
 
 // Handshake related constants
-const versionNumber = "0.0.0.1"
+const versionNumber = "1.0.0"
 
 // VersionTag is used for handshake and generally to identify the server type and version
 const VersionTag = "NodeWars:" + versionNumber
@@ -56,8 +56,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 		return
 	}
 
-	// Close this socket when we're done
-
 	// Attempt handshake
 	err = doHandshake(ws)
 	if err != nil {
@@ -67,19 +65,17 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	}
 
 	// Assuming we're all good, register client
-	// log.Println("Registering player...")
-	// thisPlayer := d.registerPlayer(ws)
 
 	// create a single use channel to receive a registered player on
 	thisChan := make(chan *nwmodel.Player)
 
 	// add player registration to dispatcher jobs,
 	d.registrationQueue <- PlayerRegReq{ws, thisChan}
-	// d.queuePlayerRegistration(ws, thisChan)
 
 	// wait for registered player object to be passed back,
 	thisPlayer := <-thisChan
 
+	// clean up player when we're done
 	defer d.scrubPlayerSocket(thisPlayer)
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
@@ -101,13 +97,11 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	}
 }
 
-// Should this do socket scrubbing on error? Is that redundant? TODO
 func outgoingRelay(p *nwmodel.Player) {
 	for {
 		msg := <-p.Outgoing
 		if err := p.Socket.WriteJSON(msg); err != nil {
 			log.Printf("error dispatching message to %v", p.GetName())
-			// scrubPlayerSocket(p)
 			return
 		}
 	}
