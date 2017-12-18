@@ -67,9 +67,19 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	}
 
 	// Assuming we're all good, register client
-	// TODO reconsider this lifecycle, registering player without name has weird side effects
 	// log.Println("Registering player...")
-	thisPlayer := d.registerPlayer(ws)
+	// thisPlayer := d.registerPlayer(ws)
+
+	// create a single use channel to receive a registered player on
+	thisChan := make(chan *nwmodel.Player)
+
+	// add player registration to dispatcher jobs,
+	d.registrationQueue <- PlayerRegReq{ws, thisChan}
+	// d.queuePlayerRegistration(ws, thisChan)
+
+	// wait for registered player object to be passed back,
+	thisPlayer := <-thisChan
+
 	defer d.scrubPlayerSocket(thisPlayer)
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket

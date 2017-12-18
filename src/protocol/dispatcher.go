@@ -13,14 +13,20 @@ type gameID = string
 
 // Dispatcher ...
 type Dispatcher struct {
-	locations map[playerID]gameID
-	games     map[gameID]Room
+	locations         map[playerID]gameID
+	games             map[gameID]Room
+	registrationQueue chan PlayerRegReq
 	Lobby
 }
 
 type Lobby struct {
 	players map[playerID]*nwmodel.Player
 	aChan   chan nwmessage.Message
+}
+
+type PlayerRegReq struct {
+	ws      *websocket.Conn
+	retChan chan *nwmodel.Player
 }
 
 // Room ...
@@ -33,9 +39,10 @@ type Room interface {
 
 func NewDispatcher() *Dispatcher {
 	d := &Dispatcher{
-		locations: make(map[playerID]gameID),
-		games:     make(map[gameID]Room),
-		Lobby:     NewLobby(),
+		locations:         make(map[playerID]gameID),
+		games:             make(map[gameID]Room),
+		registrationQueue: make(chan PlayerRegReq),
+		Lobby:             NewLobby(),
 	}
 
 	go actionConsumer(d)
@@ -71,31 +78,6 @@ func (d *Dispatcher) Recv(m nwmessage.Message) {
 	d.Lobby.aChan <- m
 }
 
-// func (l *Lobby) recv(m nwmessage.Message) {
-// 	l.aChan <- m
-// }
-
-// func actionConsumer(l Lobby) {
-// 	for {
-// 		msg := <-l.aChan
-// 		id, _ := strconv.Atoi(msg.Sender)
-
-// 		msg.Type = "allChat"
-// 		msg.Sender = "pseudoServer"
-// 		msg.Data = "blue"
-// 		// gm := nwmodel.NewDefaultModel()
-// 		// state := gm.CalcState(nil)
-
-// 		l.players[id].Outgoing <- msg
-// 		l.players[id].Outgoing <- nwmessage.PromptStateMsg("lobby>")
-// 		// nwmodel.Message{
-// 		// 	Type:   "graphState",
-// 		// 	Sender: "server",
-// 		// 	Data:   state,
-// 		// }
-// 	}
-// }
-
 func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
 	p := nwmodel.NewPlayer(ws)
 	d.Lobby.AddPlayer(p)
@@ -103,7 +85,11 @@ func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
 	return p
 }
 
-func (d *Dispatcher) removePlayer() {}
+func (d *Dispatcher) queuePlayerRegistration(ws *websocket.Conn, retChan chan *nwmodel.Player) {
+
+}
+
+// func (d *Dispatcher) removePlayer() {}
 
 func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
 	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
@@ -115,6 +101,8 @@ func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
 	if gameID, ok := d.locations[p.ID]; ok {
 		d.games[gameID].RemovePlayer(p)
 		delete(d.locations, p.ID)
+	} else {
+		delete(d.Lobby.players, p.ID)
 	}
 
 	p.Socket.Close()
