@@ -3,7 +3,6 @@ package nwmodel
 import (
 	"errors"
 	"fmt"
-	"log"
 	"nwmessage"
 	"strconv"
 )
@@ -17,6 +16,8 @@ var mapCmdList = map[string]playerCommand{
 
 	"as": cmdAddString,
 	// "rn": cmdRemoveNodes,
+	// unlink
+	// remove nodes
 
 	"ln": cmdLinkNodes,
 
@@ -179,7 +180,7 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.M
 		targ[i] = targetNode
 	}
 
-	log.Printf("linking node %d to node %d", targ[0], targ[1])
+	// log.Printf("linking node %d to node %d", targ[0], targ[1])
 	gm.Map.Nodes[targ[0]].addConnection(gm.Map.Nodes[targ[1]])
 	// toLink := make([]*node, len(args))
 	// for i := range toLink {
