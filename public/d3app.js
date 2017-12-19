@@ -28,6 +28,9 @@ class NWGraph {
             .force("charge", d3.forceManyBody().strength(-300))
             .force("center", d3.forceCenter(width / 2, height / 2))
 
+		this.simulation.stop()
+        this.stopped = true
+
 	}
 
 	reset() {
@@ -38,6 +41,62 @@ class NWGraph {
 		this.nodeGroups.remove()
 
 		this.gameState = null
+	}
+
+	draw() {
+	// const self = this
+
+	// Order of these is important as D3 handles z-index by draw order only
+	this.drawLinks()
+	this.drawNodeGroups()
+    this.drawNodeLabels()
+
+    // this.drawModules()
+    this.drawSlots()
+
+	}
+
+	update(newState) {
+		console.log("NWGraph updating...")
+
+		const self = this
+
+		NWGraph.makeEdges(newState.map)
+		NWGraph.attachPOEs(newState)
+		NWGraph.attachRoutes(newState)
+		NWGraph.arrayifyModules(newState.map)
+		
+		// if we're updating pre-existing state
+		if (this.gameState) {
+			NWGraph.attachCoords(this.nodeGroups.data(), newState.map)
+		}
+
+		this.gameState = newState
+
+		if (this.stopped){
+			this.simulation.alpha(1)
+			this.simulation.restart()
+			console.log("simulation restarting")
+			this.stopped = false
+		}
+
+		var ticked = function() {
+            self.links
+                .attr("x1", function(d) { return d.source.x; })
+                .attr("y1", function(d) { return d.source.y; })
+                .attr("x2", function(d) { return d.target.x; })
+                .attr("y2", function(d) { return d.target.y; });
+    
+    		self.nodeGroups.attr("transform", d => { return "translate(" + d.x + "," + d.y + ")"; })
+        }
+
+        this.simulation
+            .nodes(this.gameState.map.nodes)
+            .on("tick", ticked);
+    
+        this.simulation.force("link")
+            .links(this.gameState.map.edges); 
+		// console.log("NWGraph state post update:", this.gameState)
 	}
 
 	drawLinks() {
@@ -124,9 +183,9 @@ class NWGraph {
 			})
 	}
 
-	sigmoid(t) {
-	    return 1/(1+Math.pow(Math.E, -t));
-	}	
+	// sigmoid(t) {
+	//     return 1/(1+Math.pow(Math.E, -t));
+	// }	
 
 	drawNodeLabels() {
 		// const nodeRadius = 
@@ -217,110 +276,6 @@ class NWGraph {
 			    .style("fill-opacity", d => d.module == null ? .3 : d.module.health/d.module.maxHealth)
 			    .style("stroke-opacity", d => d.module == null ? .8 : 1)
 		})
-	}
-
-	// drawModules() {
-	// 	this.nodeGroups.each(function(d) {
-	//        	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
-	// 			.data(d.modList)
-
-	// 		// console.log("modules: ", modules)
-
-	// 		const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
-	// 		const nodeRadius = parentRadius
-
-	// 		// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
-	// 		const modRad = nodeBaseRadius/2.5
-	// 		// const spacing = modRad*3
-	// 		const angleInc = 70*0.017453; //convert to radian
-
-	// 		modules.exit()
-	// 			.transition(t)
-	// 			.attr("r", 0)
-	// 			.remove()
-
-	// 		modules.enter()
-	// 			   .append("circle")
-	// 			   .attr("class", "node-module")
-	//    			   .style("fill", d => d.team)
-	//    			   .style("fill-opacity", d => {
-	//    			   		console.log("making module of fill at:" , d);
-	//    			   		return d.health/d.maxHealth
-	//    			   	})
-	// 	           .style("stroke", "black")
-	// 	           .style("stroke-width", 2)
-	// 	           .attr("opacity", 0)
-	// 	           .attr("r", d => modRad)
-	// 	           // .attr("cy", -nodeRadius/2)
-	// 	           .transition(t)
-	// 	           .style("opacity", 1)
-	// 	           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
-	// 	           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
-
-	// 	    // update new modules
-	// 	    modules.transition(t)
-	// 			.style("fill", d => d.team)
-	// 		    .style("fill-opacity", d => {
-	// 		   		// console.log("making module of fill at:" , d);
-	// 		   		return d.health/d.maxHealth
-	// 		    })
-
-	// 	})
-	// }
-
-	update(newState) {
-		console.log("NWGraph updating...")
-
-		const self = this
-
-		NWGraph.makeEdges(newState.map)
-		NWGraph.attachPOEs(newState)
-		NWGraph.attachRoutes(newState)
-		NWGraph.arrayifyModules(newState.map)
-		
-		// if we're updating pre-existing state
-		if (this.gameState) {
-			NWGraph.attachCoords(this.nodeGroups.data(), newState.map)
-		}
-
-		this.gameState = newState
-
-		if (this.stopped){
-			this.simulation.alpha(1)
-			this.simulation.restart()
-			this.stopped = false
-		}
-
-		var ticked = function() {
-            self.links
-                .attr("x1", function(d) { return d.source.x; })
-                .attr("y1", function(d) { return d.source.y; })
-                .attr("x2", function(d) { return d.target.x; })
-                .attr("y2", function(d) { return d.target.y; });
-    
-    		self.nodeGroups.attr("transform", d => { return "translate(" + d.x + "," + d.y + ")"; })
-        }
-
-        this.simulation
-            .nodes(this.gameState.map.nodes)
-            .on("tick", ticked);
-    
-        this.simulation.force("link")
-            .links(this.gameState.map.edges); 
-		// console.log("NWGraph state post update:", this.gameState)
-	}
-
-	draw() {
-		// const self = this
-
-		// Order of these is important as D3 handles z-index by draw order only
-		this.drawLinks()
-		this.drawNodeGroups()
-        this.drawNodeLabels()
-
-        // this.drawModules()
-        this.drawSlots()
-
 	}
 
 	// Simulation drag helpers -------------------------------------------------------------------
@@ -483,3 +438,52 @@ class NWGraph {
 	}
 
 }
+
+// drawModules() {
+	// 	this.nodeGroups.each(function(d) {
+	//        	const modules = d3.select(this).selectAll(".node-module") // select instead of selectAll auto binds to parent data
+	// 			.data(d.modList)
+
+	// 		// console.log("modules: ", modules)
+
+	// 		const parentRadius = d3.select(this.parentNode).select(".node-main").attr("r");
+	// 		const nodeRadius = parentRadius
+
+	// 		// const nodeRadius = (nodeBaseRadius+d.connections.length*nodeRadiusMultiplier)
+	// 		const modRad = nodeBaseRadius/2.5
+	// 		// const spacing = modRad*3
+	// 		const angleInc = 70*0.017453; //convert to radian
+
+	// 		modules.exit()
+	// 			.transition(t)
+	// 			.attr("r", 0)
+	// 			.remove()
+
+	// 		modules.enter()
+	// 			   .append("circle")
+	// 			   .attr("class", "node-module")
+	//    			   .style("fill", d => d.team)
+	//    			   .style("fill-opacity", d => {
+	//    			   		console.log("making module of fill at:" , d);
+	//    			   		return d.health/d.maxHealth
+	//    			   	})
+	// 	           .style("stroke", "black")
+	// 	           .style("stroke-width", 2)
+	// 	           .attr("opacity", 0)
+	// 	           .attr("r", d => modRad)
+	// 	           // .attr("cy", -nodeRadius/2)
+	// 	           .transition(t)
+	// 	           .style("opacity", 1)
+	// 	           .attr("cx", (d,i) => (nodeRadius/2) * Math.cos(-1.5708+angleInc*i))
+	// 	           .attr("cy", (d,i) => (nodeRadius/2) * Math.sin(-1.5708+angleInc*i))
+
+	// 	    // update new modules
+	// 	    modules.transition(t)
+	// 			.style("fill", d => d.team)
+	// 		    .style("fill-opacity", d => {
+	// 		   		// console.log("making module of fill at:" , d);
+	// 		   		return d.health/d.maxHealth
+	// 		    })
+
+	// 	})
+	// }
