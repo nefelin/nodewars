@@ -7,10 +7,23 @@ import (
 	"protocol"
 )
 
+const localhost = "http://localhost:8080/"
+const localport = ":8080"
+
+var host string
+var port string
+
 func main() {
 	certfile := os.Getenv("CERTFILE")
 	keyfile := os.Getenv("KEYFILE")
 	prod := os.Getenv("PROD")
+	if prod == "" {
+		host = localhost
+		port = localport
+	} else {
+		host = prod
+		port = ":443"
+	}
 
 	log.Println("Starting " + protocol.VersionTag + " server...")
 
@@ -18,22 +31,23 @@ func main() {
 
 	// Start Webserver
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", http.FileServer(http.Dir("public")).ServeHTTP)
-	mux.HandleFunc("/ws",
+	mux.HandleFunc("/", index)
+	mux.HandleFunc("/ws", // wrap the func to pass the dispatcher
 		func(w http.ResponseWriter, req *http.Request) {
 			protocol.HandleConnections(w, req, d)
 		})
 
-	if prod == "" { // aka env var not set
+	if host == localhost { // aka env var not set
 		log.Fatal(
-			http.ListenAndServe(":8080", mux))
+			http.ListenAndServe(port, mux))
 	}
 
 	go http.ListenAndServe(":80", http.HandlerFunc(redirect))
 	log.Fatal(
-		http.ListenAndServeTLS(":443", certfile, keyfile, mux))
+		http.ListenAndServeTLS(port, certfile, keyfile, mux))
 }
 
+// Redirect all HTTP requests to HTTPS
 func redirect(w http.ResponseWriter, req *http.Request) {
 	target := "https://" + req.Host + req.URL.Path
 	if len(req.URL.RawQuery) > 0 {
@@ -44,12 +58,14 @@ func redirect(w http.ResponseWriter, req *http.Request) {
 	http.Redirect(w, req, target, http.StatusTemporaryRedirect)
 }
 
-/*
+// Reject requests that don't have the correct referer header unless they are for the root.
 func index(w http.ResponseWriter, req *http.Request) {
-	if req.URL.Path != "/" {
+	if req.Header.Get("Referer") != host &&
+		req.URL.Path != "/" {
 		log.Printf("404: %s", req.URL.String())
 		http.NotFound(w, req)
 		return
 	}
+
+	http.FileServer(http.Dir("public")).ServeHTTP(w, req)
 }
-*/
