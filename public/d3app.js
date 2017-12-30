@@ -14,9 +14,15 @@ const t = d3.transition()
 
 
 class NWGraph {
-	constructor(targetElement) {
+	constructor(targetID) {
+
+		this.graphDiv = document.querySelector(targetID)
+		this.width = this.graphDiv.clientWidth
+        this.height = this.graphDiv.clientHeight
+        console.log("width", this.width, "height", this.height)
+
 		console.log("NWGraph creating svg...")
-		this.svg = d3.select(targetElement)
+		this.svg = d3.select(targetID)
 		    // .style("border-right", "1px solid black")
 		    .append('svg')
 		    .attr('width', "100%")
@@ -26,7 +32,7 @@ class NWGraph {
             .force("link", d3.forceLink().distance(NODE_BASE_RADIUS*4))
             .force("collide",d3.forceCollide( function(d){ return d.r + 8 }) )
             .force("charge", d3.forceManyBody().strength(-300))
-            .force("center", d3.forceCenter(width / 2, height / 2))
+            .force("center", d3.forceCenter(this.width / 2, this.height / 2))
 
 		this.simulation.stop()
         this.stopped = true
@@ -37,10 +43,23 @@ class NWGraph {
 		this.stopped = true
 
 		this.simulation.stop()
-		this.links.remove()
-		this.nodeGroups.remove()
+		if (this.links)
+			this.links.remove()
+		if (this.nodeGroups)
+			this.nodeGroups.remove()
+
+		this.resize()
 
 		this.gameState = null
+	}	
+
+	resize() {
+		this.width = this.graphDiv.clientWidth
+        this.height = this.graphDiv.clientHeight
+  		// this.width = 640
+  		// this.height = 480
+        // console.log("width", this.width, "height", this.height)
+        this.simulation.force("center", d3.forceCenter(this.width / 2, this.height / 2))
 	}
 
 	draw() {

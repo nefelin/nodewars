@@ -329,6 +329,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	gm.Players[p.ID] = p
 	gm.setLanguage(p, "python")
 	// send initiall map state
+	p.Outgoing <- nwmessage.GraphReset()
 	p.Outgoing <- nwmessage.GraphState(gm.calcState(p))
 
 	// send initial prompt state
