@@ -94,6 +94,7 @@ func NewDefaultModel() *GameModel {
 		POEs:      poes,
 		languages: getLanguages(),
 		aChan:     aChan,
+		pointGoal: 10,
 	}
 
 	go actionConsumer(gm)
@@ -182,6 +183,66 @@ func newDefaultMap() *nodeMap {
 }
 
 // GameModel methods --------------------------------------------------------------------------
+
+func (gm *GameModel) tickScheduler() {
+	for gm.running == true {
+		<-time.After(2 * time.Second)
+		gm.tick()
+	}
+}
+
+// this is a naive approach, would be more performant to deal in deltas and only use tick to increment total, not recalculate rate
+func (gm *GameModel) tick() {
+	// reset each teams ProcPow
+	for _, team := range gm.Teams {
+		team.ProcPow = 0
+	}
+
+	// go through each node
+	for _, node := range gm.Map.Nodes {
+		// store the powerpermod of that node
+		modVal := node.getPowerPerMod()
+
+		// look at each slot
+		for _, slot := range node.Slots {
+			// for each module give the owner team appropriate power boost
+			if slot.Module != nil {
+				gm.Teams[slot.Module.TeamName].ProcPow += modVal
+			}
+		}
+	}
+
+	// advance each teams VicPoints
+	winners := make([]string, 0)
+
+	for _, team := range gm.Teams {
+		team.VicPoints += team.ProcPow
+		if team.VicPoints > gm.pointGoal {
+			winners = append(winners, team.Name)
+		}
+		// gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s has completed %d calculations", team.Name, team.VicPoints)))
+	}
+
+	if len(winners) > 0 {
+		for _, name := range winners {
+			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s wins!", name)))
+		}
+		gm.stopGame()
+	}
+}
+
+func (gm *GameModel) startGame() {
+	gm.running = true
+	gm.psBroadcast(nwmessage.PsAlert("Game has started!"))
+	// start go routine to handle ticking
+	go gm.tickScheduler()
+}
+
+func (gm *GameModel) stopGame() {
+	gm.running = false
+
+	// ticking goroutine should auto collapse when running is false
+}
 
 func (gm *GameModel) GetPlayers() map[playerID]*Player {
 	return gm.Players
@@ -499,7 +560,7 @@ func (m modSlot) isFull() bool {
 
 // node methods -------------------------------------------------------------------------------
 
-func (n *node) PowerPerMod() float64 {
+func (n *node) getPowerPerMod() float32 {
 	return 1
 }
 

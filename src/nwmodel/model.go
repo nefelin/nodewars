@@ -27,6 +27,8 @@ type GameModel struct {
 	languages map[string]LanguageDetails
 	aChan     chan nwmessage.Message
 	running   bool //running should replace mapLocked
+	pointGoal float32
+	// timelimit should be able to set a timelimit and count points at the end
 }
 
 type route struct {
@@ -68,12 +70,12 @@ type module struct {
 }
 
 type team struct {
-	Name        string  `json:"name"` // Names are only colors for now
-	CalcsPerSec float32 `json:"calcsPerSec"`
-	CalcTotal   float32 `json:"calcTotal"`
-	players     map[*Player]bool
-	maxSize     int `json:"maxSize"`
-	poe         *node
+	Name      string  `json:"name"` // Names are only colors for now
+	ProcPow   float32 `json:"procPow"`
+	VicPoints float32 `json:"vicPoints"`
+	players   map[*Player]bool
+	maxSize   int `json:"maxSize"`
+	poe       *node
 }
 
 // TODO un export all but route

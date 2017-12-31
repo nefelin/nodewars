@@ -341,8 +341,7 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	// begin game
 	// game should maybe not really begin until both teams have chose poes...
 	if !gm.running {
-		gm.running = true
-		gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s chose poe, game has started!", p.TeamName)))
+		gm.startGame()
 	}
 
 	gm.broadcastState()
