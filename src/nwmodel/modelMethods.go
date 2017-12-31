@@ -499,6 +499,10 @@ func (m modSlot) isFull() bool {
 
 // node methods -------------------------------------------------------------------------------
 
+func (n *node) PowerPerMod() float64 {
+	return 1
+}
+
 func (n *node) initSlots() {
 	n.Slots = make([]*modSlot, len(n.Connections))
 	for i := range n.Connections {

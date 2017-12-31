@@ -92,9 +92,9 @@ func actionConsumer(gm *GameModel) {
 		} else if p.dialogue != nil {
 			p.Outgoing <- p.dialogue.Run(msg[0])
 		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
-			if gm.mapLocked {
+			if gm.running {
 				// make this message more situation agnostic TODO
-				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
+				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
 				continue
 			}
 			// if the games not locked, allow map to me modified.
@@ -338,8 +338,13 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
 	}
 
-	// disallow further map tinkering
-	gm.mapLocked = true
+	// begin game
+	// game should maybe not really begin until both teams have chose poes...
+	if !gm.running {
+		gm.running = true
+		gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s chose poe, game has started!", p.TeamName)))
+	}
+
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.TeamName, newPOE))
 }

@@ -26,7 +26,7 @@ type GameModel struct {
 	POEs      map[playerID]*node   `json:"poes"`
 	languages map[string]LanguageDetails
 	aChan     chan nwmessage.Message
-	mapLocked bool
+	running   bool //running should replace mapLocked
 }
 
 type route struct {
@@ -68,10 +68,12 @@ type module struct {
 }
 
 type team struct {
-	Name    string `json:"name"` // Names are only colors for now
-	players map[*Player]bool
-	maxSize int `json:"maxSize"`
-	poe     *node
+	Name        string  `json:"name"` // Names are only colors for now
+	CalcsPerSec float32 `json:"calcsPerSec"`
+	CalcTotal   float32 `json:"calcTotal"`
+	players     map[*Player]bool
+	maxSize     int `json:"maxSize"`
+	poe         *node
 }
 
 // TODO un export all but route
