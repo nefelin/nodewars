@@ -305,14 +305,11 @@
 						graphViz.alertFlash(msg.data)
 						break
 
-					case "startDialogue":
+					case "pauseTerm":
 						terminal.pause()
-						// while (terminal.paused()) {
-							
-						// }
 						break
 					
-					case "endDialogue":
+					case "unpauseTerm":
 						terminal.resume()
 						break
 
