@@ -52,10 +52,10 @@ type node struct {
 }
 
 type modSlot struct {
+	sync.Mutex
 	challenge Challenge
 	Type      string  `json:"type"`
 	Module    *module `json:"module"`
-	mx        sync.Mutex
 }
 
 type module struct {
@@ -65,7 +65,6 @@ type module struct {
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
 	TeamName  string `json:"team"`
-	mx        sync.Mutex
 }
 
 type team struct {

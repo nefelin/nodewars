@@ -344,6 +344,7 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	return nwmessage.PsSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.TeamName, newPOE))
 }
 
+// deprecate this in favor of stdin box TODO
 func cmdStdin(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	// disallow blank stdin
 	if p.stdin == "" {
@@ -454,39 +455,6 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	return nwmessage.PsSuccess(retText)
 }
 
-// func buildEditBuffer(gm *GameModel, p *Player) {
-// 	langDetails := gm.languages[p.language]
-// 	boilerplate := langDetails.Boilerplate
-// 	comment := langDetails.CommentPrefix
-// 	sampleIO := pSlot.challenge.SampleIO
-// 	description := pSlot.challenge.Description
-
-// 	resp := psPrompt(p, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
-// 	if resp != "n" && resp != "no" {
-// 		editnwmessage.Message := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
-// 		if langLock {
-// 			editnwmessage.Message += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().Module.language))
-// 		}
-// }
-
-// func boilerPlateFor(p *Player) string {
-// 	langDetails := gm.languages[p.language]
-// 	return langDetails.Boilerplate
-// }
-
-// func challengeBufferFor(p *Player) string {
-// 	langDetails := gm.languages[p.language]
-// 	pSlot := p.slot()
-// 	if pSlot == nil {
-// 		return ""
-// 	}
-
-// 	comment := langDetails.CommentPrefix
-// 	sampleIO := pSlot.challenge.SampleIO
-// 	description := pSlot.challenge.Description
-// 	return fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
-// }
-
 func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
 	// TODO handle compiler error
@@ -526,14 +494,10 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		}
 
 		// LOCK SLOT
-		slot.mx.Lock()
-		defer slot.mx.Unlock()
+		slot.Lock()
+		defer slot.Unlock()
 
 		if slot.Module != nil {
-			//LOCK MODULE
-			slot.Module.mx.Lock()
-			defer slot.Module.mx.Unlock()
-
 			// in case we're refactoring a friendly module
 			if slot.Module.TeamName == p.TeamName {
 
@@ -681,12 +645,8 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		}
 
 		// LOCK SLOT
-		slot.mx.Lock()
-		defer slot.mx.Unlock()
-
-		//LOCK MODULE
-		slot.Module.mx.Lock()
-		defer slot.Module.mx.Unlock()
+		slot.Lock()
+		defer slot.Unlock()
 
 		if newModHealth >= slot.Module.Health {
 			oldTeam := gm.Teams[slot.Module.TeamName]
