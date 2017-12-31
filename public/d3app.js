@@ -23,10 +23,10 @@ class NWGraph {
 
 		console.log("NWGraph creating svg...")
 		this.svg = d3.select(targetID)
-		    // .style("border-right", "1px solid black")
 		    .append('svg')
 		    .attr('width', "100%")
 		    .attr('height', "100%")
+
 
 		this.simulation = d3.forceSimulation()
             .force("link", d3.forceLink().distance(NODE_BASE_RADIUS*4))
