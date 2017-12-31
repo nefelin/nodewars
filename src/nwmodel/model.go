@@ -2,6 +2,7 @@ package nwmodel
 
 import (
 	"nwmessage"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -54,6 +55,7 @@ type modSlot struct {
 	challenge Challenge
 	Type      string  `json:"type"`
 	Module    *module `json:"module"`
+	mx        sync.Mutex
 }
 
 type module struct {
@@ -63,6 +65,7 @@ type module struct {
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
 	TeamName  string `json:"team"`
+	mx        sync.Mutex
 }
 
 type team struct {
@@ -76,14 +79,15 @@ type team struct {
 
 // Player ...
 type Player struct {
-	ID       playerID               `json:"id"`
-	name     string                 `json:"name"`
-	TeamName string                 `json:"team"`
-	Route    *route                 `json:"route"`
-	Socket   *websocket.Conn        `json:"-"`
-	Outgoing chan nwmessage.Message `json:"-"`
-	language string                 // current working language
-	stdin    string                 // stdin buffer for testing
-	slotNum  int                    // currently attached to slotNum of current node
-	dialogue *nwmessage.Dialogue    // this holds any dialogue the players in the middle of
+	ID        playerID               `json:"id"`
+	name      string                 `json:"name"`
+	TeamName  string                 `json:"team"`
+	Route     *route                 `json:"route"`
+	Socket    *websocket.Conn        `json:"-"`
+	Outgoing  chan nwmessage.Message `json:"-"`
+	language  string                 // current working language
+	stdin     string                 // stdin buffer for testing
+	slotNum   int                    // currently attached to slotNum of current node
+	dialogue  *nwmessage.Dialogue    // this holds any dialogue the players in the middle of
+	compiling bool                   // this is used to block player action while submitted code is compiling
 }

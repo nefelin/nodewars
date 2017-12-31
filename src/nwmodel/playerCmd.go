@@ -85,7 +85,11 @@ func actionConsumer(gm *GameModel) {
 
 		msg := strings.Split(m.Data, " ")
 
-		if p.dialogue != nil {
+		// TODO clean nightmare below
+		if p.compiling != false {
+			// Would be more elegant to freeze prompt while this happens....
+			p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
+		} else if p.dialogue != nil {
 			p.Outgoing <- p.dialogue.Run(msg[0])
 		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
 			if gm.mapLocked {
@@ -491,62 +495,86 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	}
 
 	// passed error checks on args
-	p.Outgoing <- nwmessage.PsBegin("Compiling...")
 
-	response := submitTest(slot.challenge.ID, p.language, c)
+	go func(p *Player, gm *GameModel, c string) {
+		slot := p.slot()
+		response := submitTest(slot.challenge.ID, p.language, c)
+		p.compiling = false
+		p.Outgoing <- nwmessage.TerminalUnpause()
 
-	if response.Message.Type == "error" {
-		return nwmessage.PsError(errors.New(response.Message.Data))
-	}
-
-	newModHealth := response.passed()
-
-	if newModHealth == 0 {
-		return nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
-	}
-
-	if slot.Module != nil {
-		// in case we're refactoring a friendly module
-		if slot.Module.TeamName == p.TeamName {
-
-			slot.Module.Health = newModHealth
-			slot.Module.language = p.language
-
-			gm.broadcastState()
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-			return nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.Module.Health, slot.Module.MaxHealth, slot.Module.language))
+		if response.Message.Type == "error" {
+			p.Outgoing <- nwmessage.PsError(errors.New(response.Message.Data))
+			return
 		}
 
-		// hostile module
-		switch {
-		case newModHealth < slot.Module.Health:
-			return nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth))
+		newModHealth := response.passed()
 
-		case newModHealth == slot.Module.Health:
-			return nwmessage.PsAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed")
-
-		case newModHealth > slot.Module.Health:
-			oldTeam := gm.Teams[slot.Module.TeamName]
-			slot.Module.TeamName = p.TeamName
-			slot.Module.Health = newModHealth
-			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
-			gm.broadcastState()
-			gm.broadcastAlertFlash(p.TeamName)
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
-			return nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.Module.Health, slot.Module.MaxHealth))
+		if newModHealth == 0 {
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
+			return
 		}
 
-	}
-	// slot is empty, simply install...
-	newMod := newModule(p, response, p.language)
-	err := p.Route.Endpoint.addModule(newMod, p.slotNum)
-	if err != nil {
-		return nwmessage.PsError(err)
-	}
-	gm.broadcastState()
-	gm.broadcastAlertFlash(p.TeamName)
-	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-	return nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.Module.language, slot.Module.Health, slot.Module.MaxHealth))
+		// LOCK SLOT
+		slot.mx.Lock()
+		defer slot.mx.Unlock()
+
+		if slot.Module != nil {
+			//LOCK MODULE
+			slot.Module.mx.Lock()
+			defer slot.Module.mx.Unlock()
+
+			// in case we're refactoring a friendly module
+			if slot.Module.TeamName == p.TeamName {
+
+				slot.Module.Health = newModHealth
+				slot.Module.language = p.language
+
+				gm.broadcastState()
+				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.Module.Health, slot.Module.MaxHealth, slot.Module.language))
+				return
+			}
+
+			// hostile module
+			switch {
+			case newModHealth < slot.Module.Health:
+				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth))
+				return
+
+			case newModHealth == slot.Module.Health:
+				p.Outgoing <- nwmessage.PsAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, slot.Module.MaxHealth)
+				return
+
+			case newModHealth > slot.Module.Health:
+				oldTeam := gm.Teams[slot.Module.TeamName]
+				slot.Module.TeamName = p.TeamName
+				slot.Module.Health = newModHealth
+				gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+				gm.broadcastState()
+				gm.broadcastAlertFlash(p.TeamName)
+				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.Module.Health, slot.Module.MaxHealth))
+				return
+			}
+
+		}
+		// slot is empty, simply install...
+		newMod := newModule(p, response, p.language)
+		err := p.Route.Endpoint.addModule(newMod, p.slotNum)
+		if err != nil {
+			p.Outgoing <- nwmessage.PsError(err)
+			return
+		}
+		gm.broadcastState()
+		gm.broadcastAlertFlash(p.TeamName)
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.Module.language, slot.Module.Health, slot.Module.MaxHealth))
+		return
+	}(p, gm, c)
+
+	p.compiling = true
+	p.Outgoing <- nwmessage.TerminalPause()
+	return nwmessage.PsBegin("Compiling...")
 }
 
 // func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
@@ -621,38 +649,61 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 	// All checks passed:
 	// passed error checks on args
 
-	p.Outgoing <- nwmessage.PsBegin("Removing module...")
+	go func(p *Player, gm *GameModel, c string) {
+		slot := p.slot()
 
-	log.Printf("remove cID: %v", slot.challenge.ID)
-	response := submitTest(slot.challenge.ID, p.language, c)
+		response := submitTest(slot.challenge.ID, p.language, c)
 
-	if response.Message.Type == "error" {
-		return nwmessage.PsError(errors.New(response.Message.Data))
-	}
+		p.compiling = false
+		p.Outgoing <- nwmessage.TerminalUnpause()
 
-	newModHealth := response.passed()
-
-	log.Printf("response to submitted test: %v", response)
-
-	if newModHealth >= slot.Module.Health {
-		oldTeam := gm.Teams[slot.Module.TeamName]
-
-		err := p.Route.Endpoint.removeModule(p.slotNum)
-		if err != nil {
-			return nwmessage.PsError(err)
+		if response.Message.Type == "error" {
+			p.Outgoing <- nwmessage.PsError(errors.New(response.Message.Data))
+			return
 		}
-		gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
-		gm.broadcastState()
-		gm.broadcastAlertFlash(p.TeamName)
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam, p.Route.Endpoint.ID)))
-		return nwmessage.PsSuccess("Module removed")
 
-	}
+		newModHealth := response.passed()
 
-	return nwmessage.PsError(fmt.Errorf(
-		"Solution too weak: %d/%d, need %d/%d to remove",
-		response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth,
-	))
+		if newModHealth == 0 {
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
+			return
+		}
+
+		// LOCK SLOT
+		slot.mx.Lock()
+		defer slot.mx.Unlock()
+
+		//LOCK MODULE
+		slot.Module.mx.Lock()
+		defer slot.Module.mx.Unlock()
+
+		if newModHealth >= slot.Module.Health {
+			oldTeam := gm.Teams[slot.Module.TeamName]
+
+			err := p.Route.Endpoint.removeModule(p.slotNum)
+			if err != nil {
+				p.Outgoing <- nwmessage.PsError(err)
+				return
+			}
+			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+			gm.broadcastState()
+			gm.broadcastAlertFlash(p.TeamName)
+			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam, p.Route.Endpoint.ID)))
+			p.Outgoing <- nwmessage.PsSuccess("Module removed")
+			return
+
+		}
+
+		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
+			"Solution too weak: %d/%d, need %d/%d to remove",
+			response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth,
+		))
+		return
+	}(p, gm, c)
+
+	p.compiling = true
+	p.Outgoing <- nwmessage.TerminalPause()
+	return nwmessage.PsBegin("Removing module...")
 
 }
 

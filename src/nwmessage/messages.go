@@ -19,13 +19,13 @@ const (
 	beginStr       = "begin"
 	dialogueMsgStr = "dialogue"
 
-	editStateStr   = "editorState"
-	promptStateStr = "promptState"
-	graphStateStr  = "graphState"
-	teamStateStr   = "teamState"
-	graphResetStr  = "graphReset"
-	// startDialogueStr = "startDialogue"
-	// endDialogueStr   = "endDialogue"
+	editStateStr       = "editorState"
+	promptStateStr     = "promptState"
+	graphStateStr      = "graphState"
+	teamStateStr       = "teamState"
+	graphResetStr      = "graphReset"
+	terminalPauseStr   = "pauseTerm"
+	terminalUnpauseStr = "unpauseTerm"
 
 	pseudoStr = "pseudoServer"
 	serverStr = "server"
@@ -159,19 +159,19 @@ func PromptState(msg string) Message {
 }
 
 // pause and resume are not behaving client-side
-// func StartDialogue() Message {
-// 	return Message{
-// 		Type:   startDialogueStr,
-// 		Sender: serverStr,
-// 	}
-// }
+func TerminalPause() Message {
+	return Message{
+		Type:   terminalPauseStr,
+		Sender: serverStr,
+	}
+}
 
-// func EndDialogue() Message {
-// 	return Message{
-// 		Type:   startDialogueStr,
-// 		Sender: serverStr,
-// 	}
-// }
+func TerminalUnpause() Message {
+	return Message{
+		Type:   terminalUnpauseStr,
+		Sender: serverStr,
+	}
+}
 
 func TeamState(msg string) Message {
 	return Message{
