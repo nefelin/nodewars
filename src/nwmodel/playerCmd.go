@@ -116,6 +116,10 @@ func actionConsumer(gm *GameModel) {
 
 func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
+	if len(args) == 0 {
+		return nwmessage.PsError(errors.New("Need a message to yell"))
+	}
+
 	chatMsg := p.GetName() + " > " + strings.Join(args, " ")
 
 	gm.psBroadcast(nwmessage.Message{
@@ -127,6 +131,9 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
+	if len(args) < 2 {
+		return nwmessage.PsError(errors.New("Need a recipient and a message"))
+	}
 	var recip *Player
 	for _, player := range gm.Players {
 		if player.GetName() == args[0] {
@@ -147,6 +154,10 @@ func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 func cmdTc(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsNoTeam()
+	}
+
+	if len(args) == 0 {
+		return nwmessage.PsError(errors.New("Need a message for team chat"))
 	}
 
 	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
@@ -542,7 +553,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				return
 
 			case newModHealth == slot.Module.Health:
-				p.Outgoing <- nwmessage.PsAlert("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, slot.Module.MaxHealth)
+				p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, slot.Module.MaxHealth))
 				return
 
 			case newModHealth > slot.Module.Health:
