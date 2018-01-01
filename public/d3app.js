@@ -380,12 +380,12 @@ class NWGraph {
 	}
 
 	static arrayifyModules(nodeMap) {
-		for (let node of nodeMap.nodes) {
-			node.modList = []
-			for (let modID of Object.keys(node.modules)){
-				node.modList.push(node.modules[modID])
-			}
-		}
+		// for (let node of nodeMap.nodes) {
+		// 	node.modList = []
+		// 	for (let modID of Object.keys(node.modules)){
+		// 		node.modList.push(node.modules[modID])
+		// 	}
+		// }
 	}
 
 	static attachCoords(oldData, nodeMap) {

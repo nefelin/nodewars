@@ -623,25 +623,31 @@ func cutIntFromSlice(p int, s []int) []int {
 }
 
 func (n *node) allowsRoutingFor(t *team) bool {
-	// t == nil means we don't care...
+	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
 	if t == nil {
 		return true
 	}
 
-	for _, module := range n.Modules {
-		if module.isFriendlyTo(t) {
-			return true
+	// if a node has no slots, it allows routing for everyone
+	// allows creation of neutral hubs
+	if len(n.Slots) == 0 {
+		return true
+	}
+
+	for _, slot := range n.Slots {
+		if slot.Module != nil {
+			if slot.Module.isFriendlyTo(t) {
+				return true
+			}
 		}
 	}
 	return false
 }
 
-// TODO fix awckward redundancy of modules and slots
 func (n *node) addModule(m *module, slotIndex int) error {
 
 	slot := n.Slots[slotIndex]
 	if slot.Module == nil {
-		n.Modules[m.id] = m
 		slot.Module = m
 		return nil
 	}
@@ -660,8 +666,7 @@ func (n *node) removeModule(slotIndex int) error {
 		return errors.New("Slot is empty")
 	}
 
-	//remove module from node and empty slot
-	delete(n.Modules, slot.Module.id)
+	//empty slot
 	slot.Module = nil
 
 	// assign new task to slot
@@ -828,12 +833,10 @@ func (m *nodeMap) addNodes(count int) []*node {
 		m.nodeIDCount++
 
 		connections := make([]int, 0)
-		modules := make(map[modID]*module)
 
 		newNode := &node{
 			ID:          id,
 			Connections: connections,
-			Modules:     modules,
 			Remoteness:  100,
 			Slots:       make([]*modSlot, 0),
 		}
@@ -1147,6 +1150,12 @@ func (r route) length() int {
 }
 
 // team methods -------------------------------------------------------------------------------
+func (t *team) calcProcPow() {
+	// form a pool of nodes connected to source where we have modules
+	// for each node in pool calcProcPow
+	// if a slot is producing, set slot.Processing = true so we can animate this
+}
+
 func (t team) isFull() bool {
 	if len(t.players) < t.maxSize {
 		return false
@@ -1184,11 +1193,11 @@ func (n node) String() string {
 }
 
 func (n node) modIDs() []modID {
-	ids := make([]modID, len(n.Modules))
-	i := 0
-	for _, mod := range n.Modules {
-		ids[i] = mod.id
-		i++
+	ids := make([]modID, 0)
+	for _, slot := range n.Slots {
+		if slot.Module != nil {
+			ids = append(ids, slot.Module.id)
+		}
 	}
 	return ids
 }

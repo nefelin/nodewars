@@ -46,11 +46,11 @@ type nodeMap struct {
 }
 
 type node struct {
-	ID          nodeID            `json:"id"` // keys and ids is redundant? TODO
-	Connections []nodeID          `json:"connections"`
-	Modules     map[modID]*module `json:"modules"`
-	Slots       []*modSlot        `json:"slots"`
-	Remoteness  float64           `json:"remoteness"`
+	ID          nodeID   `json:"id"` // keys and ids is redundant? TODO
+	Connections []nodeID `json:"connections"`
+	// Modules     map[modID]*module `json:"modules"`
+	Slots       []*modSlot `json:"slots"`
+	Remoteness  float64    `json:"remoteness"`
 	playersHere []string
 }
 
@@ -77,6 +77,7 @@ type team struct {
 	players   map[*Player]bool
 	maxSize   int `json:"maxSize"`
 	poe       *node
+	// access    map[*node]bool // optimization to minimize re-calculating which nodes are feeding processing power
 }
 
 // TODO un export all but route
