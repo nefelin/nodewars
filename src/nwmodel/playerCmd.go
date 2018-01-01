@@ -248,10 +248,7 @@ func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 	}
 
 	if len(args) == 0 {
-		if p.Route != nil {
-			return nwmessage.PsSuccess(fmt.Sprintf("You're connected to node %d which connects to %v", p.Route.Endpoint.ID, p.Route.Endpoint.Connections))
-		}
-		return nwmessage.PsError(errors.New("No connection, provide a nodeID argument to connect"))
+		return nwmessage.PsError(errors.New("Need a node ID to connect to"))
 	}
 
 	targetNode, err := strconv.Atoi(args[0])
@@ -299,6 +296,7 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 
 	retMsg := p.Route.Endpoint.forMsg()
 	pHere := p.Route.Endpoint.playersHere
+
 	if len(pHere) > 1 {
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
@@ -314,6 +312,7 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 		//add to message
 		retMsg += addMsg
 	}
+
 	return nwmessage.PsNeutral(retMsg)
 }
 

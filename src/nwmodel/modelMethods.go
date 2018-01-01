@@ -1230,7 +1230,9 @@ func (n node) forMsg() string {
 		slotList += "\n" + strconv.Itoa(i) + ":" + slot.forMsg()
 	}
 
-	return fmt.Sprintf("NodeID: %v\nMemory Slots:%v", n.ID, slotList)
+	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
+
+	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMemory Slots:%v", n.ID, connectList, slotList)
 }
 
 func (m modSlot) forMsg() string {
