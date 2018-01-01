@@ -26,7 +26,9 @@ class NWGraph {
 		    .append('svg')
 		    .attr('width', "100%")
 		    .attr('height', "100%")
-
+		
+		this.background = this.svg.append('g')
+		this.root = this.svg.append('g')
 
 		this.simulation = d3.forceSimulation()
             .force("link", d3.forceLink().distance(NODE_BASE_RADIUS*4))
@@ -48,6 +50,11 @@ class NWGraph {
 		if (this.nodeGroups)
 			this.nodeGroups.remove()
 
+		if (this.scoreBars)
+			this.scoreBars.remove()
+		if (this.teamList)
+			this.teamList = []
+
 		this.resize()
 
 		this.gameState = null
@@ -56,9 +63,10 @@ class NWGraph {
 	resize() {
 		this.width = this.graphDiv.clientWidth
         this.height = this.graphDiv.clientHeight
-  		// this.width = 640
-  		// this.height = 480
-        // console.log("width", this.width, "height", this.height)
+
+        if (this.teamList)
+        	this.updateScore(this.teamList, true)
+
         this.simulation.force("center", d3.forceCenter(this.width / 2, this.height / 2))
 	}
 
@@ -117,9 +125,50 @@ class NWGraph {
             .links(this.gameState.map.edges); 
 		// console.log("NWGraph state post update:", this.gameState)
 	}
+	
+	updateScore(teams, resize = false) {		
+		// console.log("update score called")
+		const BAR_WIDTH = 20
+		const POINTS_GOAL = this.gameState.pointGoal // this should get pulled from server msgs
+		const TICK_RATE = 1000
+		// if resize == true then this is not a normal score update but a redraw trigged by svg resizing
+		// therefor the transition speed will be set to 0
+		const TRANS_DURATION = resize ? 0 : TICK_RATE - 20
+
+		// convert score indo d3 friendly array
+		const teamList = []
+		for (let team of Object.values(teams)){
+				teamList.push(team)
+			}
+		this.teamList = teamList
+		// console.table(teamList)
+		// not sure thsi approach handles resizing, fix TODO
+		const update = this.background.selectAll('.score-bar').data(this.teamList)
+
+		this.scoreBars = update.enter()
+			.append("rect")
+			.attr("width", BAR_WIDTH)
+			.attr("fill", d => d.name)
+			.attr("class", d => "score-bar " + d.name + "-score")
+			.attr("x", (d,i) => BAR_WIDTH*i)
+			.attr("y", d => this.height)
+			.attr("height", d => (d.vicPoints/POINTS_GOAL)*this.height) // the 100 should be pulled from actual goal points
+		   .merge(update)
+		    
+		this.scoreBars
+			// .transition()
+		 //    .ease(d3.easeLinear)
+		 //    .duration(TRANS_DURATION) // this should be the same as the score tick rate server side, maybe slightly less?
+		    .attr("y", d => this.height-(d.vicPoints/POINTS_GOAL)*this.height)
+		    .attr("height", d => (d.vicPoints/POINTS_GOAL)*this.height) // the 100 should be pulled from actual goal points
+
+		// update.exit().remove()
+		// console.log("update", update, "scoreBars", this.scoreBars)
+	}
+
 
 	drawLinks() {
-		const update = this.svg.selectAll('.edge').data(this.gameState.map.edges)
+		const update = this.root.selectAll('.edge').data(this.gameState.map.edges)
 
 		this.links = update.enter()
             .append("line")
@@ -137,7 +186,7 @@ class NWGraph {
 
 	drawNodeGroups() {
 		const self = this
-		const update = this.svg.selectAll(".node-group").data(this.gameState.map.nodes)
+		const update = this.root.selectAll(".node-group").data(this.gameState.map.nodes)
 		const enter = update.enter()
         	.append("g")
             .attr("class", "node-group")
