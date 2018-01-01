@@ -94,7 +94,7 @@ func NewDefaultModel() *GameModel {
 		POEs:      poes,
 		languages: getLanguages(),
 		aChan:     aChan,
-		pointGoal: 10,
+		PointGoal: 1000,
 	}
 
 	go actionConsumer(gm)
@@ -186,12 +186,14 @@ func newDefaultMap() *nodeMap {
 
 func (gm *GameModel) tickScheduler() {
 	for gm.running == true {
-		<-time.After(2 * time.Second)
+		<-time.After(1 * time.Second)
 		gm.tick()
 	}
 }
 
 // this is a naive approach, would be more performant to deal in deltas and only use tick to increment total, not recalculate rate
+// TODO approach should be that on any module gain or loss that teams procPow is recalculated
+// this entails making a pool of all nodes connected to POE and running the below logic
 func (gm *GameModel) tick() {
 	// reset each teams ProcPow
 	for _, team := range gm.Teams {
@@ -217,7 +219,7 @@ func (gm *GameModel) tick() {
 
 	for _, team := range gm.Teams {
 		team.VicPoints += team.ProcPow
-		if team.VicPoints > gm.pointGoal {
+		if team.VicPoints >= gm.PointGoal {
 			winners = append(winners, team.Name)
 		}
 		// gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s has completed %d calculations", team.Name, team.VicPoints)))
@@ -229,6 +231,8 @@ func (gm *GameModel) tick() {
 		}
 		gm.stopGame()
 	}
+
+	gm.broadcastScore()
 }
 
 func (gm *GameModel) startGame() {
@@ -271,6 +275,12 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 	gm.broadcastState()
 }
 
+func (gm *GameModel) broadcastScore() {
+	for _, p := range gm.Players {
+		p.Outgoing <- nwmessage.ScoreState(gm.packScores())
+	}
+}
+
 func (gm *GameModel) broadcastState() {
 	for _, p := range gm.Players {
 		state := gm.calcState(p)
@@ -284,9 +294,17 @@ func (gm *GameModel) broadcastGraphReset() {
 	}
 }
 
+func (gm *GameModel) packScores() string {
+	scoreMsg, err := json.Marshal(gm.Teams)
+	if err != nil {
+		log.Println(err)
+	}
+	return string(scoreMsg)
+}
+
+// calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
 func (gm *GameModel) calcState(p *Player) string {
 	stateMsg, err := json.Marshal(gm)
-
 	if err != nil {
 		log.Println(err)
 	}
@@ -561,7 +579,7 @@ func (m modSlot) isFull() bool {
 // node methods -------------------------------------------------------------------------------
 
 func (n *node) getPowerPerMod() float32 {
-	return 1
+	return float32(n.Remoteness)
 }
 
 func (n *node) initSlots() {

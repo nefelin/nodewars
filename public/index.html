@@ -13,6 +13,10 @@
 </script>
 
   <style>
+  
+	body {
+		overflow-y: hidden
+	}
 
 	#main-col {
 		position:absolute;
@@ -43,7 +47,7 @@
 		/*order:0;*/
 		flex-grow:1;
 		background-color: beige;
-		overflow-y: auto;
+		overflow-y: hidden;
 	}
 
 	#editor {
@@ -282,7 +286,7 @@
 	let userPrompt = "nodewars>"
 	function parseServerMessages(e) {
 		const msg = JSON.parse(e.data);
-		console.log("received: ", msg)
+		// console.log("received: ", msg)
 		switch (msg.sender) {
 			case "pseudoServer":
 				// write to terminal
@@ -319,6 +323,11 @@
 
 					case "graphState": 
 						parseGraphState(msg)
+						break
+
+					case "scoreState":
+						const teams = JSON.parse(msg.data)
+						graphViz.updateScore(teams) 
 						break
 
 					case "languageState":

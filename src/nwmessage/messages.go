@@ -22,6 +22,7 @@ const (
 	editStateStr       = "editorState"
 	promptStateStr     = "promptState"
 	graphStateStr      = "graphState"
+	scoreStateStr      = "scoreState"
 	teamStateStr       = "teamState"
 	graphResetStr      = "graphReset"
 	terminalPauseStr   = "pauseTerm"
@@ -153,6 +154,14 @@ func GraphReset() Message {
 func PromptState(msg string) Message {
 	return Message{
 		Type:   promptStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
+func ScoreState(msg string) Message {
+	return Message{
+		Type:   scoreStateStr,
 		Sender: serverStr,
 		Data:   msg,
 	}

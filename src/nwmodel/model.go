@@ -24,10 +24,11 @@ type GameModel struct {
 	Teams     map[teamName]*team   `json:"teams"`
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
+	PointGoal float32              `json:"pointGoal"`
 	languages map[string]LanguageDetails
 	aChan     chan nwmessage.Message
 	running   bool //running should replace mapLocked
-	pointGoal float32
+
 	// timelimit should be able to set a timelimit and count points at the end
 }
 
