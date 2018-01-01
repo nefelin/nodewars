@@ -44,6 +44,8 @@ var gameCmdList = map[string]playerCommand{
 
 	"stdin": cmdStdin,
 
+	"score": cmdScore,
+
 	"test": cmdTestCode,
 
 	"rm":     cmdRemoveModule,
@@ -394,6 +396,18 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	}
 
 	return nwmessage.PsSuccess(fmt.Sprintf("Output: %v", response))
+}
+
+func cmdScore(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	var scoreStrs sort.StringSlice
+
+	for teamName, team := range gm.Teams {
+		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nProcessing Power: %.2f\nCalculations Completed: %.2f/%.0f", teamName, team.ProcPow, team.VicPoints, gm.PointGoal))
+	}
+
+	scoreStrs.Sort()
+
+	return nwmessage.PsNeutral(strings.Join(scoreStrs, "\n"))
 }
 
 // TODO refactor cmdAttach for clarity and redundancy
