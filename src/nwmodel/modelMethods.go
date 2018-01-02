@@ -47,7 +47,8 @@ func NewTeam(n teamName) *team {
 	return &team{
 		Name:    n,
 		players: make(map[*Player]bool),
-		maxSize: 10,
+		maxSize: 100,
+		powered: make(map[*node]bool),
 	}
 }
 
@@ -184,6 +185,89 @@ func newDefaultMap() *nodeMap {
 
 // GameModel methods --------------------------------------------------------------------------
 
+// TODO wrap these module methods in some function that combines allowed and eval traffic
+func (gm *GameModel) buildModule(p *Player, m *module) {
+	slot := p.slot()
+
+	pTeam := gm.Teams[p.TeamName]
+
+	// track whether node allowed routing for active player before building
+	allowed := p.Route.Endpoint.allowsRoutingFor(pTeam)
+
+	if slot.Module != nil {
+		log.Panic(errors.New("Slot not empty"))
+	}
+
+	slot.Module = m
+
+	// if routing status has changed, recalculate powered nodes
+	if p.Route.Endpoint.allowsRoutingFor(pTeam) != allowed {
+		gm.calcPoweredNodes(pTeam)
+	}
+
+	// recalculate this teams processsing power
+	gm.calcProcPow(pTeam)
+}
+
+func (gm *GameModel) refactorModule(m *module, p *Player, newHealth int) {
+	// track old owner to evaluate traffic after module loss
+	oldTeam := gm.Teams[m.TeamName]
+
+	pTeam := gm.Teams[p.TeamName]
+	// track whether node allowed routing for active player before refactor
+	allowed := p.Route.Endpoint.allowsRoutingFor(pTeam)
+
+	// refactor module to new owner and health
+	m.TeamName = p.TeamName
+	m.Health = newHealth
+
+	// evaluate routing of player trffic through node
+	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+
+	// if routing status has changed, recalculate powered nodes
+	if p.Route.Endpoint.allowsRoutingFor(pTeam) != allowed {
+		gm.calcPoweredNodes(pTeam)
+	}
+
+	// recalculate old teams processsing power
+	gm.calcProcPow(oldTeam)
+
+	// recalculate this teams processsing power
+	gm.calcProcPow(pTeam)
+}
+
+func (gm *GameModel) removeModule(p *Player) {
+	slot := p.slot()
+
+	if slot.Module == nil {
+		log.Panic("Slot empty")
+		return
+	}
+
+	// track old owner to evaluate traffic after module loss
+	oldTeam := gm.Teams[slot.Module.TeamName]
+
+	// track whether node allowed routing for active player before refactor
+	allowed := p.Route.Endpoint.allowsRoutingFor(oldTeam)
+
+	// remove the module
+	err := p.Route.Endpoint.removeModule(p.slotNum)
+	if err != nil {
+		log.Panic(err)
+	}
+
+	// evaluate routing of player trffic through node
+	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+
+	// if routing status has changed, recalculate powered nodes
+	if p.Route.Endpoint.allowsRoutingFor(oldTeam) != allowed {
+		gm.calcPoweredNodes(oldTeam)
+	}
+
+	// recalculate teams processsing power
+	gm.calcProcPow(oldTeam)
+}
+
 func (gm *GameModel) tickScheduler() {
 	for gm.running == true {
 		<-time.After(1 * time.Second)
@@ -196,23 +280,23 @@ func (gm *GameModel) tickScheduler() {
 // this entails making a pool of all nodes connected to POE and running the below logic
 func (gm *GameModel) tick() {
 	// reset each teams ProcPow
-	for _, team := range gm.Teams {
-		team.ProcPow = 0
-	}
+	// for _, team := range gm.Teams {
+	// 	team.ProcPow = 0
+	// }
 
-	// go through each node
-	for _, node := range gm.Map.Nodes {
-		// store the powerpermod of that node
-		modVal := node.getPowerPerMod()
+	// // go through each node
+	// for _, node := range gm.Map.Nodes {
+	// 	// store the powerpermod of that node
+	// 	modVal := node.getPowerPerMod()
 
-		// look at each slot
-		for _, slot := range node.Slots {
-			// for each module give the owner team appropriate power boost
-			if slot.Module != nil {
-				gm.Teams[slot.Module.TeamName].ProcPow += modVal
-			}
-		}
-	}
+	// 	// look at each slot
+	// 	for _, slot := range node.Slots {
+	// 		// for each module give the owner team appropriate power boost
+	// 		if slot.Module != nil {
+	// 			gm.Teams[slot.Module.TeamName].ProcPow += modVal
+	// 		}
+	// 	}
+	// }
 
 	// advance each teams VicPoints
 	winners := make([]string, 0)
@@ -569,6 +653,7 @@ func (m module) isFriendlyTo(t *team) bool {
 
 // modSlot methods -------------------------------------------------------------------------
 
+// modslot.isFull is deprecated TODO remove
 func (m modSlot) isFull() bool {
 	if m.Module == nil {
 		return false
@@ -577,6 +662,14 @@ func (m modSlot) isFull() bool {
 }
 
 // node methods -------------------------------------------------------------------------------
+
+func (n *node) buildDummyModule(p *Player) {
+	dummyResponse := ChallengeResponse{
+		PassFail: map[string]string{"": "true"},
+	}
+
+	n.Slots[0].Module = newModule(p, dummyResponse, p.language)
+}
 
 func (n *node) getPowerPerMod() float32 {
 	return float32(n.Remoteness)
@@ -644,15 +737,16 @@ func (n *node) allowsRoutingFor(t *team) bool {
 	return false
 }
 
-func (n *node) addModule(m *module, slotIndex int) error {
+// func (n *node) addModule(m *module, slotIndex int) error {
 
-	slot := n.Slots[slotIndex]
-	if slot.Module == nil {
-		slot.Module = m
-		return nil
-	}
-	return errors.New("Slot not empty")
-}
+// 	slot := n.Slots[slotIndex]
+// 	if slot.Module == nil {
+// 		slot.Module = m
+// 		return nil
+// 	}
+
+// 	return errors.New("Slot not empty")
+// }
 
 func (n *node) removeModule(slotIndex int) error {
 	if slotIndex < 0 || slotIndex > len(n.Slots)-1 {
@@ -1150,10 +1244,38 @@ func (r route) length() int {
 }
 
 // team methods -------------------------------------------------------------------------------
-func (t *team) calcProcPow() {
-	// form a pool of nodes connected to source where we have modules
-	// for each node in pool calcProcPow
+func (gm *GameModel) calcProcPow(t *team) {
+	// for each node in t.powered add power for each module
 	// if a slot is producing, set slot.Processing = true so we can animate this
+	t.ProcPow = 0
+	// go through each node
+	for node := range t.powered {
+		// store the powerpermod of that node
+		modVal := node.getPowerPerMod()
+
+		// look at each slot
+		for _, slot := range node.Slots {
+			if slot.Module != nil {
+				if slot.Module.TeamName == t.Name {
+					slot.Powered = true
+					// if there's a module we own there, give us power for it
+					t.ProcPow += modVal
+				}
+			}
+		}
+	}
+}
+
+func (gm *GameModel) calcPoweredNodes(t *team) {
+	for _, n := range gm.Map.Nodes {
+		delete(t.powered, n)
+		// t.powered[n] = false
+		if n.allowsRoutingFor(t) {
+			if gm.Map.routeToNode(t, n, t.poe) != nil {
+				t.powered[n] = true
+			}
+		}
+	}
 }
 
 func (t team) isFull() bool {

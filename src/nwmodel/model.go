@@ -59,6 +59,7 @@ type modSlot struct {
 	challenge Challenge
 	Type      string  `json:"type"`
 	Module    *module `json:"module"`
+	Powered   bool    `json:"powered"`
 }
 
 type module struct {
@@ -75,9 +76,9 @@ type team struct {
 	ProcPow   float32 `json:"procPow"`
 	VicPoints float32 `json:"vicPoints"`
 	players   map[*Player]bool
-	maxSize   int `json:"maxSize"`
-	poe       *node
-	// access    map[*node]bool // optimization to minimize re-calculating which nodes are feeding processing power
+	maxSize   int            //`json:"maxSize"`
+	poe       *node          // point of entry, the place where all team.players connect to the map through
+	powered   map[*node]bool // list of nodes connected ot the poe, optimization to minimize re-calculating which nodes are feeding processing power
 }
 
 // TODO un export all but route

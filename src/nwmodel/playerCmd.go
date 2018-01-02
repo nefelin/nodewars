@@ -333,7 +333,7 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 
 	// debug only :
 	// fix this TODO
-	_ = gm.POEs[p.ID].addModule(newModule(p, ChallengeResponse{}, p.language), 0)
+	gm.POEs[p.ID].buildDummyModule(p)
 
 	for player := range gm.Teams[p.TeamName].players {
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
@@ -538,25 +538,46 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				return
 
 			case newModHealth > slot.Module.Health:
-				oldTeam := gm.Teams[slot.Module.TeamName]
-				slot.Module.TeamName = p.TeamName
-				slot.Module.Health = newModHealth
-				gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+				// // track old owner to evaluate traffic after module loss
+				oldTeamName := slot.Module.TeamName
+
+				// // refactor module to new owner and health
+				// slot.Module.TeamName = p.TeamName
+				// slot.Module.Health = newModHealth
+
+				// // evaluate routing of player trffic through node
+				// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+				// // ensure new owner is powering node
+				// gm.Teams[p.TeamName].powerOn(p.Route.Endpoint)
+
+				gm.refactorModule(slot.Module, p, newModHealth)
+
+				// update map state
 				gm.broadcastState()
 				gm.broadcastAlertFlash(p.TeamName)
-				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeam.Name, slot.Module.Health, slot.Module.MaxHealth))
+
+				// broadcast terminal messages
+				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeamName, slot.Module.Health, slot.Module.MaxHealth))
 				return
 			}
 
 		}
+
+		// err := p.Route.Endpoint.addModule(newMod, p.slotNum)
+		// if err != nil {
+		// 	p.Outgoing <- nwmessage.PsError(err)
+		// 	return
+		// }
+
+		// // ensure players team is powering node
+		// gm.Teams[p.TeamName].powerOn(p.Route.Endpoint)
+
 		// slot is empty, simply install...
 		newMod := newModule(p, response, p.language)
-		err := p.Route.Endpoint.addModule(newMod, p.slotNum)
-		if err != nil {
-			p.Outgoing <- nwmessage.PsError(err)
-			return
-		}
+
+		gm.buildModule(p, newMod)
+
 		gm.broadcastState()
 		gm.broadcastAlertFlash(p.TeamName)
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
@@ -568,26 +589,6 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Compiling...")
 }
-
-// func cmdNewMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-// 	// TODO fix d3 to update...
-// 	for _, t := range gm.Teams {
-// 		if t.poe != nil {
-// 			return nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
-// 		}
-// 	}
-// 	nodeCount, err := validateOneIntArg(args)
-// 	if err != nil {
-// 		return nwmessage.PsError(err)
-// 	}
-
-// 	// nodeIdcount should be irrelevant since its now tied to maps
-// 	// nodeIDCount = 0
-// 	gm.Map = newRandMap(nodeCount)
-// 	p.Outgoing <- nwmessage.GraphReset()
-// 	gm.broadcastState()
-// 	return nwmessage.PsSuccess("Generating new map...")
-// }
 
 func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
@@ -617,12 +618,13 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			return nwmessage.Message{}
 
 		case flag == "-y" || flag == "-ye" || flag == "-yes":
-			err := p.Route.Endpoint.removeModule(p.slotNum)
-			if err != nil {
-				return nwmessage.PsError(err)
-			}
+			// err := p.Route.Endpoint.removeModule(p.slotNum)
+			// if err != nil {
+			// 	return nwmessage.PsError(err)
+			// }
 
-			gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
+			// gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
+			gm.removeModule(p)
 			gm.broadcastState()
 			return nwmessage.PsSuccess("Module removed")
 
@@ -666,17 +668,19 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		defer slot.Unlock()
 
 		if newModHealth >= slot.Module.Health {
-			oldTeam := gm.Teams[slot.Module.TeamName]
+			oldTeamName := slot.Module.TeamName
 
-			err := p.Route.Endpoint.removeModule(p.slotNum)
-			if err != nil {
-				p.Outgoing <- nwmessage.PsError(err)
-				return
-			}
-			gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+			// err := p.Route.Endpoint.removeModule(p.slotNum)
+			// if err != nil {
+			// 	p.Outgoing <- nwmessage.PsError(err)
+			// 	return
+			// }
+			// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+			gm.removeModule(p)
+
 			gm.broadcastState()
 			gm.broadcastAlertFlash(p.TeamName)
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeam, p.Route.Endpoint.ID)))
+			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
 			p.Outgoing <- nwmessage.PsSuccess("Module removed")
 			return
 
