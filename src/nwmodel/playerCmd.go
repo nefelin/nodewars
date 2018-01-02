@@ -327,9 +327,9 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
 		for _, pID := range pHere {
-			playerName := gm.Players[pID].name
-			if playerName != p.GetName() {
-				names = append(names, playerName)
+			player := gm.Players[pID]
+			if player.name != p.GetName() {
+				names = append(names, fmt.Sprintf("%s (%s)", player.name, player.TeamName))
 			}
 		}
 
