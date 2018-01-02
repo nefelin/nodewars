@@ -130,10 +130,7 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 	chatMsg := p.GetName() + " > " + strings.Join(args, " ")
 
-	gm.psBroadcast(nwmessage.Message{
-		Type: "(global)",
-		Data: chatMsg,
-	})
+	gm.psBroadcast(nwmessage.PsChat(chatMsg, "(global"))
 	return nwmessage.Message{}
 }
 
@@ -177,9 +174,6 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 }
 
 func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	if p.TeamName == "" {
-		return nwmessage.PsNoTeam()
-	}
 
 	if p.Route == nil {
 		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))

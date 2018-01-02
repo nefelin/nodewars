@@ -96,7 +96,7 @@ func PsBegin(msg string) Message {
 func PsChat(msg string, context string) Message {
 	return Message{
 		Type:   context,
-		Data:   msg,
+		Data:   msg + terminatorStr,
 		Sender: pseudoStr,
 	}
 }
