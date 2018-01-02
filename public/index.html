@@ -160,23 +160,53 @@
 	})
 
 
-	// focus switching shortcut
-	let focus = "terminal"
-	$(document).keypress("`",function(e) {
-		if(e.ctrlKey){
-			switch (focus) {
-				case "editor":
-					terminal.focus()
-					focus = "terminal"
+	
+	$(document).keypress(function(e) {
+		if (e.ctrlKey) {
+			switch (e.key) {
+				case ",":
+					toggleFocus()
 					break
-				case "terminal":
-				    terminal.focus(false)
-				    editor.focus();
-				    focus="editor"
+
+				case "Enter":
+					terminal.echo("make")
+					sendMsg("make")
+					break
+
+				case "\\":
+					terminal.echo("test")
+					sendMsg("test")
 					break
 			}
-		  }
-	});
+		}
+	})
+
+
+	// focus switching shortcut
+	let focus = "terminal"
+	function toggleFocus() {
+		switch (focus) {
+			case "editor":
+				focusOnTerminal()
+				break
+			case "terminal":
+				focusOnEditor()
+				break
+		}
+
+	}
+
+	function focusOnTerminal() {
+		terminal.focus()
+		focus = "terminal"
+	}
+
+	function focusOnEditor() {
+	    terminal.focus(false)
+	    editor.focus();
+	    focus="editor"
+	}
+
 	$("#terminal").focusin(()=>{focus="terminal"})
 	$("#editor").focusin(()=>{focus="editor"})
 
@@ -279,7 +309,9 @@
 	}
 
 	function updateEditorContent(newContent) {
-		editor.session.setValue(newContent)
+		editor.session.setValue(newContent + "\n\n")
+		editor.navigateFileEnd()
+		focusOnEditor()
 	}
 
 
