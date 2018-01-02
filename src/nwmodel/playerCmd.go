@@ -26,7 +26,10 @@ var gameCmdList = map[string]playerCommand{
 	"say": cmdSay,
 
 	// // player settings
-	"team": cmdTeam,
+	"join": cmdJoinTeam,
+	"team": cmdJoinTeam,
+
+	// Just an error, setname only works in lobby. should be handled differently TODO
 	"name": cmdSetName,
 
 	// // world interaction
@@ -198,10 +201,11 @@ func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 }
 
 func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	return nwmessage.PsError(errors.New("Can't change name mid-game"))
+	return nwmessage.PsError(errors.New("Can't change name in a game"))
 }
-func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	// log.Println("cmdTeam called")
+
+func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 {
 		if p.TeamName == "" {
@@ -215,9 +219,17 @@ func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(err)
 	}
 
+	retStr := fmt.Sprintf("You're on the " + args[0] + " team")
+
 	tp := gm.Teams[p.TeamName].poe
+
+	if tp == nil {
+		retStr += "\nYour team doesn't have a point of entry yet.\nUse 'sp node_id' to set one and begin playing"
+	}
+
 	if tp != nil {
-		log.Printf("player joined team, tryin to log into %v", tp.ID)
+		retStr += fmt.Sprintf("\nTeam's point of entry is node %d.\nConnecting you there now...", tp.ID)
+		// log.Printf("player joined team, trying to log into %v", tp.ID)
 		_, err = gm.tryConnectPlayerToNode(p, tp.ID)
 		if err != nil {
 			log.Println(err)
@@ -226,7 +238,7 @@ func cmdTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	}
 
 	p.Outgoing <- nwmessage.TeamState(p.TeamName)
-	return nwmessage.PsSuccess("You're on the " + args[0] + " team")
+	return nwmessage.PsSuccess(retStr)
 }
 
 func cmdLanguage(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
@@ -373,7 +385,7 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	}
 
 	gm.broadcastState()
-	return nwmessage.PsSuccess(fmt.Sprintf("Team %s's point of entry set to node %d", p.TeamName, newPOE))
+	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
 }
 
 // deprecate this in favor of stdin box TODO
