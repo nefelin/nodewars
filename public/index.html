@@ -243,6 +243,7 @@
 	  			 "|_|\\_\\___/\\__,_\\___|\\_/\\_/\\__,_|_| /__/\n" 
 
 
+	const introMessage = "Check out https://help.nodewars.net for more info"
 	// const helpFiles = [
 	const helpFiles = ["help_docs.json"]
 	// const uiHelpFile = "./uihelp_docs.json"
@@ -466,9 +467,9 @@
 	    $('#terminal').terminal({
 	    	// editor font size adjust
 	    	// editor theme change (w/ list) TODO
-	    	flash: function(color){
-	    		alertFlash(color)
-	    	},
+	    	// flash: function(color){
+	    	// 	alertFlash(color)
+	    	// },
 
 	    	help: function(cmd) {
 	    		if (!cmd) {
@@ -498,10 +499,10 @@
 	        // 	}
 	        // },
 
-	        fontsize: function(a) {
-	        	// buggy
-	        	// $(".terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt").css("font-size", a)
-	        },
+	        // fontsize: function(a) {
+	        // 	// buggy
+	        // 	// $(".terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt").css("font-size", a)
+	        // },
 
 	        color: function(a, b) {
 	        	switch (a){
@@ -548,10 +549,11 @@
 	    	pauseEvents: false,
 	    	fontSize:40,
 	        height: 100,
-	        greetings: "Welcome to\n" + logo + "\nv" + versionNum,
+	        greetings: "Welcome to\n" + logo + "\nv" + versionNum + "\n" + introMessage,
 	        checkArity: false,
 	        prompt: "",
 	        exit: false,
+	        unclosed_strings: false,
 	        prompt: function() {
 	        	// console.log(userPrompt)
 	        	// setTimeout(()=>{terminal.set_prompt(userPrompt)}, 1000)
@@ -567,7 +569,10 @@
 	      
 	    });
 	});
-
+	
+	// super hacky way to allow quotes in our command line
+	$.terminal.unclosed_strings = () => false
+	
 	// function prettifyCommands(json) {
 	// 	let text = "List of available commands:\n" 
 
