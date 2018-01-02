@@ -185,6 +185,42 @@ func newDefaultMap() *nodeMap {
 
 // GameModel methods --------------------------------------------------------------------------
 
+// calcProcPow could be team method...
+func (gm *GameModel) calcProcPow(t *team) {
+	// for each node in t.powered add power for each module
+	// if a slot is producing, set slot.Processing = true so we can animate this
+	t.ProcPow = 0
+	// go through each node
+	for node := range t.powered {
+		// store the powerpermod of that node
+		modVal := node.getPowerPerMod()
+
+		// look at each slot
+		for _, slot := range node.Slots {
+			if slot.Module != nil {
+				if slot.Module.TeamName == t.Name {
+					slot.Powered = true
+					// if there's a module we own there, give us power for it
+					t.ProcPow += modVal
+				}
+			}
+		}
+	}
+}
+
+func (gm *GameModel) calcPoweredNodes(t *team) {
+	log.Printf("calcPoweredNodes for %s", t.Name)
+	for _, n := range gm.Map.Nodes {
+		delete(t.powered, n)
+		// t.powered[n] = false
+		if n.allowsRoutingFor(t) {
+			if gm.Map.routeToNode(t, n, t.poe) != nil {
+				t.powered[n] = true
+			}
+		}
+	}
+}
+
 // TODO wrap these module methods in some function that combines allowed and eval traffic
 func (gm *GameModel) buildModule(p *Player, m *module) {
 	slot := p.slot()
@@ -302,6 +338,7 @@ func (gm *GameModel) tick() {
 	winners := make([]string, 0)
 
 	for _, team := range gm.Teams {
+		gm.calcProcPow(team)
 		team.VicPoints += team.ProcPow
 		if team.VicPoints >= gm.PointGoal {
 			winners = append(winners, team.Name)
@@ -652,14 +689,6 @@ func (m module) isFriendlyTo(t *team) bool {
 }
 
 // modSlot methods -------------------------------------------------------------------------
-
-// modslot.isFull is deprecated TODO remove
-// func (m modSlot) isFull() bool {
-// 	if m.Module == nil {
-// 		return false
-// 	}
-// 	return true
-// }
 
 // node methods -------------------------------------------------------------------------------
 
@@ -1244,39 +1273,6 @@ func (r route) length() int {
 }
 
 // team methods -------------------------------------------------------------------------------
-func (gm *GameModel) calcProcPow(t *team) {
-	// for each node in t.powered add power for each module
-	// if a slot is producing, set slot.Processing = true so we can animate this
-	t.ProcPow = 0
-	// go through each node
-	for node := range t.powered {
-		// store the powerpermod of that node
-		modVal := node.getPowerPerMod()
-
-		// look at each slot
-		for _, slot := range node.Slots {
-			if slot.Module != nil {
-				if slot.Module.TeamName == t.Name {
-					slot.Powered = true
-					// if there's a module we own there, give us power for it
-					t.ProcPow += modVal
-				}
-			}
-		}
-	}
-}
-
-func (gm *GameModel) calcPoweredNodes(t *team) {
-	for _, n := range gm.Map.Nodes {
-		delete(t.powered, n)
-		// t.powered[n] = false
-		if n.allowsRoutingFor(t) {
-			if gm.Map.routeToNode(t, n, t.poe) != nil {
-				t.powered[n] = true
-			}
-		}
-	}
-}
 
 func (t team) isFull() bool {
 	if len(t.players) < t.maxSize {

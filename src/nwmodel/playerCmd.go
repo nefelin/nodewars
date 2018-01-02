@@ -331,9 +331,9 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		return nwmessage.PsError(err)
 	}
 
-	// debug only :
-	// fix this TODO
+	// TODO handle initial poe module more elegently
 	gm.POEs[p.ID].buildDummyModule(p)
+	gm.calcPoweredNodes(gm.Teams[p.TeamName])
 
 	for player := range gm.Teams[p.TeamName].players {
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
