@@ -257,6 +257,11 @@ func cmdTell(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message 
 
 func cmdListGames(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 	gameList := ""
+
+	if len(d.games) == 0 {
+		return nwmessage.PsNeutral("No games running. Type, 'new game_name', to start one")
+	}
+
 	for gameName, game := range d.games {
 		gameList += fmt.Sprintf("'%s' - Players: %d\n", gameName, len(game.GetPlayers()))
 	}
