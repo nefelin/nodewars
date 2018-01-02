@@ -598,7 +598,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		return nwmessage.PsError(errors.New("Not attached to slot"))
 	}
 
-	if !slot.isFull() {
+	if slot.Module == nil {
 		return nwmessage.PsError(errors.New("Slot is empty"))
 	}
 

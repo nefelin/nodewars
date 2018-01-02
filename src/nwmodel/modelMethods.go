@@ -654,12 +654,12 @@ func (m module) isFriendlyTo(t *team) bool {
 // modSlot methods -------------------------------------------------------------------------
 
 // modslot.isFull is deprecated TODO remove
-func (m modSlot) isFull() bool {
-	if m.Module == nil {
-		return false
-	}
-	return true
-}
+// func (m modSlot) isFull() bool {
+// 	if m.Module == nil {
+// 		return false
+// 	}
+// 	return true
+// }
 
 // node methods -------------------------------------------------------------------------------
 
