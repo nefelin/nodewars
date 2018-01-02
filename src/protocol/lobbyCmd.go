@@ -17,6 +17,9 @@ var lobbyCmdList = map[string]playerCmd{
 	// TODO leaveGame should demand confirmation
 	"leave": cmdLeaveGame,
 
+	"t":    cmdTell,
+	"tell": cmdTell,
+
 	"ls":   cmdListGames,
 	"list": cmdListGames,
 
@@ -29,16 +32,77 @@ var lobbyCmdList = map[string]playerCmd{
 	"rm": cmdKillGame,
 }
 
-var superCmdList = map[string]playerCmd{
+var globalCmdList = map[string]bool{
 	// TODO leaveGame should demand confirmation
-	"leave": cmdLeaveGame,
-	"t":     cmdTell,
-	"tell":  cmdTell,
+	"leave": true,
+	"t":     true,
+	"tell":  true,
 }
+
+// func actionConsumer(d *Dispatcher) {
+// 	for {
+
+// 		select {
+// 		// if we get a new player, register and pass back
+// 		// to the connection handler
+// 		case regReq := <-d.registrationQueue:
+// 			regReq.retChan <- d.registerPlayer(regReq.ws)
+
+// 		// if we get a player command, handle that
+// 		case m := <-d.Lobby.aChan:
+// 			pID, err := strconv.Atoi(m.Sender)
+
+// 			if err != nil {
+// 				log.Println(err)
+// 			}
+
+// 			p := d.Lobby.players[pID]
+
+// 			log.Printf("This is odd, what is p here: %v", p)
+
+// 			msg := strings.Split(m.Data, " ")
+
+// 			// log.Println("recvd messg")
+// 			if handlerFunc, ok := globalCmdList[msg[0]]; ok {
+// 				// if the player's in a
+// 				gameName, ok := d.locations[pID]
+// 				if ok {
+// 					// if the players in a game we should grab the player object from the game...
+// 					p = d.games[gameName].GetPlayers()[pID]
+// 				}
+
+// 				res := handlerFunc(p, d, msg[1:])
+// 				if res.Data != "" {
+// 					p.Outgoing <- res
+// 				}
+// 				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
+
+// 			} else if gameName, ok := d.locations[pID]; ok {
+// 				// p = d.games[gameName].GetPlayers()[p.ID]
+// 				d.games[gameName].Recv(m)
+// 			} else if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
+// 				res := handlerFunc(p, d, msg[1:])
+// 				if res.Data != "" {
+// 					p.Outgoing <- res
+// 				}
+// 				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
+// 			} else {
+// 				// if it's not a known lobby command and the player
+// 				// isn't in a game, treat it as a chat.
+// 				chatMsg := fmt.Sprintf("%s: %s", p.GetName(), strings.Join(msg, " "))
+
+// 				// log.Printf("lobbCmd d.Lobby.GetPlayers: %v", d.Lobby.GetPlayers())
+// 				for _, player := range d.Lobby.GetPlayers() {
+// 					player.Outgoing <- nwmessage.PsChat(chatMsg, "(lobby)")
+// 				}
+// 				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
+// 			}
+// 		}
+// 	}
+// }
 
 func actionConsumer(d *Dispatcher) {
 	for {
-
 		select {
 		// if we get a new player, register and pass back
 		// to the connection handler
@@ -47,52 +111,59 @@ func actionConsumer(d *Dispatcher) {
 
 		// if we get a player command, handle that
 		case m := <-d.Lobby.aChan:
+
 			pID, err := strconv.Atoi(m.Sender)
 
 			if err != nil {
 				log.Println(err)
 			}
 
-			p := d.Lobby.players[pID]
-
-			log.Printf("This is odd, what is p here: %v", p)
-
 			msg := strings.Split(m.Data, " ")
 
-			// log.Println("recvd messg")
-			if handlerFunc, ok := superCmdList[msg[0]]; ok {
-				// if the player's in a
-				gameName, ok := d.locations[pID]
-				if ok {
-					// if the players in a game we should grab the player object from the game...
-					p = d.games[gameName].GetPlayers()[pID]
-				}
+			gameName, inGame := d.locations[pID]
 
-				res := handlerFunc(p, d, msg[1:])
-				if res.Data != "" {
-					p.Outgoing <- res
-				}
-				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
+			// if players not in a game (i.e in lobby)
+			if !inGame {
+				// PLAYER IN LOBBY
 
-			} else if gameName, ok := d.locations[pID]; ok {
-				// p = d.games[gameName].GetPlayers()[p.ID]
-				d.games[gameName].Recv(m)
-			} else if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
-				res := handlerFunc(p, d, msg[1:])
-				if res.Data != "" {
-					p.Outgoing <- res
+				// get player object
+				p := d.Lobby.players[pID]
+
+				// if its a valid lobby command execute
+				if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
+					res := handlerFunc(p, d, msg[1:])
+					if res.Data != "" {
+						p.Outgoing <- res
+					}
+
+				} else {
+					// if it's not a known lobby command and the player
+					// isn't in a game, treat it as a chat.
+					chatMsg := fmt.Sprintf("%s: %s", p.GetName(), strings.Join(msg, " "))
+
+					for _, player := range d.Lobby.GetPlayers() {
+						player.Outgoing <- nwmessage.PsChat(chatMsg, "(lobby)")
+					}
 				}
 				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
 			} else {
-				// if it's not a known lobby command and the player
-				// isn't in a game, treat it as a chat.
-				chatMsg := fmt.Sprintf("%s: %s", p.GetName(), strings.Join(msg, " "))
+				// PLAYER IN GAME
 
-				log.Printf("lobbCmd d.Lobby.GetPlayers: %v", d.Lobby.GetPlayers())
-				for _, player := range d.Lobby.GetPlayers() {
-					player.Outgoing <- nwmessage.PsChat(chatMsg, "(lobby)")
+				// get a valid player object
+				p := d.games[gameName].GetPlayers()[pID]
+
+				// is the command entered a global command?
+				if _, ok := globalCmdList[msg[0]]; ok {
+					// get the handler function
+					handlerFunc := lobbyCmdList[msg[0]]
+					res := handlerFunc(p, d, msg[1:])
+					if res.Data != "" {
+						p.Outgoing <- res
+					}
+				} else {
+					// it's not a global command, let the game handle it
+					d.games[gameName].Recv(m)
 				}
-				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
 			}
 		}
 	}
