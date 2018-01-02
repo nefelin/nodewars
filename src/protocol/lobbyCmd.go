@@ -24,9 +24,9 @@ var lobbyCmdList = map[string]playerCmd{
 
 	"name": cmdSetName,
 
-	"ng":      cmdNewGame,
-	"new":     cmdNewGame,
-	"newgame": cmdNewGame,
+	"new": cmdNewGame,
+
+	"rm": cmdKillGame,
 }
 
 var superCmdList = map[string]playerCmd{
@@ -121,6 +121,10 @@ func cmdSetName(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 
 func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 
+	if len(args) == 0 || args[0] == "" {
+		return nwmessage.PsError(errors.New("Need a name for new game"))
+	}
+
 	if _, ok := d.games[args[0]]; ok {
 		return nwmessage.PsError(fmt.Errorf("A game named '%s' already exists", args[0]))
 	}
@@ -143,6 +147,10 @@ func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 	newGame.AddPlayer(p)
 
 	return nwmessage.PsSuccess(fmt.Sprintf("New game, '%s', created and joined", args[0]))
+}
+
+func cmdKillGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
+	return nwmessage.PsSuccess("")
 }
 
 func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
