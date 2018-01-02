@@ -217,8 +217,8 @@ func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mes
 
 func cmdListGames(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 	gameList := ""
-	for gameName := range d.games {
-		gameList += gameName + "\n"
+	for gameName, game := range d.games {
+		gameList += fmt.Sprintf("'%s' - Players: %d\n", gameName, len(game.GetPlayers()))
 	}
 
 	return nwmessage.PsNeutral(strings.TrimSpace("Available games:\n" + gameList))
