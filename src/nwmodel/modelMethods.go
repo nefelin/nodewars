@@ -209,7 +209,6 @@ func (gm *GameModel) calcProcPow(t *team) {
 }
 
 func (gm *GameModel) calcPoweredNodes(t *team) {
-	log.Printf("calcPoweredNodes for %s", t.Name)
 	for _, n := range gm.Map.Nodes {
 		delete(t.powered, n)
 		// t.powered[n] = false
@@ -777,13 +776,14 @@ func (n *node) allowsRoutingFor(t *team) bool {
 // 	return errors.New("Slot not empty")
 // }
 
+// n.removeModule should never be called directly. only from gm.removeModule
 func (n *node) removeModule(slotIndex int) error {
 	if slotIndex < 0 || slotIndex > len(n.Slots)-1 {
 		return errors.New("No valid attachment")
 	}
 
 	slot := n.Slots[slotIndex]
-	log.Printf("removeModule slot: %v", slot)
+	// log.Printf("removeModule slot: %v", slot)
 
 	if slot.Module == nil {
 		return errors.New("Slot is empty")
@@ -918,7 +918,7 @@ func (m *nodeMap) initPoes(n int) {
 	// check each remoteness in ascending order,
 
 	// if not, move up to the next remoteness tier
-	for i, v := range ordRem {
+	for _, v := range ordRem {
 		// if there're enough nodes of that remoteness, seen if we can place n poes in those remotenesses
 		if len(remMap[v]) >= n {
 			// add a poe at each node of that remoteness
@@ -927,7 +927,7 @@ func (m *nodeMap) initPoes(n int) {
 			}
 			break
 		}
-		log.Printf("We have %d nodes of remoteness %v", len(remMap[ordRem[i]]), ordRem[i])
+		// log.Printf("We have %d nodes of remoteness %v", len(remMap[ordRem[i]]), ordRem[i])
 	}
 
 	// if all else fails, assign at random

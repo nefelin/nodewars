@@ -150,7 +150,27 @@ func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 }
 
 func cmdKillGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
-	return nwmessage.PsSuccess("")
+
+	if len(args) == 0 || args[0] == "" {
+		return nwmessage.PsError(errors.New("Need a name for game to remove"))
+	}
+
+	game, ok := d.games[args[0]]
+
+	if !ok {
+		return nwmessage.PsError(fmt.Errorf("No game, '%s', exists", args[0]))
+	}
+
+	// check to make sure game is empty
+	if len(game.GetPlayers()) != 0 {
+		return nwmessage.PsError(fmt.Errorf("The game, '%s', is not empty", args[0]))
+	}
+
+	// clean up game
+	// TODO is this sufficient?
+	delete(d.games, args[0])
+
+	return nwmessage.PsSuccess(fmt.Sprintf("The game, '%s', has been removed", args[0]))
 }
 
 func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
@@ -180,7 +200,6 @@ func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mess
 
 func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 
-	log.Printf("d: %v, p: %v", d, p)
 	gameName, ok := d.locations[p.ID]
 	if !ok {
 		return nwmessage.PsError(errors.New("Your not in a game"))
