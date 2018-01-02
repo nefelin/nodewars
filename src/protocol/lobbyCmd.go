@@ -32,6 +32,8 @@ var lobbyCmdList = map[string]playerCmd{
 var superCmdList = map[string]playerCmd{
 	// TODO leaveGame should demand confirmation
 	"leave": cmdLeaveGame,
+	"t":     cmdTell,
+	"tell":  cmdTell,
 }
 
 func actionConsumer(d *Dispatcher) {
@@ -52,6 +54,8 @@ func actionConsumer(d *Dispatcher) {
 			}
 
 			p := d.Lobby.players[pID]
+
+			log.Printf("This is odd, what is p here: %v", p)
 
 			msg := strings.Split(m.Data, " ")
 
@@ -213,6 +217,42 @@ func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mes
 	d.Lobby.AddPlayer(p)
 
 	return nwmessage.PsSuccess(fmt.Sprintf("Left game, '%s'", gameName))
+}
+
+func cmdTell(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
+
+	if len(args) < 2 {
+		return nwmessage.PsError(errors.New("Need a recipient and a message"))
+	}
+
+	var recip *nwmodel.Player
+
+	// check lobby for recipient:
+	for _, player := range d.Lobby.players {
+		if player.GetName() == args[0] {
+			recip = player
+		}
+	}
+
+	// if not in lobby check all games
+	if recip == nil {
+		for _, game := range d.games {
+			for _, player := range game.GetPlayers() {
+				if player.GetName() == args[0] {
+					recip = player
+				}
+			}
+		}
+	}
+
+	if recip == nil {
+		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
+	}
+
+	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
+
+	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
+	return nwmessage.Message{}
 }
 
 func cmdListGames(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {

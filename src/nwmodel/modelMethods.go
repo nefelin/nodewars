@@ -799,11 +799,11 @@ func (n *node) removeModule(slotIndex int) error {
 }
 
 func (n *node) addPlayer(p *Player) {
-	n.playersHere = append(n.playersHere, p.GetName())
+	n.playersHere = append(n.playersHere, p.ID)
 }
 
 func (n *node) removePlayer(p *Player) {
-	n.playersHere = cutStrFromSlice(p.GetName(), n.playersHere)
+	n.playersHere = cutIntFromSlice(p.ID, n.playersHere)
 }
 
 // helper function for removing player from slice of players

@@ -51,7 +51,7 @@ type node struct {
 	// Modules     map[modID]*module `json:"modules"`
 	Slots       []*modSlot `json:"slots"`
 	Remoteness  float64    `json:"remoteness"`
-	playersHere []string
+	playersHere []playerID
 }
 
 type modSlot struct {

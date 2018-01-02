@@ -15,12 +15,15 @@ type playerCommand func(*Player, *GameModel, []string, string) nwmessage.Message
 
 var gameCmdList = map[string]playerCommand{
 	// chat functions
-	"y":        cmdYell,
-	"yell":     cmdYell,
-	"t":        cmdTell,
-	"tell":     cmdTell,
-	"tc":       cmdTc,
-	"teamchat": cmdTc,
+	"y":    cmdYell,
+	"yell": cmdYell,
+	// "t":        cmdTell,
+	// "tell":     cmdTell,
+	"tc":       cmdTeamChat,
+	"teamchat": cmdTeamChat,
+
+	"s":   cmdSay,
+	"say": cmdSay,
 
 	// // player settings
 	"team": cmdTeam,
@@ -131,29 +134,29 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	return nwmessage.Message{}
 }
 
-func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
-	if len(args) < 2 {
-		return nwmessage.PsError(errors.New("Need a recipient and a message"))
-	}
-	var recip *Player
-	for _, player := range gm.Players {
-		if player.GetName() == args[0] {
-			recip = player
-		}
-	}
+// 	if len(args) < 2 {
+// 		return nwmessage.PsError(errors.New("Need a recipient and a message"))
+// 	}
+// 	var recip *Player
+// 	for _, player := range gm.Players {
+// 		if player.GetName() == args[0] {
+// 			recip = player
+// 		}
+// 	}
 
-	if recip == nil {
-		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
-	}
+// 	if recip == nil {
+// 		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
+// 	}
 
-	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
+// 	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
 
-	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
-	return nwmessage.Message{}
-}
+// 	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
+// 	return nwmessage.Message{}
+// }
 
-func cmdTc(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdTeamChat(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsNoTeam()
 	}
@@ -164,13 +167,36 @@ func cmdTc(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 
 	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
 
-	gm.Teams[p.TeamName].broadcast(nwmessage.Message{
-		Type: "(team)",
-		Data: chatMsg,
-	})
+	gm.Teams[p.TeamName].broadcast(nwmessage.PsChat(chatMsg, "(team)"))
+
 	return nwmessage.Message{}
 
 }
+
+func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	if p.TeamName == "" {
+		return nwmessage.PsNoTeam()
+	}
+
+	if p.Route == nil {
+		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))
+	}
+
+	if len(args) == 0 {
+		return nwmessage.PsError(errors.New("Need a message to say"))
+	}
+
+	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
+
+	msg := nwmessage.PsChat(chatMsg, "(node)")
+
+	for _, pID := range p.Route.Endpoint.playersHere {
+		gm.Players[pID].Outgoing <- msg
+	}
+
+	return nwmessage.Message{}
+}
+
 func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	return nwmessage.PsError(errors.New("Can't change name mid-game"))
 }
@@ -300,7 +326,8 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 	if len(pHere) > 1 {
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
-		for _, playerName := range pHere {
+		for _, pID := range pHere {
+			playerName := gm.Players[pID].name
 			if playerName != p.GetName() {
 				names = append(names, playerName)
 			}
