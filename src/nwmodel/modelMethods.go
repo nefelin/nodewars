@@ -184,6 +184,19 @@ func newDefaultMap() *nodeMap {
 }
 
 // GameModel methods --------------------------------------------------------------------------
+func (gm *GameModel) trailingTeam() string {
+	var tt *team
+	for _, team := range gm.Teams {
+		if tt == nil {
+			tt = team
+			continue
+		}
+		if len(team.players) < len(tt.players) {
+			tt = team
+		}
+	}
+	return tt.Name
+}
 
 // calcProcPow could be team method...
 func (gm *GameModel) calcProcPow(t *team) {

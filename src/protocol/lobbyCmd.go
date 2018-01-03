@@ -40,7 +40,7 @@ var globalCmdList = map[string]bool{
 	"leave": true,
 	"t":     true,
 	"tell":  true,
-	"name":  true,
+	// "name":  true,
 }
 
 func actionConsumer(d *Dispatcher) {

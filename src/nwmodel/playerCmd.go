@@ -19,10 +19,10 @@ var gameCmdList = map[string]playerCommand{
 	"yell": cmdYell,
 	// "t":        cmdTell,
 	// "tell":     cmdTell,
-	"tc":       cmdTeamChat,
-	"teamchat": cmdTeamChat,
+	"tc": cmdTeamChat,
+	// "teamchat": cmdTeamChat,
 
-	"s":   cmdSay,
+	// "s":   cmdSay,
 	"say": cmdSay,
 
 	// // player settings
@@ -33,24 +33,21 @@ var gameCmdList = map[string]playerCommand{
 	// "name": cmdSetName,
 
 	// // world interaction
-	"con":     cmdConnect,
-	"connect": cmdConnect,
+	"con": cmdConnect,
 	// disconnect
 	// "disconnect": cmdDisconnect,
 	// "dis":        cmdDisconnect,
 
-	"lang": cmdLanguage,
+	"lang": cmdLang,
 
 	"langs": cmdListLanguages,
 
-	"mk":      cmdMake,
-	"mak":     cmdMake,
-	"make":    cmdMake,
-	"makemod": cmdMake,
+	"make": cmdMake,
 
 	"stdin": cmdStdin,
 
-	"score": cmdScore,
+	"pow":   cmdScore,
+	"power": cmdScore,
 
 	"test": cmdTestCode,
 
@@ -72,10 +69,9 @@ var gameCmdList = map[string]playerCommand{
 
 	"who": cmdWho,
 
-	"ls":      cmdLs, // list modules/slot. out of spec but for expediency
-	"listmod": cmdLs, // list modules/slot. out of spec but for expediency
-	"sp":      cmdSetPOE,
-	"teampoe": cmdSetPOE,
+	"ls": cmdLs, // list modules/slot. out of spec but for expediency
+
+	"sp": cmdSetPOE,
 	// "boilerplate": cmdLoadBoilerplate,
 	// "bp":          cmdLoadBoilerplate,
 }
@@ -202,10 +198,12 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 {
-		if p.TeamName == "" {
-			return nwmessage.PsNoTeam()
-		}
-		return nwmessage.PsSuccess(("You're on the " + p.TeamName + " team"))
+		// if p.TeamName == "" {
+		// 	return nwmessage.PsNoTeam()
+		// }
+		tt := gm.trailingTeam()
+		p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("Auto-assigning to team '%s'", tt))
+		return cmdJoinTeam(p, gm, []string{tt}, c)
 	}
 
 	err := gm.assignPlayerToTeam(p, teamName(args[0]))
@@ -235,9 +233,9 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	return nwmessage.PsSuccess(retStr)
 }
 
-func cmdLanguage(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	if len(args) == 0 {
-		return nwmessage.PsSuccess("Your name is " + p.language)
+		return nwmessage.PsError(errors.New("Expected one argument, received zero"))
 	}
 
 	err := gm.setLanguage(p, args[0])
