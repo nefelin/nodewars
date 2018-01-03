@@ -81,8 +81,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
 	go outgoingRelay(thisPlayer)
-	thisPlayer.Outgoing <- nwmessage.PromptState("lobby>")
-
+	thisPlayer.Outgoing <- nwmessage.PromptState(thisPlayer.GetName() + "@lobby>")
 	// Handle socket stream
 	for {
 		var msg nwmessage.Message

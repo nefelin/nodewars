@@ -532,7 +532,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	p.Outgoing <- nwmessage.GraphState(gm.calcState(p))
 
 	// send initial prompt state
-	p.Outgoing <- nwmessage.PromptState(p.prompt())
+	p.Outgoing <- nwmessage.PromptState(p.Prompt())
 	return nil
 }
 
@@ -1197,16 +1197,16 @@ func NewPlayer(ws *websocket.Conn) *Player {
 	return ret
 }
 
-func (p *Player) prompt() string {
+func (p *Player) Prompt() string {
 	if p.dialogue != nil {
 		return ""
 	}
 
 	promptEndChar := ">"
-	prompt := fmt.Sprintf("(%s)", p.GetName())
-	if p.TeamName != "" {
-		prompt += fmt.Sprintf(":%s:", p.TeamName)
-	}
+	prompt := fmt.Sprintf("%s", p.GetName())
+	// if p.TeamName != "" {
+	// 	prompt += fmt.Sprintf(":%s:", p.TeamName)
+	// }
 	if p.Route != nil {
 		prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
 	}

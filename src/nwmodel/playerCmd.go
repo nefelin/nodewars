@@ -30,7 +30,7 @@ var gameCmdList = map[string]playerCommand{
 	"team": cmdJoinTeam,
 
 	// Just an error, setname only works in lobby. should be handled differently TODO
-	"name": cmdSetName,
+	// "name": cmdSetName,
 
 	// // world interaction
 	"con":     cmdConnect,
@@ -118,7 +118,7 @@ func actionConsumer(gm *GameModel) {
 		} else {
 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
 		}
-		p.Outgoing <- nwmessage.PromptState(p.prompt())
+		p.Outgoing <- nwmessage.PromptState(p.Prompt())
 	}
 }
 
@@ -194,9 +194,9 @@ func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 	return nwmessage.Message{}
 }
 
-func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	return nwmessage.PsError(errors.New("Can't change name in a game"))
-}
+// func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// 	return nwmessage.PsError(errors.New("Can't change name in a game"))
+// }
 
 func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	// log.Println("cmdJoinTeam called")
@@ -316,6 +316,8 @@ func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 			whoStr += "\t" + mem.GetName() + "\n"
 		}
 	}
+
+	//TODO list unassigned players? leave as invisible for observation? list just a number maybe
 
 	return nwmessage.PsNeutral(whoStr)
 }
