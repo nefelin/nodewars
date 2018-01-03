@@ -707,8 +707,15 @@ func (m module) isFriendlyTo(t *team) bool {
 // node methods -------------------------------------------------------------------------------
 
 func (n *node) buildDummyModule(p *Player) {
+
+	// make the response the right size
 	dummyResponse := ChallengeResponse{
-		PassFail: map[string]string{"": "true"},
+		PassFail: n.Slots[0].challenge.IO,
+	}
+
+	// fake pass all tests
+	for k := range dummyResponse.PassFail {
+		dummyResponse.PassFail[k] = "true"
 	}
 
 	n.Slots[0].Module = newModule(p, dummyResponse, p.language)

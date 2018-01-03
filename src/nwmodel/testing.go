@@ -12,9 +12,10 @@ import (
 // mirrored struct definitions from TestBox
 // Challenge does this need to be exported? TODO
 type Challenge struct {
-	ID          string `json:"id"`
-	Description string `json:"description"`
-	SampleIO    string `json:"sampleIO"`
+	ID          string            `json:"id"`
+	Description string            `json:"description"`
+	SampleIO    string            `json:"sampleIO"`
+	IO          map[string]string `json:"io"`
 }
 
 type SubmissionRequest struct {
