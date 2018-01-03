@@ -48,7 +48,7 @@ func (c ChallengeResponse) passed() int {
 	return passed
 }
 
-func getRandomTest() Challenge {
+func getRandomChallenge() Challenge {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 

@@ -22,7 +22,7 @@ func newModSlot() *modSlot {
 
 	// assign id
 	return &modSlot{
-		challenge: getRandomTest(),
+		challenge: getRandomChallenge(),
 	}
 }
 
@@ -808,7 +808,7 @@ func (n *node) removeModule(slotIndex int) error {
 	slot.Module = nil
 
 	// assign new task to slot
-	slot.challenge = getRandomTest()
+	slot.challenge = getRandomChallenge()
 	return nil
 
 }
