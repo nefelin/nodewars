@@ -369,10 +369,12 @@ func (gm *GameModel) tick() {
 }
 
 func (gm *GameModel) startGame() {
-	gm.running = true
-	gm.psBroadcast(nwmessage.PsAlert("Game has started!"))
-	// start go routine to handle ticking
-	go gm.tickScheduler()
+	if !gm.running {
+		gm.running = true
+		gm.psBroadcast(nwmessage.PsAlert("All teams have POEs. Game is starting!"))
+		// start go routine to handle ticking
+		go gm.tickScheduler()
+	}
 }
 
 func (gm *GameModel) stopGame() {

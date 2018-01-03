@@ -372,9 +372,16 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
 	}
 
-	// begin game
-	// game should maybe not really begin until both teams have chose poes...
-	if !gm.running {
+	// if all teams have their poe set
+	var ready int
+	for _, team := range gm.Teams {
+		if team.poe != nil {
+			ready++
+		}
+	}
+
+	// start the game
+	if len(gm.Teams) == ready {
 		gm.startGame()
 	}
 
