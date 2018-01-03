@@ -93,10 +93,10 @@ func PsBegin(msg string) Message {
 	}
 }
 
-func PsChat(msg string, context string) Message {
+func PsChat(sender, context, msg string) Message {
 	return Message{
-		Type:   context,
-		Data:   msg + terminatorStr,
+		Type:   "",
+		Data:   fmt.Sprintf("%s (%s): %s", sender, context, msg),
 		Sender: pseudoStr,
 	}
 }

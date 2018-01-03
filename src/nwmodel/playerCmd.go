@@ -128,9 +128,9 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(errors.New("Need a message to yell"))
 	}
 
-	chatMsg := p.GetName() + " > " + strings.Join(args, " ")
+	chatMsg := strings.Join(args, " ")
 
-	gm.psBroadcast(nwmessage.PsChat(chatMsg, "(global"))
+	gm.psBroadcast(nwmessage.PsChat(p.GetName(), "global", chatMsg))
 	return nwmessage.Message{}
 }
 
@@ -165,9 +165,9 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 		return nwmessage.PsError(errors.New("Need a message for team chat"))
 	}
 
-	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
+	chatMsg := strings.Join(args, " ")
 
-	gm.Teams[p.TeamName].broadcast(nwmessage.PsChat(chatMsg, "(team)"))
+	gm.Teams[p.TeamName].broadcast(nwmessage.PsChat(p.GetName(), "team", chatMsg))
 
 	return nwmessage.Message{}
 
@@ -183,9 +183,9 @@ func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 		return nwmessage.PsError(errors.New("Need a message to say"))
 	}
 
-	chatMsg := p.GetName() + "> " + strings.Join(args, " ")
+	chatMsg := strings.Join(args, " ")
 
-	msg := nwmessage.PsChat(chatMsg, "(node)")
+	msg := nwmessage.PsChat(p.GetName(), "node", chatMsg)
 
 	for _, pID := range p.Route.Endpoint.playersHere {
 		gm.Players[pID].Outgoing <- msg

@@ -139,10 +139,10 @@ func actionConsumer(d *Dispatcher) {
 				} else {
 					// if it's not a known lobby command and the player
 					// isn't in a game, treat it as a chat.
-					chatMsg := fmt.Sprintf("%s: %s", p.GetName(), strings.Join(msg, " "))
+					chatMsg := strings.Join(msg, " ")
 
 					for _, player := range d.Lobby.GetPlayers() {
-						player.Outgoing <- nwmessage.PsChat(chatMsg, "(lobby)")
+						player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", chatMsg)
 					}
 				}
 				p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>")
@@ -320,10 +320,10 @@ func cmdTell(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message 
 		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
 	}
 
-	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
+	chatMsg := strings.Join(args[1:], " ")
 
-	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
-	return nwmessage.Message{}
+	recip.Outgoing <- nwmessage.PsChat(p.GetName(), "private", chatMsg)
+	return nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), chatMsg))
 }
 
 func cmdListGames(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
