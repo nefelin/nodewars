@@ -6,6 +6,7 @@ import (
 	"log"
 	"nwmessage"
 	"nwmodel"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -30,6 +31,8 @@ var lobbyCmdList = map[string]playerCmd{
 	"new": cmdNewGame,
 
 	"rm": cmdKillGame,
+
+	"who": cmdWho,
 }
 
 var globalCmdList = map[string]bool{
@@ -246,6 +249,31 @@ func cmdKillGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mess
 	delete(d.games, args[0])
 
 	return nwmessage.PsSuccess(fmt.Sprintf("The game, '%s', has been removed", args[0]))
+}
+
+func cmdWho(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
+	// var location Room
+	// location, ok := d.games[d.locations[p.ID]]
+
+	// if !ok {
+	// 	location = d.Lobby
+	// }
+	location := d.Lobby
+
+	if len(location.GetPlayers()) == 0 {
+		return nwmessage.PsNeutral("There are no players here")
+	}
+
+	var playerNames sort.StringSlice
+
+	for _, p := range location.GetPlayers() {
+		playerNames = append(playerNames, p.GetName())
+	}
+
+	playerNames.Sort()
+
+	retMsg := "Players here:\n" + strings.Join(playerNames, ", ")
+	return nwmessage.PsNeutral(retMsg)
 }
 
 func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {

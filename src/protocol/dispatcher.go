@@ -60,8 +60,6 @@ func NewLobby() Lobby {
 // TODO handle errors for add/remove player
 func (l *Lobby) AddPlayer(p *nwmodel.Player) error {
 	l.players[p.ID] = p
-	// log.Printf("lobbyplayers: %v", l.players)
-	// p.Outgoing <- nwmessage.PromptState(p.GetName() + "@(lobby)>") causing lock here, probably dispatcher goroutine isnt running yet
 	return nil
 }
 
@@ -74,8 +72,12 @@ func (l *Lobby) GetPlayers() map[int]*nwmodel.Player {
 	return l.players
 }
 
+func (l *Lobby) Recv(m nwmessage.Message) {
+	l.aChan <- m
+}
+
 func (d *Dispatcher) Recv(m nwmessage.Message) {
-	d.Lobby.aChan <- m
+	d.Lobby.Recv(m)
 }
 
 func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
