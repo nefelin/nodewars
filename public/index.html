@@ -184,7 +184,7 @@
 		</div>
 
 		<div id="code-col">
-			<textarea id="stdin">Use this box to test your own input</textarea>
+			<textarea id="stdin"></textarea>
 			<div id="editor"></div>
 			<div id="output">The results of your executed code will appear here</div>
 		</div>
@@ -197,8 +197,20 @@
 'use strict';
 // on document ready jquery shorthand
 // $(function () {
-	const graphViz = new NWGraph('#graph')
+	
 
+	// Initialize our boxes
+	const startStdin = "Use this box for custom stdin"
+	$("#stdin").val(startStdin)
+	$("#stdin").click(()=>{
+		if ($("#stdin").val()==startStdin){
+			$("#stdin").val("")
+		}
+	})
+	$("#output").click(()=>{$("#output").text("Clicked")})
+
+	// graphViz must be declared before split called as split calls GV's resize
+	const graphViz = new NWGraph('#graph')
 	Split(['#terminal', '#graph'], {
 		direction: 'vertical',
 		sizes: [35, 65],
@@ -232,6 +244,7 @@
 	})
 
 	$(document).keypress(function(e) {
+		console.log($("#stdin").val())
 		if (e.ctrlKey) {
 			switch (e.key) {
 				case ",":
@@ -239,12 +252,12 @@
 					break
 
 				case "Enter":
-					terminal.echo("make")
+					// terminal.echo("make")
 					sendMsg("make")
 					break
 
 				case "\\":
-					terminal.echo("test")
+					// terminal.echo("test")
 					sendMsg("test")
 					break
 			}
@@ -499,9 +512,19 @@
 	function sendMsg(input) {
 		const cmd = input.split(" ")[0]
 		let message
-
-		// console.log('index of cmd', cmd, ":" ,codeCmds.indexOf(cmd));
+		
+		// If this command requires code be sent with it
 		if (codeCmds.indexOf(cmd) != -1) {
+			// First set the STDIN
+			// TODO fix this hacky nonsense
+			message = JSON.stringify({
+				type: "playerCmd",
+				data: "setStdinFromTheFrontEndButNotARealCommand " + $("#stdin").val()
+			})
+			
+			ws.send(message)
+
+			// now send the code
 			console.log("sending code along too")
 			message = JSON.stringify({
 				type: "playerCmd",
