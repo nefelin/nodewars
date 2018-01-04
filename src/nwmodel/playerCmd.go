@@ -255,7 +255,7 @@ func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		sampleIO := pSlot.challenge.SampleIO
 		description := pSlot.challenge.Description
 
-		editText := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
 		p.Outgoing <- nwmessage.EditState(editText)
 	}
 
@@ -417,7 +417,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	}
 
 	if p.stdin == "" {
-		p.stdin = "default stdin"
+		p.stdin = "default stdin\nmultiline"
 	}
 
 	// passed error checks on args
@@ -492,7 +492,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	resp := ""
 	if resp != "n" && resp != "no" {
-		editText := fmt.Sprintf("%s\n%s %s\n%s Sample IO: %s", boilerplate, comment, description, comment, sampleIO)
+		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
 
 		if langLock {
 			editText += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.slot().Module.language))
@@ -534,6 +534,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 	go func(p *Player, gm *GameModel, c string) {
 		slot := p.slot()
+		log.Printf("Make go routine, slot: %v", slot.challenge.ID)
 		response := submitTest(slot.challenge.ID, p.language, c)
 		p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()

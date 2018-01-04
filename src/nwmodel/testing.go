@@ -3,6 +3,7 @@ package nwmodel
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"nwmessage"
@@ -18,11 +19,19 @@ type Challenge struct {
 	IO          map[string]string `json:"io"`
 }
 
+func (c Challenge) String() string {
+	return fmt.Sprintf("( <Challenge> {ID: %s, Desc: %s, SampleIO: %s, IO: %s} )", c.ID, c.Description, c.SampleIO, c.IO)
+}
+
 type SubmissionRequest struct {
-	Id       string `json:"id"`
+	ID       string `json:"id"`
 	Language string `json:"language"`
 	Code     string `json:"code"`
 	Input    string `json:"input"`
+}
+
+func (s SubmissionRequest) String() string {
+	return fmt.Sprintf("( <SubmissionRequest> {ID: %s, Language: %s, Code: Hidden, Input: %s} )", s.ID, s.Language, s.Input)
 }
 
 type ChallengeResponse struct {
@@ -66,6 +75,7 @@ func getRandomChallenge() Challenge {
 	}
 	defer r.Body.Close()
 
+	log.Printf("getRandomChallenge> challenge: %s", chal)
 	return chal
 }
 
