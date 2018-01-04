@@ -211,6 +211,24 @@
 
 	// graphViz must be declared before split called as split calls GV's resize
 	const graphViz = new NWGraph('#graph')
+
+	// Split(['#world-col', '#code-col'], {
+	// 	direction: 'vertical',
+	// 	sizes: [50, 50],
+	//     elementStyle: function (dimension, size, gutterSize) {
+	//     	graphViz.resize()
+	//         return {
+	//             'flex-basis': 'calc(' + size + '% - ' + gutterSize + 'px)'
+	//         }
+	//     },
+	//     gutterStyle: function (dimension, gutterSize) {
+	//     	graphViz.resize()
+	//         return {
+	//             'flex-basis':  gutterSize + 'px'
+	//         }
+	//     }
+	// })
+
 	Split(['#terminal', '#graph'], {
 		direction: 'vertical',
 		sizes: [35, 65],
@@ -244,7 +262,6 @@
 	})
 
 	$(document).keypress(function(e) {
-		console.log($("#stdin").val())
 		if (e.ctrlKey) {
 			switch (e.key) {
 				case ",":
@@ -398,11 +415,15 @@
 		focusOnEditor()
 	}
 
+	function updateOutput(newOutput) {
+		$("#output").text(newOutput)
+	}
+
 
 	let userPrompt = "nodewars>"
 	function parseServerMessages(e) {
 		const msg = JSON.parse(e.data);
-		// console.log("received: ", msg)
+		console.log("received: ", msg)
 		switch (msg.sender) {
 			case "pseudoServer":
 				// write to terminal
@@ -439,6 +460,10 @@
 
 					case "graphState": 
 						parseGraphState(msg)
+						break
+
+					case "resultState":
+						updateOutput(msg.data)
 						break
 
 					case "scoreState":

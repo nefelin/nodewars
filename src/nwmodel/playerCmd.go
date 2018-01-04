@@ -414,20 +414,20 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	}
 
 	// passed error checks on args
-	p.Outgoing <- nwmessage.PsBegin(fmt.Sprintf("Running test with stdin: %v", p.stdin))
 
-	// disallow blank stdin
-	if p.stdin == "" {
-		p.stdin = "default stdin"
-	}
+	go func() {
+		response := getOutput(p.language, c, p.stdin)
+		p.Outgoing <- nwmessage.PsSuccess("Finished running (check output box)")
 
-	response := getOutput(p.language, c, p.stdin)
+		if response.Message.Type == "error" {
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Error: %s", response.Message.Data))
+			return
+		}
 
-	if response.Message.Type == "error" {
-		return nwmessage.PsError(errors.New(response.Message.Data))
-	}
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response))
+	}()
 
-	return nwmessage.PsSuccess(fmt.Sprintf("Output: %v", response))
+	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))
 }
 
 func cmdScore(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
