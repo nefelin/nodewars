@@ -18,6 +18,18 @@
 		overflow-y: hidden
 	}
 
+	textarea {
+		resize:none;
+
+		border: none;
+	    overflow: auto;
+	    outline: none;
+
+	    -webkit-box-shadow: none;
+	    -moz-box-shadow: none;
+	    box-shadow: none;
+	}
+	
 	#main-col {
 		position:absolute;
 		top:0;
@@ -25,50 +37,92 @@
 		left:0;
 		right:0;
 
-		display:flex;
-		flex-direction: column-reverse;
+		display: flex;
+		flex-direction: column;
 		flex-wrap: nowrap;
-	}
-
-	.gutter {
-		background-color: grey;
 	}
 
 	#main-row {
-		display:flex;
-		flex-grow: 20;
-		/*order:0;*/
-		/*flex:1 1 auto;*/
+		display: flex;
 		flex-direction: row;
 		flex-wrap: nowrap;
+		height:100%;
 	}
-
-	#graph {
-		/*order:0;*/
-		flex-grow:1;
-		background-color: beige;
-		overflow-y: hidden;
-	}
-
-	#editor {
-		/*order:1;*/
-		flex-grow:2;
-		background-color: lightgrey;
+	
+	#world-col {
+		position: relative;
+		display:flex;
+		width:50%;
+		flex-direction: column;
 	}
 
 	#team-flag {
-		/*order:1;*/
-		/*z-index: 10;*/
+		z-index: 10;
+		opacity: 1;
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		/*bottom: 8px;*/
 		width:100%;
-		height:8px;
+		height:10px;
 		background-color: black;
 	}
 
 	#terminal {
-		/*order:0;*/
-		flex-grow:2;
-		/*height: 100%;*/
 		width: 100%;
+		height: 100%;
+	}
+
+	#graph {
+		/*order:0;*/
+		/*flex-grow:1;*/
+		background-color: beige;
+		overflow-y: hidden;
+	}
+
+	.gutter {
+		background-color: grey;
+		cursor: row-resize;
+		height:1px;
+	}
+
+	
+	#code-col {
+		/*order:1;*/
+		/*flex-grow:2;*/
+		/*background-color: lightgrey;*/
+		position: relative;
+		display:flex;
+		width:50%;
+		flex-direction: column;
+	}
+
+	#stdin {
+		padding: 3px;
+		z-index: 9;
+		position:absolute;
+		background-color: white;
+		top:0;
+		right:0;
+		width:110px;
+		height:50px;
+		border-left: 1px solid black;
+		border-bottom: 1px solid black;
+
+	}
+
+	#editor {
+		/*height:80%;*/
+		width:100%;
+		background-color: lightgrey;
+	}
+
+	#output {
+		padding:5px;
+		width:100%;
+		height:20%;
+		background-color: white;
 	}
 
 	.terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt {
@@ -120,20 +174,22 @@
   </style>
 </head>
 <body>
-
 <div id="main-col">
+	
 	<div id="main-row">
-		<div id="graph"></div>
-		<div id="editor"></div>
-	</div>
-	<!-- <div id="splitter-horizontal"></div> -->
-	<!-- <div id="term-column"> -->
-		
-	<div id="terminal"></div>
-	<div id="team-flag"></div>
-	<!-- </div> -->
-</div>
+		<div id="world-col">
+			<div id="team-flag"></div>
+			<div id="terminal"></div>
+			<div id="graph"></div>
+		</div>
 
+		<div id="code-col">
+			<textarea id="stdin">Use this box to test your own input</textarea>
+			<div id="editor"></div>
+			<div id="output">The results of your executed code will appear here</div>
+		</div>
+	</div>
+</div>
 
 <script src="d3app.js"></script>
 
@@ -142,9 +198,10 @@
 // on document ready jquery shorthand
 // $(function () {
 	const graphViz = new NWGraph('#graph')
-	Split(['#main-row', '#terminal'], {
+
+	Split(['#terminal', '#graph'], {
 		direction: 'vertical',
-		sizes: [75, 35],
+		sizes: [35, 65],
 	    elementStyle: function (dimension, size, gutterSize) {
 	    	graphViz.resize()
 	        return {
@@ -159,8 +216,21 @@
 	    }
 	})
 
+	Split(['#editor', '#output'], {
+		direction: 'vertical',
+		sizes: [80, 20],
+	    elementStyle: function (dimension, size, gutterSize) {
+	        return {
+	            'flex-basis': 'calc(' + size + '% - ' + gutterSize + 'px)'
+	        }
+	    },
+	    gutterStyle: function (dimension, gutterSize) {
+	        return {
+	            'flex-basis':  gutterSize + 'px'
+	        }
+	    }
+	})
 
-	
 	$(document).keypress(function(e) {
 		if (e.ctrlKey) {
 			switch (e.key) {
@@ -548,7 +618,6 @@
 	    }, {
 	    	pauseEvents: false,
 	    	fontSize:40,
-	        height: 100,
 	        greetings: "Welcome to\n" + logo + "\nv" + versionNum + "\n" + introMessage,
 	        checkArity: false,
 	        prompt: "",
