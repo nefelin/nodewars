@@ -19,15 +19,15 @@ import (
 
 func newModSlot() *modSlot {
 	// get random challenge,
-
-	// assign id
+	c := getRandomChallenge()
+	// log.Printf("Created slot with challenge: %s\n", c)
 	return &modSlot{
-		challenge: getRandomChallenge(),
+		challenge: c,
 	}
 }
 
 // creates a new module by p based on the results from response in language l
-func newModule(p *Player, response ChallengeResponse, lang string) *module {
+func newModule(p *Player, response CompileResult, lang string) *module {
 	id := moduleIDCount
 	moduleIDCount++
 
@@ -38,7 +38,7 @@ func newModule(p *Player, response ChallengeResponse, lang string) *module {
 		builder:   p.GetName(),
 		TeamName:  p.TeamName,
 		Health:    response.passed(),
-		MaxHealth: len(response.PassFail),
+		MaxHealth: len(response.Graded),
 	}
 }
 
@@ -709,13 +709,13 @@ func (m module) isFriendlyTo(t *team) bool {
 func (n *node) buildDummyModule(p *Player) {
 
 	// make the response the right size
-	dummyResponse := ChallengeResponse{
-		PassFail: n.Slots[0].challenge.IO,
+	dummyResponse := CompileResult{
+		Graded: n.Slots[0].challenge.IO,
 	}
 
 	// fake pass all tests
-	for k := range dummyResponse.PassFail {
-		dummyResponse.PassFail[k] = "true"
+	for k := range dummyResponse.Graded {
+		dummyResponse.Graded[k] = "true"
 	}
 
 	n.Slots[0].Module = newModule(p, dummyResponse, p.language)
@@ -1244,7 +1244,7 @@ func (p *Player) Prompt() string {
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) slot() *modSlot {
-	if p.Route == nil || p.slotNum < 0 || p.slotNum > len(p.Route.Endpoint.Slots) {
+	if p.Route == nil || p.slotNum < 0 || p.slotNum >= len(p.Route.Endpoint.Slots) {
 		return nil
 	}
 
@@ -1419,13 +1419,13 @@ func (r route) forMsg() string {
 	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint.ID, strings.Join(nodeList, ", "))
 }
 
-func (c ChallengeResponse) String() string {
-	ret := ""
-	for k, v := range c.PassFail {
-		ret += fmt.Sprintf("(in: %v, out: %v)", k, v)
-	}
-	return ret
-}
+// func (c CompileResult) String() string {
+// 	ret := ""
+// 	for k, v := range c.Graded {
+// 		ret += fmt.Sprintf("(in: %v, out: %v)", k, v)
+// 	}
+// 	return ret
+// }
 
 // func (m modSlot) String() string {
 
