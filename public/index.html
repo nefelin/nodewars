@@ -274,6 +274,11 @@
 					sendMsg("make")
 					break
 
+				case "0":
+					// terminal.echo("make")
+					sendMsg("remove")
+					break
+
 				case "\\":
 					// terminal.echo("test")
 					sendMsg("test")
@@ -668,10 +673,13 @@
 	    	pauseEvents: false,
 	    	fontSize:40,
 	        greetings: "Welcome to\n" + logo + "\nv" + versionNum + "\n" + introMessage,
+	        // checkArity: don't check argument length 
 	        checkArity: false,
 	        prompt: "",
+	        // keydown: disable build in shortcuts
+			keydown: false,
+	        // exit: disable crtl-D exit of terminal
 	        exit: false,
-	        unclosed_strings: false,
 	        prompt: function() {
 	        	// console.log(userPrompt)
 	        	// setTimeout(()=>{terminal.set_prompt(userPrompt)}, 1000)
@@ -688,7 +696,7 @@
 	    });
 	});
 	
-	// super hacky way to allow quotes in our command line
+	// hacky way to allow quotes in our command line
 	$.terminal.unclosed_strings = () => false
 
 	// function prettifyCommands(json) {
