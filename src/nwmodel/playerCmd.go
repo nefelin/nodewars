@@ -424,7 +424,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 			return
 		}
 
-		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response))
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Raw))
 	}()
 
 	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))
@@ -527,22 +527,26 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 	go func(p *Player, gm *GameModel, c string) {
 		slot := p.slot()
-		log.Printf("Make go routine, slot: %v", slot.challenge.ID)
+		log.Printf("Make go routine, slot.challenge.ID: %s", slot.challenge.ID)
 		response := submitTest(slot.challenge.ID, p.language, c)
 		p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
 
 		if response.Message.Type == "error" {
-			p.Outgoing <- nwmessage.PsError(errors.New(response.Message.Data))
+			p.Outgoing <- nwmessage.PsCompileFail()
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Results: %s\nErrors: %s", response.Graded, response.Message.Data))
 			return
 		}
 
 		newModHealth := response.passed()
 
 		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module failed all tests"))
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Graded))
 			return
 		}
+		// if there's no error show graded results, regardless of what happens with the module:
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Graded))
 
 		// LOCK SLOT
 		slot.Lock()
@@ -564,7 +568,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 			// hostile module
 			switch {
 			case newModHealth < slot.Module.Health:
-				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth))
+				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), slot.Module.Health, slot.Module.MaxHealth))
 				return
 
 			case newModHealth == slot.Module.Health:
@@ -597,15 +601,6 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 			}
 
 		}
-
-		// err := p.Route.Endpoint.addModule(newMod, p.slotNum)
-		// if err != nil {
-		// 	p.Outgoing <- nwmessage.PsError(err)
-		// 	return
-		// }
-
-		// // ensure players team is powering node
-		// gm.Teams[p.TeamName].powerOn(p.Route.Endpoint)
 
 		// slot is empty, simply install...
 		newMod := newModule(p, response, p.language)
@@ -686,16 +681,21 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		p.Outgoing <- nwmessage.TerminalUnpause()
 
 		if response.Message.Type == "error" {
-			p.Outgoing <- nwmessage.PsError(errors.New(response.Message.Data))
+			p.Outgoing <- nwmessage.PsCompileFail()
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Results: %s\nErrors: %s", response.Graded, response.Message.Data))
 			return
 		}
 
 		newModHealth := response.passed()
 
 		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Failed to make module, test results: %d/%d", response.passed(), len(response.PassFail)))
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module failed all tests"))
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Graded))
 			return
 		}
+
+		// if there's no error, show graded results, regardless of what happens with the module:
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Graded))
 
 		// LOCK SLOT
 		slot.Lock()
@@ -722,7 +722,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
 			"Solution too weak: %d/%d, need %d/%d to remove",
-			response.passed(), len(response.PassFail), slot.Module.Health, slot.Module.MaxHealth,
+			response.passed(), len(response.Graded), slot.Module.Health, slot.Module.MaxHealth,
 		))
 		return
 	}(p, gm, c)
