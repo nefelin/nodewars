@@ -123,6 +123,8 @@
 		width:100%;
 		height:20%;
 		background-color: white;
+		white-space: pre;
+		overflow-y: scroll;
 	}
 
 	.terminal, .cmd, .terminal .terminal-output div div, .cmd .prompt {
@@ -207,7 +209,6 @@
 			$("#stdin").val("")
 		}
 	})
-	$("#output").click(()=>{$("#output").text("Clicked")})
 
 	// graphViz must be declared before split called as split calls GV's resize
 	const graphViz = new NWGraph('#graph')

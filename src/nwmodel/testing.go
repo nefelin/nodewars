@@ -39,16 +39,28 @@ func (s SubmissionRequest) String() string {
 // 	Message  nwmessage.Message `json:"message"`
 // }
 
+type gradeMap map[string]string
+
+func (g gradeMap) String() string {
+
+	var results string
+	for k, v := range g {
+		results += fmt.Sprintf("%s: %s\n", k, v)
+	}
+	log.Printf("gradeMap stringer results: %s", results)
+	return results
+}
+
 type CompileResult struct {
 	Raw     string            `json:"raw"`
-	Graded  map[string]string `json:"graded"`
+	Graded  gradeMap          `json:"graded"`
 	Message nwmessage.Message `json:"message"`
 }
 
 func (c CompileResult) passed() int {
 	var passed int
 	for _, res := range c.Graded {
-		if res == "true" {
+		if res == "Pass" {
 			passed++
 		}
 	}

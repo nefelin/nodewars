@@ -20,7 +20,7 @@ import (
 func newModSlot() *modSlot {
 	// get random challenge,
 	c := getRandomChallenge()
-	// log.Printf("Created slot with challenge: %s\n", c)
+	// log.Printf("Created slot with challengeID: %s\n", c.ID)
 	return &modSlot{
 		challenge: c,
 	}

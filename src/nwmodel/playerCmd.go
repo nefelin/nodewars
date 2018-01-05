@@ -471,6 +471,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		langLock = true
 		gm.setLanguage(p, pSlot.Module.language)
 	}
+	// log.Printf("Playyer attached to slot: %d, challengeID: %s\n", p.slotNum, pSlot.challenge.ID)
 
 	// Send slot info to edit buffer
 	msgPostfix := "\nchallenge details loaded to codebox"
@@ -527,7 +528,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 	go func(p *Player, gm *GameModel, c string) {
 		slot := p.slot()
-		log.Printf("Make go routine, slot.challenge.ID: %s", slot.challenge.ID)
+		// log.Printf("Make goroutine, slot.challenge.ID: %s", slot.challenge.ID)
 		response := submitTest(slot.challenge.ID, p.language, c)
 		p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
