@@ -21,8 +21,8 @@ var lobbyCmdList = map[string]playerCmd{
 	"t":    cmdTell,
 	"tell": cmdTell,
 
-	"ls":   cmdListGames,
-	"list": cmdListGames,
+	"ls": cmdListGames,
+	// "list": cmdListGames,
 
 	"join": cmdJoinGame,
 
@@ -33,6 +33,8 @@ var lobbyCmdList = map[string]playerCmd{
 	"rm": cmdKillGame,
 
 	"who": cmdWho,
+
+	"chat": cmdChat,
 }
 
 var globalCmdList = map[string]bool{
@@ -71,23 +73,26 @@ func actionConsumer(d *Dispatcher) {
 				// get player object
 				p := d.Lobby.players[pID]
 
-				// if its a valid lobby command execute
-				if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
-					res := handlerFunc(p, d, msg[1:])
-					if res.Data != "" {
-						p.Outgoing <- res
-					}
+				// are we in chatmode?
 
-				} else {
-					// if it's not a known lobby command and the player
-					// isn't in a game, treat it as a chat.
+				if p.ChatMode && msg[0] != "chat" {
 					chatMsg := strings.Join(msg, " ")
 
 					for _, player := range d.Lobby.GetPlayers() {
 						player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", chatMsg)
 					}
+				} else {
+					// if its a valid lobby command execute
+					if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
+						res := handlerFunc(p, d, msg[1:])
+						if res.Data != "" {
+							p.Outgoing <- res
+						}
+					} else {
+						p.Outgoing <- nwmessage.PsError(fmt.Errorf("Unknown command, '%s'", msg[0]))
+					}
 				}
-				// p.Outgoing <- nwmessage.PromptState(p.GetName() + "@lobby>")
+
 			} else {
 				// PLAYER IN GAME
 
@@ -109,6 +114,29 @@ func actionConsumer(d *Dispatcher) {
 			}
 		}
 	}
+}
+
+func cmdChat(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
+	if len(args) > 0 {
+		// broadcast args
+		msg := strings.Join(args, " ")
+
+		for _, player := range d.Lobby.GetPlayers() {
+			player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
+		}
+		return nwmessage.Message{}
+	}
+
+	p.ChatMode = !p.ChatMode
+
+	var flag string
+	if p.ChatMode {
+		flag = "ON"
+	} else {
+		flag = "OFF"
+	}
+
+	return nwmessage.PsNeutral(fmt.Sprintf("ChatMode set to %s", flag))
 }
 
 func cmdSetName(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {

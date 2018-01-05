@@ -96,4 +96,5 @@ type Player struct {
 	slotNum   int                    // currently attached to slotNum of current node
 	dialogue  *nwmessage.Dialogue    // this holds any dialogue the players in the middle of
 	compiling bool                   // this is used to block player action while submitted code is compiling
+	ChatMode  bool                   // track whether player is in chatmode or not (for use in lobby)
 }
