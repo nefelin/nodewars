@@ -548,12 +548,14 @@
 		if (codeCmds.indexOf(cmd) != -1) {
 			// First set the STDIN
 			// TODO fix this hacky nonsense
-			message = JSON.stringify({
-				type: "playerCmd",
-				data: "setStdinFromTheFrontEndButNotARealCommand " + $("#stdin").val()
-			})
+			// message = JSON.stringify({
+			// 	type: "playerCmd",
+			// 	data: "setStdinFromTheFrontEndButNotARealCommand " + $("#stdin").val()
+			// })
 			
-			ws.send(message)
+			// ws.send(message)
+			if (cmd == "test")
+				input = "test " + $("#stdin").val()
 
 			// now send the code
 			console.log("sending code along too")

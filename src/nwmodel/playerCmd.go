@@ -45,7 +45,7 @@ var gameCmdList = map[string]playerCommand{
 	"make": cmdMake,
 
 	// TODO hacky AF
-	"setStdinFromTheFrontEndButNotARealCommand": cmdStdin,
+	// "setStdinFromTheFrontEndButNotARealCommand": cmdStdin,
 
 	"pow":   cmdScore,
 	"power": cmdScore,
@@ -393,21 +393,23 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 }
 
 // deprecate this in favor of stdin box TODO
-func cmdStdin(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	// disallow blank stdin
-	if len(args) == 0 {
-		p.stdin = ""
-	}
+// func cmdStdin(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// 	// disallow blank stdin
+// 	if len(args) == 0 {
+// 		p.stdin = ""
+// 	}
 
-	p.stdin = strings.Join(args, " ")
+// 	p.stdin = strings.Join(args, " ")
 
-	return nwmessage.Message{}
-}
+// 	return nwmessage.Message{}
+// }
 
 func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
 	if len(args) > 0 {
 		p.stdin = strings.Join(args, " ")
+	} else {
+		p.stdin = ""
 	}
 
 	// TODO handle compiler error
