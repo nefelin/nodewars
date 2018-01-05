@@ -110,6 +110,14 @@ func PsNoTeam() Message {
 	}
 }
 
+func PsCompileFail() Message {
+	return Message{
+		Type:   errorStr,
+		Sender: pseudoStr,
+		Data:   "Compile failed" + terminatorStr,
+	}
+}
+
 func PsNoConnection() Message {
 	return Message{
 		Type:   errorStr,
