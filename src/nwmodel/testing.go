@@ -71,13 +71,14 @@ func (c CompileResult) String() string {
 	return fmt.Sprintf("( <CompileResult> {Raw: %s, Graded: %s, Message: %s} )", c.Raw, c.Graded, c.Message)
 }
 
-type LanguageDetails struct {
+type Language struct {
+	// Name          string `json:"name"`
 	Boilerplate   string `json:"boilerplate"`
 	CommentPrefix string `json:"commentPrefix"`
 }
 
 type LanguagesResponse struct {
-	Languages map[string]LanguageDetails `json:"languages"`
+	Languages map[string]Language `json:"languages"`
 }
 
 func getRandomChallenge() Challenge {
@@ -155,7 +156,7 @@ func getOutput(language, code, input string) CompileResult {
 	return response
 }
 
-func getLanguages() map[string]LanguageDetails {
+func getLanguages() map[string]Language {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
@@ -171,6 +172,11 @@ func getLanguages() map[string]LanguageDetails {
 		panic(err)
 	}
 	defer r.Body.Close()
+
+	// map language names into the objects
+	// for k := range langRes.Languages {
+	// 	langRes.Languages[k].Name = k
+	// }
 
 	return langRes.Languages
 }

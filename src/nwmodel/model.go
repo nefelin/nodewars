@@ -25,7 +25,7 @@ type GameModel struct {
 	Players   map[playerID]*Player `json:"players"`
 	POEs      map[playerID]*node   `json:"poes"`
 	PointGoal float32              `json:"pointGoal"`
-	languages map[string]LanguageDetails
+	languages map[string]Language
 	aChan     chan nwmessage.Message
 	running   bool //running should replace mapLocked
 

@@ -250,6 +250,8 @@ func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 			return nwmessage.PsError(errors.New("Can't change language on enemy module"))
 		}
 		pSlot := p.slot()
+
+		// TODO syntax
 		langDetails := gm.languages[p.language]
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
