@@ -34,9 +34,29 @@ func (s SubmissionRequest) String() string {
 	return fmt.Sprintf("( <SubmissionRequest> {ID: %s, Language: %s, Code: Hidden, Input: %s} )", s.ID, s.Language, s.Input)
 }
 
-type ChallengeResponse struct {
-	PassFail map[string]string `json:"passFail"`
-	Message  nwmessage.Message `json:"message"`
+// type CompileResult struct {
+// 	PassFail map[string]string `json:"passFail"`
+// 	Message  nwmessage.Message `json:"message"`
+// }
+
+type CompileResult struct {
+	Raw     string            `json:"raw"`
+	Graded  map[string]string `json:"graded"`
+	Message nwmessage.Message `json:"message"`
+}
+
+func (c CompileResult) passed() int {
+	var passed int
+	for _, res := range c.Graded {
+		if res == "true" {
+			passed++
+		}
+	}
+	return passed
+}
+
+func (c CompileResult) String() string {
+	return fmt.Sprintf("( <CompileResult> {Raw: %s, Graded: %s, Message: %s} )", c.Raw, c.Graded, c.Message)
 }
 
 type LanguageDetails struct {
@@ -46,16 +66,6 @@ type LanguageDetails struct {
 
 type LanguagesResponse struct {
 	Languages map[string]LanguageDetails `json:"languages"`
-}
-
-func (c ChallengeResponse) passed() int {
-	var passed int
-	for _, res := range c.PassFail {
-		if res == "true" {
-			passed++
-		}
-	}
-	return passed
 }
 
 func getRandomChallenge() Challenge {
@@ -75,12 +85,12 @@ func getRandomChallenge() Challenge {
 	}
 	defer r.Body.Close()
 
-	log.Printf("getRandomChallenge> challenge: %s", chal)
+	// log.Printf("getRandomChallenge> challenge: %s", chal)
 	return chal
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id, language, code string) ChallengeResponse {
+func submitTest(id, language, code string) CompileResult {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
@@ -94,19 +104,21 @@ func submitTest(id, language, code string) ChallengeResponse {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var response ChallengeResponse
-	err = decoder.Decode(&response)
-	log.Printf("submitTest response: %v", response)
+	var result CompileResult
+	err = decoder.Decode(&result)
+
+	log.Printf("submitTest result: %s", result)
+
 	if err != nil {
 		panic(err)
 	}
 	defer r.Body.Close()
 
-	return response
+	return result
 }
 
 // returns a map of inputs to test pass/fail
-func getOutput(language, code, input string) ChallengeResponse {
+func getOutput(language, code, input string) CompileResult {
 	address := os.Getenv("TEST_BOX_ADDRESS")
 	port := os.Getenv("TEST_BOX_PORT")
 
@@ -120,7 +132,7 @@ func getOutput(language, code, input string) ChallengeResponse {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var response ChallengeResponse
+	var response CompileResult
 	err = decoder.Decode(&response)
 	log.Printf("getOutput response: %v", response)
 	if err != nil {
