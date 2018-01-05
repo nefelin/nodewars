@@ -535,7 +535,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 		if response.Message.Type == "error" {
 			p.Outgoing <- nwmessage.PsCompileFail()
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Results: %s\nErrors: %s", response.Graded, response.Message.Data))
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s\nErrors:\n%s", response.Graded, response.Message.Data))
 			return
 		}
 
@@ -683,7 +683,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 		if response.Message.Type == "error" {
 			p.Outgoing <- nwmessage.PsCompileFail()
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Results: %s\nErrors: %s", response.Graded, response.Message.Data))
+			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s\nErrors:\n%s", response.Graded, response.Message.Data))
 			return
 		}
 
