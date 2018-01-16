@@ -546,14 +546,6 @@
 		
 		// If this command requires code be sent with it
 		if (codeCmds.indexOf(cmd) != -1) {
-			// First set the STDIN
-			// TODO fix this hacky nonsense
-			// message = JSON.stringify({
-			// 	type: "playerCmd",
-			// 	data: "setStdinFromTheFrontEndButNotARealCommand " + $("#stdin").val()
-			// })
-			
-			// ws.send(message)
 			if (cmd == "test")
 				input = "test " + $("#stdin").val()
 

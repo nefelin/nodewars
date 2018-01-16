@@ -44,9 +44,6 @@ var gameCmdList = map[string]playerCommand{
 
 	"make": cmdMake,
 
-	// TODO hacky AF
-	// "setStdinFromTheFrontEndButNotARealCommand": cmdStdin,
-
 	"pow":   cmdScore,
 	"power": cmdScore,
 
@@ -266,13 +263,15 @@ func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 }
 
 func cmdListLanguages(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	msgContent := ""
+	var langs sort.StringSlice
 
-	for k := range gm.languages {
-		msgContent += k + "\n"
+	for l := range gm.languages {
+		langs = append(langs, l)
 	}
 
-	return nwmessage.PsNeutral(msgContent)
+	langs.Sort()
+
+	return nwmessage.PsNeutral("This game supports:\n" + strings.Join(langs, "\n"))
 }
 
 func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
@@ -391,18 +390,6 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
 }
-
-// deprecate this in favor of stdin box TODO
-// func cmdStdin(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-// 	// disallow blank stdin
-// 	if len(args) == 0 {
-// 		p.stdin = ""
-// 	}
-
-// 	p.stdin = strings.Join(args, " ")
-
-// 	return nwmessage.Message{}
-// }
 
 func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 
