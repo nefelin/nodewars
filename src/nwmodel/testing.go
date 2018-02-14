@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"nwmessage"
 	"os"
@@ -54,7 +53,7 @@ func (g gradeMap) String() string {
 	for k, v := range g {
 		results += fmt.Sprintf("%s: %s\n", k, v)
 	}
-	log.Printf("gradeMap stringer results: %s", results)
+	// log.Printf("gradeMap stringer results: %s", results)
 	return results
 }
 
@@ -117,7 +116,7 @@ func submitTest(id, language, code string) ExecutionResult {
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
-	fmt.Printf("Submitting SubReq: %s", submission)
+	// fmt.Printf("Submitting SubReq: %s", submission)
 	r, err := http.Post(address+":"+port+"/submit/", "application/json", buf)
 	if err != nil {
 		panic(err)
@@ -127,7 +126,7 @@ func submitTest(id, language, code string) ExecutionResult {
 	var result ExecutionResult
 	err = decoder.Decode(&result)
 
-	log.Printf("submitTest result: %s", result)
+	// log.Printf("submitTest result: %s", result)
 
 	if err != nil {
 		panic(err)
