@@ -23,15 +23,22 @@ func (c Challenge) String() string {
 	return fmt.Sprintf("( <Challenge> {ID: %s, Desc: %s, SampleIO: %s, IO: %s} )", c.ID, c.Description, c.SampleIO, c.IO)
 }
 
-type SubmissionRequest struct {
-	ID       string   `json:"id"`
-	Language string   `json:"language"`
-	Code     string   `json:"code"`
-	Stdins   []string `json:"stdins,omitempty"`
+// type CodeSubmission struct {
+// 	ID       string   `json:"id"`
+// 	Language string   `json:"language"`
+// 	Code     string   `json:"code"`
+// 	Stdins   []string `json:"stdins,omitempty"`
+// }
+
+type CodeSubmission struct {
+	Language    string   `json:"language"`
+	Code        string   `json:"code"`
+	Stdins      []string `json:"stdins"`
+	ChallengeId string   `json:"challengeId,omitempty`
 }
 
-func (s SubmissionRequest) String() string {
-	return fmt.Sprintf("( <SubmissionRequest> {ID: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ID, s.Language, s.Stdins)
+func (s CodeSubmission) String() string {
+	return fmt.Sprintf("( <CodeSubmission> {ChallengeId: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeId, s.Language, s.Stdins)
 }
 
 // type ExecutionResult struct {
@@ -106,10 +113,11 @@ func submitTest(id, language, code string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	submission := SubmissionRequest{ID: id, Language: language, Code: code}
+	submission := CodeSubmission{ChallengeId: id, Language: language, Code: code}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
+	fmt.Printf("Submitting SubReq: %s", submission)
 	r, err := http.Post(address+":"+port+"/submit/", "application/json", buf)
 	if err != nil {
 		panic(err)
@@ -133,7 +141,7 @@ func getOutput(language, code, stdin string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	submission := SubmissionRequest{"", language, code, []string{stdin}}
+	submission := CodeSubmission{Language: language, Code: code, Stdins: []string{stdin}}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
