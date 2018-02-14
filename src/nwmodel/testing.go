@@ -77,19 +77,18 @@ type Language struct {
 	CommentPrefix string `json:"commentPrefix"`
 }
 
-type LanguagesResponse struct {
-	Languages map[string]Language `json:"languages"`
-}
+type LanguagesResponse map[string]Language
 
 func getRandomChallenge() Challenge {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+	address := os.Getenv("TESTBOX_ADDRESS")
+	port := os.Getenv("TESTBOX_PORT")
 
-	r, err := http.Get(address + ":" + port)
+	r, err := http.Get(address + ":" + port + "/get_challenge/")
 
 	if err != nil {
 		panic(err)
 	}
+
 	decoder := json.NewDecoder(r.Body)
 	var chal Challenge
 	err = decoder.Decode(&chal)
@@ -104,8 +103,8 @@ func getRandomChallenge() Challenge {
 
 // returns a map of inputs to test pass/fail
 func submitTest(id, language, code string) CompileResult {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+	address := os.Getenv("TESTBOX_ADDRESS")
+	port := os.Getenv("TESTBOX_PORT")
 
 	submission := SubmissionRequest{id, language, code, ""}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
@@ -132,8 +131,8 @@ func submitTest(id, language, code string) CompileResult {
 
 // returns a map of inputs to test pass/fail
 func getOutput(language, code, input string) CompileResult {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+	address := os.Getenv("TESTBOX_ADDRESS")
+	port := os.Getenv("TESTBOX_PORT")
 
 	submission := SubmissionRequest{"", language, code, input}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
@@ -157,14 +156,21 @@ func getOutput(language, code, input string) CompileResult {
 }
 
 func getLanguages() map[string]Language {
-	address := os.Getenv("TEST_BOX_ADDRESS")
-	port := os.Getenv("TEST_BOX_PORT")
+	address := os.Getenv("TESTBOX_ADDRESS")
+	port := os.Getenv("TESTBOX_PORT")
+	langPoint := address + ":" + port + "/languages/"
 
-	r, err := http.Get(address + ":" + port + "/languages/")
+	r, err := http.Get(langPoint)
 
+	fmt.Printf("testbox at: %s\n", langPoint)
 	if err != nil {
 		panic(err)
 	}
+
+	// buf := new(bytes.Buffer)
+	// buf.ReadFrom(r.Body)
+	// // s := buf.String()
+	// fmt.Printf("body: %s\n", buf.String())
 	decoder := json.NewDecoder(r.Body)
 	var langRes LanguagesResponse
 	err = decoder.Decode(&langRes)
@@ -178,5 +184,5 @@ func getLanguages() map[string]Language {
 	// 	langRes.Languages[k].Name = k
 	// }
 
-	return langRes.Languages
+	return langRes
 }
