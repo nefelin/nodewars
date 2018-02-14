@@ -24,17 +24,17 @@ func (c Challenge) String() string {
 }
 
 type SubmissionRequest struct {
-	ID       string `json:"id"`
-	Language string `json:"language"`
-	Code     string `json:"code"`
-	Input    string `json:"input"`
+	ID       string   `json:"id"`
+	Language string   `json:"language"`
+	Code     string   `json:"code"`
+	Stdins   []string `json:"stdins,omitempty"`
 }
 
 func (s SubmissionRequest) String() string {
-	return fmt.Sprintf("( <SubmissionRequest> {ID: %s, Language: %s, Code: Hidden, Input: %s} )", s.ID, s.Language, s.Input)
+	return fmt.Sprintf("( <SubmissionRequest> {ID: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ID, s.Language, s.Stdins)
 }
 
-// type CompileResult struct {
+// type ExecutionResult struct {
 // 	PassFail map[string]string `json:"passFail"`
 // 	Message  nwmessage.Message `json:"message"`
 // }
@@ -51,13 +51,13 @@ func (g gradeMap) String() string {
 	return results
 }
 
-type CompileResult struct {
-	Raw     string            `json:"raw"`
-	Graded  gradeMap          `json:"graded"`
+type ExecutionResult struct {
+	Stdouts []string          `json:"stdouts"`
+	Graded  gradeMap          `json:"graded,omitempty"`
 	Message nwmessage.Message `json:"message"`
 }
 
-func (c CompileResult) passed() int {
+func (c ExecutionResult) passed() int {
 	var passed int
 	for _, res := range c.Graded {
 		if res == "Pass" {
@@ -67,8 +67,8 @@ func (c CompileResult) passed() int {
 	return passed
 }
 
-func (c CompileResult) String() string {
-	return fmt.Sprintf("( <CompileResult> {Raw: %s, Graded: %s, Message: %s} )", c.Raw, c.Graded, c.Message)
+func (c ExecutionResult) String() string {
+	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Message: %s} )", c.Stdouts, c.Graded, c.Message)
 }
 
 type Language struct {
@@ -102,11 +102,11 @@ func getRandomChallenge() Challenge {
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id, language, code string) CompileResult {
+func submitTest(id, language, code string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	submission := SubmissionRequest{id, language, code, ""}
+	submission := SubmissionRequest{ID: id, Language: language, Code: code}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
@@ -116,7 +116,7 @@ func submitTest(id, language, code string) CompileResult {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var result CompileResult
+	var result ExecutionResult
 	err = decoder.Decode(&result)
 
 	log.Printf("submitTest result: %s", result)
@@ -129,12 +129,11 @@ func submitTest(id, language, code string) CompileResult {
 	return result
 }
 
-// returns a map of inputs to test pass/fail
-func getOutput(language, code, input string) CompileResult {
+func getOutput(language, code, stdin string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	submission := SubmissionRequest{"", language, code, input}
+	submission := SubmissionRequest{"", language, code, []string{stdin}}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
@@ -144,9 +143,9 @@ func getOutput(language, code, input string) CompileResult {
 	}
 
 	decoder := json.NewDecoder(r.Body)
-	var response CompileResult
+	var response ExecutionResult
 	err = decoder.Decode(&response)
-	log.Printf("getOutput response: %v", response)
+	// log.Printf("getOutput response: %v", response)
 	if err != nil {
 		panic(err)
 	}
@@ -158,11 +157,11 @@ func getOutput(language, code, input string) CompileResult {
 func getLanguages() map[string]Language {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
+
 	langPoint := address + ":" + port + "/languages/"
+	// fmt.Printf("testbox at: %s\n", langPoint)
 
 	r, err := http.Get(langPoint)
-
-	fmt.Printf("testbox at: %s\n", langPoint)
 	if err != nil {
 		panic(err)
 	}

@@ -415,7 +415,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 			return
 		}
 
-		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.Raw))
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%v", response.Stdouts[0]))
 	}()
 
 	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))

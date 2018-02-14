@@ -27,7 +27,7 @@ func newModSlot() *modSlot {
 }
 
 // creates a new module by p based on the results from response in language l
-func newModule(p *Player, response CompileResult, lang string) *module {
+func newModule(p *Player, response ExecutionResult, lang string) *module {
 	id := moduleIDCount
 	moduleIDCount++
 
@@ -751,7 +751,7 @@ func (m module) isFriendlyTo(t *team) bool {
 func (n *node) buildDummyModule(p *Player) {
 
 	// make the response the right size
-	dummyResponse := CompileResult{
+	dummyResponse := ExecutionResult{
 		Graded: n.Slots[0].challenge.IO,
 	}
 
