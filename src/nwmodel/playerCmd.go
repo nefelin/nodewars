@@ -195,7 +195,7 @@ func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
-	if len(args) == 0 {
+	if len(args) == 0 || args[0] == "" {
 		// if p.TeamName == "" {
 		// 	return nwmessage.PsNoTeam()
 		// }
