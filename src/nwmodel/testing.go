@@ -65,6 +65,10 @@ type grade struct {
 	Grade  string   `json:"grade"`
 }
 
+func (g grade) String() string {
+	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
+}
+
 // type gradeMap map[TestCase]string
 
 // func (g gradeMap) String() string {
@@ -81,6 +85,19 @@ type ExecutionResult struct {
 	Stdouts []string          `json:"stdouts"`
 	Graded  []grade           `json:"graded,omitempty"`
 	Message nwmessage.Message `json:"message"`
+}
+
+func (r ExecutionResult) gradeMsg() string {
+	var res string
+	for i, g := range r.Graded {
+		res += fmt.Sprintf("Test #%d: ", i)
+		if g.Grade == "Pass" {
+			res += fmt.Sprintf("PASS\n")
+		} else {
+			res += fmt.Sprintf("FAIL - Expected: '%s', Got: '%s'\n", g.Case.Expect, g.Actual)
+		}
+	}
+	return res
 }
 
 func (c ExecutionResult) passed() int {
