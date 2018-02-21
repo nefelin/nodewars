@@ -11,16 +11,35 @@ import (
 
 // mirrored struct definitions from TestBox
 // Challenge does this need to be exported? TODO
+// type Challenge struct {
+// 	ID          string            `json:"id"`
+// 	Description string            `json:"description"`
+// 	SampleIO    string            `json:"sampleIO"`
+// 	IO          map[string]string `json:"io"`
+// }
+
 type Challenge struct {
-	ID          string            `json:"id"`
-	Description string            `json:"description"`
-	SampleIO    string            `json:"sampleIO"`
-	IO          map[string]string `json:"io"`
+	ID        int64    `json:"id"`
+	Name      string   `json:"name"`
+	ShortDesc string   `json:"shortDesc"`
+	LongDesc  string   `json:"longDesc"`
+	Tags      tagList  `json:"tags"`
+	Cases     caseList `json:"cases"`
+	SampleIO  caseList `json:"sampleIO"`
 }
 
-func (c Challenge) String() string {
-	return fmt.Sprintf("( <Challenge> {ID: %s, Desc: %s, SampleIO: %s, IO: %s} )", c.ID, c.Description, c.SampleIO, c.IO)
+type TestCase struct {
+	Input  string `json:"input"`
+	Expect string `json:"expect"`
+	Desc   string `json:"desc,omitempty"`
 }
+
+type tagList []string
+type caseList []TestCase
+
+// func (c Challenge) String() string {
+// 	return fmt.Sprintf("( <Challenge> {ID: %s, Desc: %s, SampleIO: %s, IO: %s} )", c.ID, c.Description, c.SampleIO, c.IO)
+// }
 
 // type CodeSubmission struct {
 // 	ID       string   `json:"id"`
@@ -33,40 +52,41 @@ type CodeSubmission struct {
 	Language    string   `json:"language"`
 	Code        string   `json:"code"`
 	Stdins      []string `json:"stdins"`
-	ChallengeId string   `json:"challengeId,omitempty`
+	ChallengeId int64    `json:"challengeId,omitempty`
 }
 
 func (s CodeSubmission) String() string {
 	return fmt.Sprintf("( <CodeSubmission> {ChallengeId: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeId, s.Language, s.Stdins)
 }
 
-// type ExecutionResult struct {
-// 	PassFail map[string]string `json:"passFail"`
-// 	Message  nwmessage.Message `json:"message"`
-// }
-
-type gradeMap map[string]string
-
-func (g gradeMap) String() string {
-
-	var results string
-	for k, v := range g {
-		results += fmt.Sprintf("%s: %s\n", k, v)
-	}
-	// log.Printf("gradeMap stringer results: %s", results)
-	return results
+type grade struct {
+	Case   TestCase `json:"case"`
+	Actual string   `json:"actual"`
+	Grade  string   `json:"grade"`
 }
+
+// type gradeMap map[TestCase]string
+
+// func (g gradeMap) String() string {
+
+// 	var results string
+// 	for k, v := range g {
+// 		results += fmt.Sprintf("%s: %s\n", k, v)
+// 	}
+// 	// log.Printf("gradeMap stringer results: %s", results)
+// 	return results
+// }
 
 type ExecutionResult struct {
 	Stdouts []string          `json:"stdouts"`
-	Graded  gradeMap          `json:"graded,omitempty"`
+	Graded  []grade           `json:"graded,omitempty"`
 	Message nwmessage.Message `json:"message"`
 }
 
 func (c ExecutionResult) passed() int {
 	var passed int
 	for _, res := range c.Graded {
-		if res == "Pass" {
+		if res.Grade == "Pass" {
 			passed++
 		}
 	}
@@ -89,7 +109,7 @@ func getRandomChallenge() Challenge {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	r, err := http.Get(address + ":" + port + "/get_challenge/")
+	r, err := http.Get(address + ":" + port + "/challenges/rand/")
 
 	if err != nil {
 		panic(err)
@@ -108,7 +128,7 @@ func getRandomChallenge() Challenge {
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id, language, code string) ExecutionResult {
+func submitTest(id int64, language, code string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 

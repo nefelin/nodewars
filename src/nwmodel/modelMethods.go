@@ -749,15 +749,16 @@ func (m module) isFriendlyTo(t *team) bool {
 // node methods -------------------------------------------------------------------------------
 
 func (n *node) buildDummyModule(p *Player) {
+	perfectScore := make([]grade, len(n.Slots[0].challenge.Cases))
+
+	// pass all tests
+	for i := range perfectScore {
+		perfectScore[i].Grade = "Pass"
+	}
 
 	// make the response the right size
 	dummyResponse := ExecutionResult{
-		Graded: n.Slots[0].challenge.IO,
-	}
-
-	// fake pass all tests
-	for k := range dummyResponse.Graded {
-		dummyResponse.Graded[k] = "true"
+		Graded: perfectScore,
 	}
 
 	n.Slots[0].Module = newModule(p, dummyResponse, p.language)

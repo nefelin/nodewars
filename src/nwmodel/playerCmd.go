@@ -253,7 +253,7 @@ func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
 		sampleIO := pSlot.challenge.SampleIO
-		description := pSlot.challenge.Description
+		description := pSlot.challenge.ShortDesc
 
 		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
 		p.Outgoing <- nwmessage.EditState(editText)
@@ -472,7 +472,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
 	sampleIO := pSlot.challenge.SampleIO
-	description := pSlot.challenge.Description
+	description := pSlot.challenge.ShortDesc
 
 	// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	resp := ""
