@@ -9,15 +9,7 @@ import (
 	"os"
 )
 
-// mirrored struct definitions from TestBox
-// Challenge does this need to be exported? TODO
-// type Challenge struct {
-// 	ID          string            `json:"id"`
-// 	Description string            `json:"description"`
-// 	SampleIO    string            `json:"sampleIO"`
-// 	IO          map[string]string `json:"io"`
-// }
-
+// Challenge holds info for individual programming challenges
 type Challenge struct {
 	ID        int64    `json:"id"`
 	Name      string   `json:"name"`
@@ -28,6 +20,7 @@ type Challenge struct {
 	SampleIO  caseList `json:"sampleIO"`
 }
 
+// TestCase describes an individual test case, of which a challenge may have one->many
 type TestCase struct {
 	Input  string `json:"input"`
 	Expect string `json:"expect"`
@@ -37,26 +30,16 @@ type TestCase struct {
 type tagList []string
 type caseList []TestCase
 
-// func (c Challenge) String() string {
-// 	return fmt.Sprintf("( <Challenge> {ID: %s, Desc: %s, SampleIO: %s, IO: %s} )", c.ID, c.Description, c.SampleIO, c.IO)
-// }
-
-// type CodeSubmission struct {
-// 	ID       string   `json:"id"`
-// 	Language string   `json:"language"`
-// 	Code     string   `json:"code"`
-// 	Stdins   []string `json:"stdins,omitempty"`
-// }
-
+// CodeSubmission is the format the testbox like to receive in order to execute code, compare against challenge expectations, and return results
 type CodeSubmission struct {
 	Language    string   `json:"language"`
 	Code        string   `json:"code"`
 	Stdins      []string `json:"stdins"`
-	ChallengeId int64    `json:"challengeId,omitempty`
+	ChallengeID int64    `json:"challengeId,omitempty`
 }
 
 func (s CodeSubmission) String() string {
-	return fmt.Sprintf("( <CodeSubmission> {ChallengeId: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeId, s.Language, s.Stdins)
+	return fmt.Sprintf("( <CodeSubmission> {ChallengeID: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeID, s.Language, s.Stdins)
 }
 
 type grade struct {
@@ -65,22 +48,17 @@ type grade struct {
 	Grade  string   `json:"grade"`
 }
 
+type tbAPIResponse struct {
+	ErrorMessage string `json:"error,omitempty"`
+	ID           int64  `json:"id,omitempty"`
+	Result       string `json:"result,omitempty"`
+}
+
 func (g grade) String() string {
 	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
 }
 
-// type gradeMap map[TestCase]string
-
-// func (g gradeMap) String() string {
-
-// 	var results string
-// 	for k, v := range g {
-// 		results += fmt.Sprintf("%s: %s\n", k, v)
-// 	}
-// 	// log.Printf("gradeMap stringer results: %s", results)
-// 	return results
-// }
-
+// ExecutionResult hold the response from testbox, if no challenge id was provided in submission, Graded will be empty
 type ExecutionResult struct {
 	Stdouts []string          `json:"stdouts"`
 	Graded  []grade           `json:"graded,omitempty"`
@@ -100,9 +78,9 @@ func (r ExecutionResult) gradeMsg() string {
 	return res
 }
 
-func (c ExecutionResult) passed() int {
+func (r ExecutionResult) passed() int {
 	var passed int
-	for _, res := range c.Graded {
+	for _, res := range r.Graded {
 		if res.Grade == "Pass" {
 			passed++
 		}
@@ -110,16 +88,18 @@ func (c ExecutionResult) passed() int {
 	return passed
 }
 
-func (c ExecutionResult) String() string {
-	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Message: %s} )", c.Stdouts, c.Graded, c.Message)
+func (r ExecutionResult) String() string {
+	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Message: %s} )", r.Stdouts, r.Graded, r.Message)
 }
 
+// Language describes the language details nodewars server needs to hold
 type Language struct {
 	// Name          string `json:"name"`
 	Boilerplate   string `json:"boilerplate"`
 	CommentPrefix string `json:"commentPrefix"`
 }
 
+// LanguagesResponse describes the data format testbox will describe supported languages in.
 type LanguagesResponse map[string]Language
 
 func getRandomChallenge() Challenge {
@@ -132,16 +112,10 @@ func getRandomChallenge() Challenge {
 		panic(err)
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	var chal Challenge
-	err = decoder.Decode(&chal)
-	if err != nil {
-		panic(err)
-	}
-	defer r.Body.Close()
+	var c Challenge
+	decodeAPIResponse(r, &c)
 
-	// log.Printf("getRandomChallenge> challenge: %s", chal)
-	return chal
+	return c
 }
 
 // returns a map of inputs to test pass/fail
@@ -149,7 +123,7 @@ func submitTest(id int64, language, code string) ExecutionResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
-	submission := CodeSubmission{ChallengeId: id, Language: language, Code: code}
+	submission := CodeSubmission{ChallengeID: id, Language: language, Code: code}
 	jsonBytes, _ := json.MarshalIndent(submission, "", "    ")
 	buf := bytes.NewBuffer(jsonBytes)
 
@@ -159,18 +133,20 @@ func submitTest(id int64, language, code string) ExecutionResult {
 		panic(err)
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	var result ExecutionResult
-	err = decoder.Decode(&result)
+	// decoder := json.NewDecoder(r.Body)
+	// var result ExecutionResult
+	// err = decoder.Decode(&result)
 
-	// log.Printf("submitTest result: %s", result)
+	// // log.Printf("submitTest result: %s", result)
 
-	if err != nil {
-		panic(err)
-	}
-	defer r.Body.Close()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer r.Body.Close()
+	var e ExecutionResult
+	decodeAPIResponse(r, &e)
 
-	return result
+	return e
 }
 
 func getOutput(language, code, stdin string) ExecutionResult {
@@ -186,16 +162,18 @@ func getOutput(language, code, stdin string) ExecutionResult {
 		panic(err)
 	}
 
-	decoder := json.NewDecoder(r.Body)
-	var response ExecutionResult
-	err = decoder.Decode(&response)
-	// log.Printf("getOutput response: %v", response)
-	if err != nil {
-		panic(err)
-	}
-	defer r.Body.Close()
+	// decoder := json.NewDecoder(r.Body)
+	// var response ExecutionResult
+	// err = decoder.Decode(&response)
+	// // log.Printf("getOutput response: %v", response)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// defer r.Body.Close()
+	var e ExecutionResult
+	decodeAPIResponse(r, &e)
 
-	return response
+	return e
 }
 
 func getLanguages() map[string]Language {
@@ -210,22 +188,24 @@ func getLanguages() map[string]Language {
 		panic(err)
 	}
 
-	// buf := new(bytes.Buffer)
-	// buf.ReadFrom(r.Body)
-	// // s := buf.String()
-	// fmt.Printf("body: %s\n", buf.String())
+	var l LanguagesResponse
+	decodeAPIResponse(r, &l)
+
+	return l
+}
+
+func decodeAPIResponse(r *http.Response, i interface{}) {
 	decoder := json.NewDecoder(r.Body)
-	var langRes LanguagesResponse
-	err = decoder.Decode(&langRes)
+	var resp tbAPIResponse
+	err := decoder.Decode(&resp)
 	if err != nil {
 		panic(err)
 	}
+	// fmt.Printf("Got apiresponse: %v\n\n\n", resp.Result)
 	defer r.Body.Close()
 
-	// map language names into the objects
-	// for k := range langRes.Languages {
-	// 	langRes.Languages[k].Name = k
-	// }
-
-	return langRes
+	err = json.Unmarshal([]byte(resp.Result), &i)
+	if err != nil {
+		panic(err)
+	}
 }
