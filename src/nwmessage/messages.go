@@ -19,10 +19,12 @@ const (
 	beginStr       = "begin"
 	dialogueMsgStr = "dialogue"
 
+	challengeStateStr  = "challengeState"
+	compOutStateStr    = "compOutState"
 	editStateStr       = "editorState"
-	promptStateStr     = "promptState"
 	graphStateStr      = "graphState"
 	scoreStateStr      = "scoreState"
+	stdinStateStr      = "stdinState"
 	teamStateStr       = "teamState"
 	graphResetStr      = "graphReset"
 	resultStateStr     = "resultState"
@@ -42,6 +44,13 @@ func PsDialogue(msg string) Message {
 		Type:   dialogueMsgStr,
 		Sender: pseudoStr,
 		Data:   msg,
+	}
+}
+
+func PsPrompt(msg string) Message {
+	return Message{
+		Sender: pseudoStr,
+		Data:   msg + " ",
 	}
 }
 
@@ -97,7 +106,7 @@ func PsBegin(msg string) Message {
 func PsChat(sender, context, msg string) Message {
 	return Message{
 		Type:   "",
-		Data:   fmt.Sprintf("%s (%s): %s", sender, context, msg),
+		Data:   fmt.Sprintf("%s (%s): %s\n", sender, context, msg),
 		Sender: pseudoStr,
 	}
 }
@@ -127,12 +136,11 @@ func PsNoConnection() Message {
 }
 
 // messages with server as Sender trigger action in the front end but are not show in the pseudoterminal
-
-func AlertFlash(color string) Message {
+func ChallengeState(msg string) Message {
 	return Message{
-		Type:   "alertFlash",
+		Type:   challengeStateStr,
 		Sender: serverStr,
-		Data:   color,
+		Data:   msg,
 	}
 }
 
@@ -157,14 +165,6 @@ func GraphReset() Message {
 		Type:   graphResetStr,
 		Sender: serverStr,
 		Data:   "",
-	}
-}
-
-func PromptState(msg string) Message {
-	return Message{
-		Type:   promptStateStr,
-		Sender: serverStr,
-		Data:   msg,
 	}
 }
 

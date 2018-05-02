@@ -112,7 +112,7 @@ func actionConsumer(gm *GameModel) {
 		} else {
 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
 		}
-		p.Outgoing <- nwmessage.PromptState(p.Prompt())
+		p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
 	}
 }
 

@@ -23,7 +23,8 @@ import { defaultLayout } from './Layouts'
 
 import STRMLWindow from './STRMLWindow'
 
-import NWSocket from '../handshake.js'
+import NWSocket from '../NWSocket'
+import * as Parsers from '../Parsers'
 // map stuff
 import Graph from '../Graph/Graph'
 import * as Maps from '../../maps'
@@ -41,6 +42,8 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
+      tinyTermIn: "",
+
       compilerOutput: "Execution completed in 0.323 seconds...",
 
       layout: this.readLocalLayout() || defaultLayout,
@@ -49,32 +52,19 @@ class STRMLGrid extends React.Component {
   
 
   componentDidMount() {
-    this.ws = new NWSocket(this.parser)
+    // Setup for websocket + handlers
+    const inParser = new Parsers.Incoming(this)
+    const ws = new NWSocket(inParser, true)
+    this.outgoing = new Parsers.Outgoing(ws, this, true)
   }
 
-  parser = (m) => {
-    console.log('received message,', m)
+  handleTermSend = (cmd) => {
+    this.outgoing.parseCmd(cmd) 
   }
 
   handleChange = (e) => {
-    // store current layout
+    // track current layout
     this.currentLayout = JSON.stringify(e)
-
-    // should check if map changed, then call:
-    
-
-
-    // this.setMapSize(e[0])
-  }
-
-  setMapSize = (gridItem) => {
-    
-    const colSize = 105,
-          rowSize = 30
-    
-    const mapSize = {x:colSize*gridItem.w, y:rowSize*gridItem.h}          
-    console.log('setMapSize size', mapSize)
-    this.graph.current.resize(mapSize)
   }
 
   copyLayout(orig) {
@@ -173,12 +163,13 @@ class STRMLGrid extends React.Component {
     return (
       // <GridLayout style={strmlWindow} onLayoutChange={this.handleChange} className="layout" draggableCancel="input,textarea" layout={layout} cols={12} rowHeight={30} width={1260}>
       <div style={{height: 1500}}>
-      <STRMLWindow className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
+
+      <STRMLWindow bgOverride={this.state.team ? this.state.team : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
         <GridLayout {...layoutProps}>
 
           <div key="terminal">
-            <STRMLWindow  menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
-              <TinyTerm grabFocus={true} />
+            <STRMLWindow menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
+              <TinyTerm incoming={this.state.tinyTermIn} grabFocus={true} onSend={this.handleTermSend}/>
             </STRMLWindow>
           </div>
 

@@ -37,4 +37,6 @@
 	/*padding: 10px;*/
 	/*background-color: blue;*/
 	box-sizing: border-box;
+	-webkit-transition: background-color 2s; /* Safari */
+    transition: background-color 2s;
 }

@@ -12,7 +12,7 @@ class TinyTerm extends React.Component {
 
 		this.state = {
 			commandHistory: [],
-			page: "just some text\nthis should be a new line\nprompt> ",
+			page: "",
 			// prompt: this.props.prompt || "prompt> ",
 			command: "",
 			cursor: this.props.cursor || "\u258c",
@@ -80,6 +80,7 @@ class TinyTerm extends React.Component {
 		// console.log((this.state.page + cmd + '\n').split('\n'))
 		this.updatePage(cmd + '\n')
 		this.setState({ command: "" })
+		this.props.onSend(cmd)
 	}
 
 	handleChange(e) {

@@ -18,7 +18,15 @@ const versionNumber = "1.0.0"
 // VersionTag is used for handshake and generally to identify the server type and version
 const VersionTag = "NodeWars:" + versionNumber
 
-var upgrader = websocket.Upgrader{}
+// var upgrader = websocket.Upgrader{}
+// Allows cross-origin web socket upgrade. Remove for production
+var upgrader = websocket.Upgrader{
+	ReadBufferSize:  1024,
+	WriteBufferSize: 1024,
+	CheckOrigin: func(r *http.Request) bool {
+		return true
+	},
+}
 
 // Ask about reduntant error messaging...
 func doHandshake(ws *websocket.Conn) error {
@@ -81,7 +89,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
 	go outgoingRelay(thisPlayer)
-	thisPlayer.Outgoing <- nwmessage.PromptState(thisPlayer.GetName() + "@lobby>")
+	thisPlayer.Outgoing <- nwmessage.PsPrompt(thisPlayer.GetName() + "@lobby>")
 	// Handle socket stream
 	for {
 		var msg nwmessage.Message

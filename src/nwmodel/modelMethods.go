@@ -490,9 +490,10 @@ func (gm *GameModel) calcState(p *Player) string {
 
 func (gm *GameModel) broadcastAlertFlash(color string) {
 	// TODO abstract this to messages
-	for _, player := range gm.Players {
-		player.Outgoing <- nwmessage.AlertFlash(color)
-	}
+	fmt.Println("This should add activity markers to the maps TODO")
+	// for _, player := range gm.Players {
+	// 	player.Outgoing <- nwmessage.AlertFlash(color)
+	// }
 }
 
 // send a pseudoServer message to all players
@@ -589,7 +590,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	p.Outgoing <- nwmessage.GraphState(gm.calcState(p))
 
 	// send initial prompt state
-	p.Outgoing <- nwmessage.PromptState(p.Prompt())
+	p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
 	return nil
 }
 
