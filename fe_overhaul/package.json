@@ -1,0 +1,32 @@
+{
+  "name": "test",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "brace": "^0.11.1",
+    "css-element-queries": "^1.0.2",
+    "d3": "^5.0.0",
+    "react": "^16.3.0",
+    "react-ace": "^6.1.0",
+    "react-dom": "^16.3.0",
+    "react-grid-layout": "^0.16.6",
+    "react-scripts": "1.1.2",
+    "react-splitter-layout": "^3.0.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject",
+    "storybook": "start-storybook -p 9009 -s public",
+    "build-storybook": "build-storybook -s public"
+  },
+  "devDependencies": {
+    "@storybook/react": "^3.4.0",
+    "@storybook/addon-actions": "^3.4.0",
+    "@storybook/addon-links": "^3.4.0",
+    "@storybook/addons": "^3.4.0",
+    "babel-core": "^6.26.0",
+    "babel-runtime": "^6.26.0"
+  }
+}

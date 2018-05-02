@@ -1,4 +1,6 @@
-'use strict'
+// import d3 from 'd3'
+import * as d3 from "d3";
+// 'use strict'
 // TODO review the class structure and make those methods that don't rely on instance data STATIC
 
 // class constants (only used internally)
@@ -555,3 +557,4 @@ class NWGraph {
 
 	// 	})
 	// }
+export default NWGraph

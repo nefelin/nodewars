@@ -1,10 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"protocol"
+
+	"github.com/rs/cors"
 )
 
 const localhost = "http://localhost:8080/"
@@ -29,7 +32,24 @@ func main() {
 
 	d := protocol.NewDispatcher()
 
-	// Start Webserver
+	//// Start Webserver WO CORS
+	// mux := http.NewServeMux()
+	// mux.HandleFunc("/", index)
+	// mux.HandleFunc("/ws", // wrap the func to pass the dispatcher
+	// 	func(w http.ResponseWriter, req *http.Request) {
+	// 		protocol.HandleConnections(w, req, d)
+	// 	})
+
+	// if host == localhost { // aka env var not set
+	// 	log.Fatal(
+	// 		http.ListenAndServe(port, mux))
+	// }
+
+	// go http.ListenAndServe(":80", http.HandlerFunc(redirect))
+	// log.Fatal(
+	// 	http.ListenAndServeTLS(port, certfile, keyfile, mux))
+
+	// Start Webserver WITH CORS
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/ws", // wrap the func to pass the dispatcher
@@ -37,14 +57,24 @@ func main() {
 			protocol.HandleConnections(w, req, d)
 		})
 
+	// c := cors.New(cors.Options{
+	// 	AllowedOrigins: []string{"http://localhost:9009"},
+	// 	// AllowOriginFunc: func(origin string) bool { return true },
+	// })
+	// handler := c.Handler(mux)
+
+	handler := cors.AllowAll().Handler(mux)
+
 	if host == localhost { // aka env var not set
+		fmt.Println("checkcheck")
 		log.Fatal(
-			http.ListenAndServe(port, mux))
+			http.ListenAndServe(port, handler))
 	}
 
-	go http.ListenAndServe(":80", http.HandlerFunc(redirect))
+	go http.ListenAndServe(":80", handler)
 	log.Fatal(
 		http.ListenAndServeTLS(port, certfile, keyfile, mux))
+
 }
 
 // Redirect all HTTP requests to HTTPS
@@ -67,5 +97,5 @@ func index(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	http.FileServer(http.Dir("public")).ServeHTTP(w, req)
+	http.FileServer(http.Dir("fe_temp/public")).ServeHTTP(w, req)
 }

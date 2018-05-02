@@ -133,16 +133,6 @@ func submitTest(id int64, language, code string) ExecutionResult {
 		panic(err)
 	}
 
-	// decoder := json.NewDecoder(r.Body)
-	// var result ExecutionResult
-	// err = decoder.Decode(&result)
-
-	// // log.Printf("submitTest result: %s", result)
-
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer r.Body.Close()
 	var e ExecutionResult
 	decodeAPIResponse(r, &e)
 
@@ -162,14 +152,6 @@ func getOutput(language, code, stdin string) ExecutionResult {
 		panic(err)
 	}
 
-	// decoder := json.NewDecoder(r.Body)
-	// var response ExecutionResult
-	// err = decoder.Decode(&response)
-	// // log.Printf("getOutput response: %v", response)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// defer r.Body.Close()
 	var e ExecutionResult
 	decodeAPIResponse(r, &e)
 

@@ -1,0 +1,65 @@
+.strml-menu {
+	display: inline;
+	background-color: lightgrey;
+	color: black;
+	position: relative;
+}
+
+.strml-menu-title {
+	display: inline-block;
+	padding: 2px 5px 2px 5px;
+}
+
+.strml-menu-title.active {
+	background-color: blue;
+	color: white;
+}
+
+/*.strml-menu-title.has-contents:hover {
+	
+	width: 5px;
+	height: 100%;
+	background-color: blue;
+	color:white;
+}*/
+
+.strml-menu-body.hidden {
+	display: none;
+}
+
+.strml-menu-body {
+	position:absolute;
+
+	left: 0;
+	background-color: inherit;
+
+	border-top: 1px solid grey;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+	border-bottom: 1px solid black;
+	width: 100px;
+}
+
+.strml-menu-item {
+	padding: 2px 0 2px 10px;
+	font-size: inherit;
+}
+
+.strml-menu-item.disabled {
+	color: lightgrey;
+}
+
+.strml-menu-item:hover:not(.disabled) {
+	background-color: blue;
+	color: white;
+}
+
+.noselect {
+	-webkit-touch-callout: none; /* iOS Safari */
+	-webkit-user-select: none; /* Safari */
+	-khtml-user-select: none; /* Konqueror HTML */
+	-moz-user-select: none; /* Firefox */
+	-ms-user-select: none; /* Internet Explorer/Edge */
+	user-select: none; /* Non-prefixed version, currently
+                          supported by Chrome and Opera */
+}
