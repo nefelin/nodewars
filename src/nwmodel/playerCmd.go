@@ -112,7 +112,10 @@ func actionConsumer(gm *GameModel) {
 		} else {
 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
 		}
-		p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+
+		if p.compiling == false && p.dialogue == nil {
+			p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+		}
 	}
 }
 

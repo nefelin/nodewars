@@ -481,7 +481,8 @@ func (gm *GameModel) packScores() string {
 
 // calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
 func (gm *GameModel) calcState(p *Player) string {
-	stateMsg, err := json.Marshal(gm)
+	stateMsg, err := json.Marshal(gm.Map)
+	fmt.Printf("State Message %s", stateMsg)
 	if err != nil {
 		log.Println(err)
 	}
@@ -583,6 +584,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; ok {
 		return errors.New("player '" + p.GetName() + "' is already in this game")
 	}
+	p.inGame = true
 	gm.Players[p.ID] = p
 	gm.setLanguage(p, "python")
 	// send initiall map state
@@ -614,6 +616,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	p.TeamName = ""
 	p.Route = nil
 	p.slotNum = -1
+	p.inGame = false
 
 	p.Outgoing <- nwmessage.GraphReset()
 
@@ -1271,16 +1274,22 @@ func (p *Player) Prompt() string {
 
 	promptEndChar := ">"
 	prompt := fmt.Sprintf("%s", p.GetName())
-	// if p.TeamName != "" {
-	// 	prompt += fmt.Sprintf(":%s:", p.TeamName)
-	// }
-	if p.Route != nil {
-		prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
+
+	if p.inGame {
+		// if p.TeamName != "" {
+		// 	prompt += fmt.Sprintf(":%s:", p.TeamName)
+		// }
+		if p.Route != nil {
+			prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
+		}
+
+		if p.slotNum != -1 {
+			prompt += fmt.Sprintf(":s%d", p.slotNum)
+		}
+		prompt += fmt.Sprintf("[%s]", p.language)
+	} else {
+		prompt += "@lobby"
 	}
-	if p.slotNum != -1 {
-		prompt += fmt.Sprintf(":s%d", p.slotNum)
-	}
-	prompt += fmt.Sprintf("[%s]", p.language)
 
 	prompt += promptEndChar
 

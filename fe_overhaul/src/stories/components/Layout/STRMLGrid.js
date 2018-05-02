@@ -53,8 +53,8 @@ class STRMLGrid extends React.Component {
 
   componentDidMount() {
     // Setup for websocket + handlers
-    const inParser = new Parsers.Incoming(this)
-    const ws = new NWSocket(inParser, true)
+    const inParser = new Parsers.Incoming(this, true)
+    const ws = new NWSocket(inParser)
     this.outgoing = new Parsers.Outgoing(ws, this, true)
   }
 
