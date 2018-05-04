@@ -1,6 +1,7 @@
 package nwmessage
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -36,7 +37,8 @@ const (
 
 	noConnectStr = "No connection"
 
-	terminatorStr = "\n"
+	terminatorStr = "\n\n"
+	preStr        = "\n"
 )
 
 func PsDialogue(msg string) Message {
@@ -58,7 +60,7 @@ func PsError(e error) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   fmt.Sprint(e) + terminatorStr,
+		Data:   preStr + fmt.Sprint(e) + terminatorStr,
 	}
 }
 
@@ -75,7 +77,7 @@ func PsUnknown(cmd string) Message {
 func PsNeutral(msg string) Message {
 	return Message{
 		Sender: pseudoStr,
-		Data:   msg + terminatorStr,
+		Data:   preStr + msg + terminatorStr,
 	}
 }
 
@@ -83,7 +85,7 @@ func PsAlert(msg string) Message {
 	return Message{
 		Type:   alertStr,
 		Sender: pseudoStr,
-		Data:   msg + terminatorStr,
+		Data:   preStr + msg + terminatorStr,
 	}
 }
 
@@ -91,7 +93,7 @@ func PsSuccess(msg string) Message {
 	return Message{
 		Type:   successStr,
 		Sender: pseudoStr,
-		Data:   msg + terminatorStr,
+		Data:   preStr + msg + terminatorStr,
 	}
 }
 
@@ -99,40 +101,28 @@ func PsBegin(msg string) Message {
 	return Message{
 		Type:   beginStr,
 		Sender: pseudoStr,
-		Data:   msg + terminatorStr,
+		Data:   preStr + msg + terminatorStr,
 	}
 }
 
 func PsChat(sender, context, msg string) Message {
 	return Message{
 		Type:   "",
-		Data:   fmt.Sprintf("%s (%s): %s\n", sender, context, msg),
+		Data:   preStr + fmt.Sprintf("%s (%s): %s", sender, context, msg) + terminatorStr,
 		Sender: pseudoStr,
 	}
 }
 
 func PsNoTeam() Message {
-	return Message{
-		Type:   errorStr,
-		Sender: pseudoStr,
-		Data:   "No team assignment" + terminatorStr,
-	}
+	return PsError(errors.New("No team assignment"))
 }
 
 func PsCompileFail() Message {
-	return Message{
-		Type:   errorStr,
-		Sender: pseudoStr,
-		Data:   "Compile failed" + terminatorStr,
-	}
+	return PsError(errors.New("Compile failed"))
 }
 
 func PsNoConnection() Message {
-	return Message{
-		Type:   errorStr,
-		Sender: pseudoStr,
-		Data:   "No connection" + terminatorStr,
-	}
+	return PsError(errors.New("No connection"))
 }
 
 // messages with server as Sender trigger action in the front end but are not show in the pseudoterminal
