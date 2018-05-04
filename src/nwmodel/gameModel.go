@@ -11,11 +11,11 @@ import (
 
 // GameModel holds all state information
 type GameModel struct {
-	Map           *nodeMap             `json:"map"`
-	Teams         map[teamName]*team   `json:"teams"`
-	Players       map[playerID]*Player `json:"players"`
-	POEs          map[playerID]*node   `json:"poes"`
-	PointGoal     float32              `json:"pointGoal"`
+	Map     *nodeMap             `json:"map"`
+	Teams   map[teamName]*team   `json:"teams"`
+	Players map[playerID]*Player `json:"players"`
+	// POEs          map[playerID]*node   `json:"poes"`
+	PointGoal     float32 `json:"pointGoal"`
 	languages     map[string]Language
 	aChan         chan nwmessage.Message
 	running       bool //running should replace mapLocked
@@ -31,7 +31,7 @@ func NewDefaultModel() *GameModel {
 	m := newRandMap(10)
 	t := makeDummyTeams()
 	p := make(map[playerID]*Player)
-	poes := make(map[playerID]*node)
+	// poes := make(map[playerID]*node)
 
 	aChan := make(chan nwmessage.Message, 100)
 
@@ -40,7 +40,7 @@ func NewDefaultModel() *GameModel {
 		Teams:   t,
 		Players: p,
 		// Routes:  r,
-		POEs:          poes,
+		// POEs:          poes,
 		languages:     getLanguages(),
 		aChan:         aChan,
 		PointGoal:     1000,
@@ -60,6 +60,17 @@ func makeDummyTeams() map[teamName]*team {
 }
 
 // GameModel methods --------------------------------------------------------------------------
+
+// fulfill Room interface
+func (gm *GameModel) GetPlayers() map[playerID]*Player {
+	return gm.Players
+}
+
+func (gm *GameModel) Recv(msg nwmessage.Message) {
+	gm.aChan <- msg
+}
+
+// trailingTeam should hand back either smallest team or currently losing team, depending on game settings TODO
 func (gm *GameModel) trailingTeam() string {
 	var tt *team
 	for _, team := range gm.Teams {
@@ -301,14 +312,6 @@ func (gm *GameModel) stopGame() {
 	// ticking goroutine should auto collapse when running is false
 }
 
-func (gm *GameModel) GetPlayers() map[playerID]*Player {
-	return gm.Players
-}
-
-func (gm *GameModel) Recv(msg nwmessage.Message) {
-	gm.aChan <- msg
-}
-
 func (gm *GameModel) resetMap(m *nodeMap) {
 	gm.Map = m
 
@@ -318,7 +321,7 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 	}
 
 	// Clear map specific data:
-	gm.POEs = make(map[playerID]*node)
+	// gm.POEs = make(map[playerID]*node)
 	for _, t := range gm.Teams {
 		t.poe = nil
 	}
@@ -441,30 +444,26 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	}
 
 	if !gm.Map.nodeExists(ni) {
-		return fmt.Errorf("Node '%v' does not exist", ni)
-	}
-	avail, ok := gm.Map.POEs[ni]
-	if !ok {
-		return fmt.Errorf("Node '%v' is not a valid point of entry", ni)
-	}
-
-	if !avail {
-		return errors.New("That point of entry is already taken")
+		return fmt.Errorf("Node '%d' does not exist", ni)
 	}
 
 	node := gm.Map.Nodes[ni]
+	if node.Feature.Type != "poe" {
+		return fmt.Errorf("No Point of Entry feature at Node, '%d'", ni)
+	}
+
+	if node.Feature.TeamName != "" {
+		return errors.New("That point of entry is already taken")
+	}
+
 	// set the teams poe
 	t.poe = node
 
-	// set all teams players poes
+	// claim feature for random player on team
 	for player := range t.players {
-		gm.setPlayerPOE(player, ni)
+		node.Feature.dummyClaim(player, "MIN")
+		break
 	}
-
-	// mark the spot as taken
-
-	gm.Map.POEs[ni] = false
-
 	return nil
 }
 
@@ -481,19 +480,19 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 // 	return nil
 // }
 
-func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
-	// TODO move this node validity check to a nodeMap method
-	// if nodeID is valid
+// func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
+// 	// TODO move this node validity check to a nodeMap method
+// 	// if nodeID is valid
 
-	if gm.Map.nodeExists(n) {
+// 	if gm.Map.nodeExists(n) {
 
-		gm.POEs[p.ID] = gm.Map.Nodes[n]
+// 		gm.POEs[p.ID] = gm.Map.Nodes[n]
 
-		return true
-	}
+// 		return true
+// 	}
 
-	return false
-}
+// 	return false
+// }
 
 // AddPlayer ...
 func (gm *GameModel) AddPlayer(p *Player) error {
@@ -529,7 +528,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 		gm.Teams[p.TeamName].removePlayer(p)
 	}
 
-	delete(gm.POEs, p.ID)
+	// delete(gm.POEs, p.ID)
 
 	delete(gm.Players, p.ID)
 
@@ -559,9 +558,9 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 
 	t := gm.Teams[tn]
 	t.addPlayer(p)
-	if t.poe != nil {
-		gm.setPlayerPOE(p, t.poe.ID)
-	}
+	// if t.poe != nil {
+	// 	gm.setPlayerPOE(p, t.poe.ID)
+	// }
 
 	return nil
 }
@@ -569,10 +568,11 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
 
 	// TODO report errors here
-	source, poeOK := gm.POEs[p.ID]
+	// source, poeOK := gm.POEs[p.ID]
 
 	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
-	if !poeOK {
+	source := gm.Teams[p.TeamName].poe
+	if source == nil {
 		return nil, errors.New("No point of entry")
 	}
 

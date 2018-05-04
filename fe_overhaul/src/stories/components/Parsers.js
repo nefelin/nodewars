@@ -28,6 +28,8 @@ class Incoming {
 	      			if (this.context.graph.current!=null)
 		      			this.context.graph.current.reset()
 	      			break
+	      		case 'editorState':
+	      			this.context.setState({ aceContent: data.data })
 	      	}
 	    }
 	}

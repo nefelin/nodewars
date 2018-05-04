@@ -89,12 +89,13 @@ func (n *node) allowsRoutingFor(t *team) bool {
 		return true
 	}
 
-	// if a node has no slots, it allows routing for everyone
+	// if a node has no machines, it allows routing for everyone
 	// allows creation of neutral hubs
 	if len(n.Machines) == 0 {
 		return true
 	}
 
+	// if we control a powered machine here we can route through
 	for _, mac := range n.Machines {
 		if mac.TeamName != "" {
 			if mac.TeamName == t.Name && mac.Powered {
@@ -102,6 +103,12 @@ func (n *node) allowsRoutingFor(t *team) bool {
 			}
 		}
 	}
+
+	// or if we control a powered feature here we can route through
+	if n.Feature.TeamName == t.Name && n.Feature.Powered {
+		return true
+	}
+
 	return false
 }
 

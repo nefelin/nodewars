@@ -370,7 +370,6 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	}
 
 	// TODO handle initial poe module more elegently
-	gm.POEs[p.ID].claimFreeMachine(p)
 	gm.calcPoweredNodes(gm.Teams[p.TeamName])
 
 	for player := range gm.Teams[p.TeamName].players {

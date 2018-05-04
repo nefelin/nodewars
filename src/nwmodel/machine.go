@@ -12,7 +12,7 @@ type machine struct {
 	// Type      string `json:"type"`
 	Powered  bool   `json:"powered"`
 	builder  string // `json:"creator"`
-	TeamName string `json:"team"`
+	TeamName string `json:"owner"`
 	// solution  string
 	language  string // `json:"languageId"`
 	Health    int    `json:"health"`
@@ -86,7 +86,7 @@ func (m *machine) claim(p *Player, r ExecutionResult) {
 func (m *machine) dummyClaim(p *Player, str string) {
 	m.builder = p.name
 	m.TeamName = p.TeamName
-	m.language = p.language
+	m.language = "python"
 	// m.Powered = true
 
 	switch str {

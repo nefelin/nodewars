@@ -7,8 +7,8 @@ import (
 )
 
 type nodeMap struct {
-	Nodes       []*node         `json:"nodes"`
-	POEs        map[nodeID]bool `json:"poes"`
+	Nodes []*node `json:"nodes"`
+	// POEs        map[nodeID]bool `json:"poes"`
 	diameter    float64
 	radius      float64
 	nodeIDCount nodeID
@@ -17,8 +17,8 @@ type nodeMap struct {
 // initializer:
 func newNodeMap() nodeMap {
 	return nodeMap{
-		Nodes:    make([]*node, 0),
-		POEs:     make(map[nodeID]bool),
+		Nodes: make([]*node, 0),
+		// POEs:     make(map[nodeID]bool),
 		diameter: 0,
 		radius:   1000,
 	}
@@ -84,7 +84,8 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 			continue
 		}
 		// make an available POE for each nodeID passed
-		m.POEs[id] = true
+		m.Nodes[id].Feature.Type = "poe"
+		// m.POEs[id] = true
 	}
 }
 
