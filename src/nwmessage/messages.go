@@ -152,6 +152,14 @@ func EditState(msg string) Message {
 	}
 }
 
+func StdinState(msg string) Message {
+	return Message{
+		Type:   stdinStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
 func GraphState(msg string) Message {
 	return Message{
 		Type:   graphStateStr,

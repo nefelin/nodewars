@@ -30,6 +30,10 @@ class Incoming {
 	      			break
 	      		case 'editorState':
 	      			this.context.setState({ aceContent: data.data })
+	      			break
+	      		case 'stdinState':
+	      			this.context.setState({ stdin: data.data })
+	      			break
 	      	}
 	    }
 	}

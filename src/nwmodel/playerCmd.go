@@ -476,6 +476,9 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	sampleIO := pSlot.challenge.SampleIO
 	description := pSlot.challenge.ShortDesc
 
+	stdin := sampleIO[0].Input
+	p.Outgoing <- nwmessage.StdinState(stdin)
+
 	// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	resp := ""
 	if resp != "n" && resp != "no" {
