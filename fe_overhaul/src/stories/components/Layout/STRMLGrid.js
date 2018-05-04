@@ -47,7 +47,11 @@ class STRMLGrid extends React.Component {
       compilerOutput: "Execution completed in 0.323 seconds...",
 
       layout: this.readLocalLayout() || defaultLayout,
+
+      // graph: null
     }
+
+    this.graph = React.createRef()
   }
   
 
@@ -175,7 +179,7 @@ class STRMLGrid extends React.Component {
 
           <div key="map">
             <STRMLWindow menuBar={[{ name: 'Map' }, { name: 'Theme', items: ['Light', 'Dark'] }]} onSelect={this.handleSelect}>
-              <Graph ref={this.graph} dataset={ Maps.SimpleMap }/>
+              <Graph ref={this.graph} dataset={ this.state.graph }/>
             </STRMLWindow>
           </div>
           

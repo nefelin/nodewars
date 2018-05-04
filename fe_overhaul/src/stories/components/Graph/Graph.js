@@ -20,13 +20,14 @@ class Graph extends Component {
   }
   componentDidMount() {
     // console.log('did mount size', this.props.size)
-    const { dataset } = this.props;
-    this.update(dataset);
+    if (this.props.dataset)
+      this.update(dataset);
     // this.resize()
   }
   componentWillReceiveProps({ dataset }) {
     // console.log('will receive size', this.props.size)
-    // this.update(dataset);
+    if (this.props.dataset)
+      this.update(dataset);
   }
 
   shouldComponentUpdate() {
@@ -50,6 +51,11 @@ class Graph extends Component {
     console.log('dataset', dataset)
     this.state.graph.update( dataset)
     // this.state.graph.draw()
+  }
+
+  reset = () => {
+    if (this.state.graph)
+      this.state.graph.reset()
   }
 
   resize(newSize) {
@@ -84,8 +90,8 @@ class Graph extends Component {
   }
 }
 
-Graph.propTypes = {
-  dataset: PropTypes.object.isRequired,
-}
+// Graph.propTypes = {
+//   dataset: PropTypes.object.isRequired,
+// }
 
 export default Graph

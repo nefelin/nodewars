@@ -20,6 +20,14 @@ class Incoming {
 	      		case 'teamState':
 	      			this.context.setState({team: data.data})
 	      			break
+	      		case 'graphState':
+		      		if (this.context.graph.current!=null)
+		      			this.context.graph.current.update(JSON.parse(data.data))
+	      			break
+	      		case 'graphReset':
+	      			if (this.context.graph.current!=null)
+		      			this.context.graph.current.reset()
+	      			break
 	      	}
 	    }
 	}

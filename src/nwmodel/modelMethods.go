@@ -17,15 +17,15 @@ import (
 
 // Initialization methods ------------------------------------------------------------------
 
-func newMachine() *machine {
-	// get random challenge,
-	c := getRandomChallenge()
-	// log.Printf("Created slot with challengeID: %s\n", c.ID)
-	return &machine{
-		challenge: c,
-		Powered:   true,
-	}
-}
+// func newMachine() *machine {
+// 	// get random challenge,
+// 	// c := getRandomChallenge()
+// 	// log.Printf("Created slot with challengeID: %s\n", c.ID)
+// 	return &machine{
+// 		challenge: c,
+// 		Powered:   true,
+// 	}
+// }
 
 // NewTeam creates a new team with color/name color
 func NewTeam(n teamName) *team {
@@ -146,7 +146,7 @@ func newDefaultMap() *nodeMap {
 
 	// create module slots based on connectivity of node
 	for _, node := range newMap.Nodes {
-		node.initSlots()
+		node.initMachines()
 	}
 
 	newMap.addPoes(1, 10)
@@ -461,9 +461,25 @@ func (gm *GameModel) broadcastScore() {
 	}
 }
 
-func (gm *GameModel) broadcastState() {
+func (gm *GameModel) makeRouteMap() *trafficMap {
+	// collect routes, TODO redundat loop
+	traffic := newTrafficMap()
+
 	for _, p := range gm.Players {
-		state := gm.calcState(p)
+		if p.Route != nil {
+			traffic.addRoute(p.Route, p.TeamName)
+		}
+	}
+
+	return traffic
+}
+
+func (gm *GameModel) broadcastState() {
+	routeMap := gm.makeRouteMap()
+
+	for _, p := range gm.Players {
+		// TODO feels super hackey to have to pass in routemap but was quickest solution for now.
+		state := gm.calcState(p, routeMap)
 		p.Outgoing <- nwmessage.GraphState(state)
 	}
 }
@@ -483,7 +499,7 @@ func (gm *GameModel) packScores() string {
 }
 
 // calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
-func (gm *GameModel) calcState(p *Player) string {
+func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 
 	// calculate player location
 	var playerLoc nodeID
@@ -493,9 +509,10 @@ func (gm *GameModel) calcState(p *Player) string {
 
 	// compose state message
 	state := stateMessage{
-		nodeMap:   gm.Map,
-		Alerts:    gm.pendingAlerts[p.ID],
-		PlayerLoc: playerLoc,
+		nodeMap:    gm.Map,
+		Alerts:     gm.pendingAlerts[p.ID],
+		PlayerLoc:  playerLoc,
+		trafficMap: tMap,
 	}
 
 	// fmt.Printf("state: %v", state)
@@ -616,9 +633,12 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	gm.pendingAlerts[p.ID] = make([]alert, 0) // make alerts slot for new player
 
 	gm.setLanguage(p, "python")
+
 	// send initiall map state
+
 	p.Outgoing <- nwmessage.GraphReset()
-	p.Outgoing <- nwmessage.GraphState(gm.calcState(p))
+	routeMap := gm.makeRouteMap()
+	p.Outgoing <- nwmessage.GraphState(gm.calcState(p, routeMap))
 
 	// send initial prompt state
 	p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
@@ -771,6 +791,9 @@ func (gm *GameModel) setLanguage(p *Player, l string) error {
 }
 
 // machine methods -------------------------------------------------------------------------
+func (m *machine) resetChallenge() {
+	m.challenge = getRandomChallenge()
+}
 
 func (m *machine) isNeutral() bool {
 	if m.TeamName == "" {
@@ -855,11 +878,11 @@ func (n *node) getPowerPerMod() float32 {
 	return float32(n.Remoteness)
 }
 
-func (n *node) initSlots() {
+func (n *node) initMachines() {
 	n.Machines = make([]*machine, len(n.Connections))
 	for i := range n.Connections {
-		mac := newMachine()
-		n.Machines[i] = mac
+		n.Machines[i] = newMachine()
+		n.Machines[i].resetChallenge()
 	}
 }
 
@@ -980,7 +1003,7 @@ func (m *nodeMap) initAllNodes() {
 func (m *nodeMap) initAllSlots() {
 	// initialize each node's slots
 	for _, node := range m.Nodes {
-		node.initSlots()
+		node.initMachines()
 	}
 }
 
@@ -1086,20 +1109,24 @@ func (m *nodeMap) initPoes(n int) {
 // 	}
 // }
 
+func (m *nodeMap) newNode() *node {
+	id := m.nodeIDCount
+	m.nodeIDCount++
+
+	return &node{
+		ID:          id,
+		Connections: make([]int, 0),
+		Remoteness:  100,
+		Machines:    []*machine{newMachine()},
+		Feature:     newFeature(),
+	}
+}
+
 func (m *nodeMap) addNodes(count int) []*node {
 	enter := make([]*node, count)
 	for i := 0; i < count; i++ {
-		id := m.nodeIDCount
-		m.nodeIDCount++
 
-		connections := make([]int, 0)
-
-		newNode := &node{
-			ID:          id,
-			Connections: connections,
-			Remoteness:  100,
-			Machines:    make([]*machine, 0),
-		}
+		newNode := m.newNode()
 
 		enter[i] = newNode
 		m.Nodes = append(m.Nodes, newNode)

@@ -680,8 +680,10 @@ class NWGraph {
 
 			// show notifications
 			if (this.FLAGS.Alerts) {
-				for (let loc of Object.keys(this.gameState.alerts)) {
-					alertBlip(this.root.select('#node-'+loc), undefined, SIZES.node_outer_radius+SIZES.stroke_width, SIZES.node_outer_radius*1.3, 700, TEAMCOLORS[this.gameState.alerts[loc]])
+				if (this.gameState.alerts){
+					for (let loc of Object.keys(this.gameState.alerts)) {
+						alertBlip(this.root.select('#node-'+loc), undefined, SIZES.node_outer_radius+SIZES.stroke_width, SIZES.node_outer_radius*1.3, 700, TEAMCOLORS[this.gameState.alerts[loc]])
+					}
 				}
 			}
 
@@ -1058,14 +1060,14 @@ class NWGraph {
 
 	composeSlotData(data) {
 		const newData = []
-			for (let slot of data.slots){
-				// console.log(slot)
-				const owner = slot.owner//slot.module != null ? slot.module.owner : "none"
+			for (let mac of data.machines){
+				// console.log(mac)
+				const owner = mac.owner//mac.module != null ? mac.module.owner : "none"
 				const size = 1
 				// const value = data.remoteness/1//parseInt(data.id)%3 + 1 // Math.ceil(Math.random()*3) // groupData.coinVal TODO implement node value system on backend
 				const value = (parseInt(data.id)%4)*2 + 1
 				// console.log('composeSlotData', data)
-				const powered = slot.powered//slot.module != null ? data.powered.indexOf(slot.module.owner) != -1 : true// powered if node is powered by owner
+				const powered = mac.powered//mac.module != null ? data.powered.indexOf(mac.module.owner) != -1 : true// powered if node is powered by owner
 				// console.log('slot:' + slot)
 				newData.push({ size, owner, value, powered })
 			}

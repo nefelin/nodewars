@@ -2,6 +2,7 @@ package nwmodel
 
 import (
 	"nwmessage"
+	"strconv"
 	"sync"
 
 	"github.com/gorilla/websocket"
@@ -34,9 +35,10 @@ type GameModel struct {
 }
 
 type stateMessage struct {
-	*nodeMap          //`json:"map"`
+	*nodeMap
 	Alerts    []alert `json:"alerts"`
 	PlayerLoc nodeID  `json:"player_location"`
+	*trafficMap
 	// Traffic map[string]trafficPacket `json:"traffic"` // maps edgeIds to lists of packets on that edge
 }
 
@@ -50,20 +52,23 @@ type route struct {
 	Nodes    []*node `json:"nodes"`
 }
 
+// easily rendered routes traffic TODO breaks current separation of interests
+type packet struct {
+	Owner     string `json:"owner"`
+	Direction string `json:"dir"`
+}
+
 type trafficMap struct {
-	Traffic map[string][]trafficPacket `json:"traffic"`
+	Traffic map[string][]packet `json:"traffic"`
 }
 
-type trafficPacket struct {
-	owner     string `json:"owner"` // team generating this traffic
-	direction string `json:"dir"`   // up/down whether this traffic is moving from a higher id node to lower or vice-versa
-}
-
+// TODO route is stored reversed?
 func (t *trafficMap) addRoute(r *route, color string) {
-	for i := range r.Nodes {
-		var n1, n2 nodeID
-		var dir, edgeID string
-		n1 := r.Nodes[i].ID
+	for i, n := range r.Nodes {
+		n1 := n.ID
+		var n2 nodeID
+
+		var dir, edge string
 
 		if i == len(r.Nodes)-1 {
 			n2 = r.Endpoint.ID
@@ -73,18 +78,33 @@ func (t *trafficMap) addRoute(r *route, color string) {
 
 		if n1 > n2 {
 			dir = "down"
-			edgeID = string(n1) + "e" + string(n2)
+			edge = strconv.Itoa(n1) + "e" + strconv.Itoa(n2)
 		} else {
 			dir = "up"
-			edgeID = string(n2) + "e" + string(n1)
+			edge = strconv.Itoa(n2) + "e" + strconv.Itoa(n1)
 		}
-		t.Traffic[edgeID] = append(t.Traffic[edgeID], trafficPacket{color, dir})
+		t.appendPacket(packet{color, dir}, edge)
 	}
 }
 
-func (t *trafficMap) removeRoute(r *route, color string) {
-
+func (t *trafficMap) appendPacket(p packet, edge string) {
+	_, ok := t.Traffic[edge]
+	if !ok {
+		t.Traffic[edge] = []packet{p}
+	} else {
+		t.Traffic[edge] = append(t.Traffic[edge], p)
+	}
 }
+
+func newTrafficMap() *trafficMap {
+	return &trafficMap{
+		Traffic: make(map[string][]packet),
+	}
+}
+
+// func (r *route) endpoint() nodeID {
+// 	return r.Nodes[len(r.Nodes)-1]
+// }
 
 type nodeMap struct {
 	Nodes       []*node         `json:"nodes"`
@@ -98,7 +118,7 @@ type node struct {
 	ID          nodeID     `json:"id"` // keys and ids is redundant? TODO
 	Connections []nodeID   `json:"connections"`
 	Machines    []*machine `json:"machines"` // TODO why is this a list of pointerS?
-	Feature     feature    `json:"feature`
+	Feature     *feature   `json:"feature"`
 	Remoteness  float64    //`json:"remoteness"`
 	playersHere []playerID
 }
@@ -123,9 +143,19 @@ type machine struct {
 	MaxHealth int    `json:"maxHealth"`
 }
 
+func newMachine() *machine {
+	return &machine{Powered: true}
+}
+
 type feature struct {
 	Type string `json:"type"` // type of feature
 	machine
+}
+
+func newFeature() *feature {
+	return &feature{
+		machine: machine{Powered: true},
+	}
 }
 
 type team struct {
