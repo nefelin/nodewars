@@ -20,21 +20,70 @@ var moduleIDCount modID
 
 // GameModel holds all state information
 type GameModel struct {
-	Map       *nodeMap             `json:"map"`
-	Teams     map[teamName]*team   `json:"teams"`
-	Players   map[playerID]*Player `json:"players"`
-	POEs      map[playerID]*node   `json:"poes"`
-	PointGoal float32              `json:"pointGoal"`
-	languages map[string]Language
-	aChan     chan nwmessage.Message
-	running   bool //running should replace mapLocked
+	Map           *nodeMap             `json:"map"`
+	Teams         map[teamName]*team   `json:"teams"`
+	Players       map[playerID]*Player `json:"players"`
+	POEs          map[playerID]*node   `json:"poes"`
+	PointGoal     float32              `json:"pointGoal"`
+	languages     map[string]Language
+	aChan         chan nwmessage.Message
+	running       bool //running should replace mapLocked
+	pendingAlerts map[playerID][]alert
 
 	// timelimit should be able to set a timelimit and count points at the end
+}
+
+type stateMessage struct {
+	*nodeMap          //`json:"map"`
+	Alerts    []alert `json:"alerts"`
+	PlayerLoc nodeID  `json:"player_location"`
+	// Traffic map[string]trafficPacket `json:"traffic"` // maps edgeIds to lists of packets on that edge
+}
+
+type alert struct {
+	Actor    string `json:"team"`
+	Location nodeID `json:"location"`
 }
 
 type route struct {
 	Endpoint *node   `json:"endpoint"`
 	Nodes    []*node `json:"nodes"`
+}
+
+type trafficMap struct {
+	Traffic map[string][]trafficPacket `json:"traffic"`
+}
+
+type trafficPacket struct {
+	owner     string `json:"owner"` // team generating this traffic
+	direction string `json:"dir"`   // up/down whether this traffic is moving from a higher id node to lower or vice-versa
+}
+
+func (t *trafficMap) addRoute(r *route, color string) {
+	for i := range r.Nodes {
+		var n1, n2 nodeID
+		var dir, edgeID string
+		n1 := r.Nodes[i].ID
+
+		if i == len(r.Nodes)-1 {
+			n2 = r.Endpoint.ID
+		} else {
+			n2 = r.Nodes[i+1].ID
+		}
+
+		if n1 > n2 {
+			dir = "down"
+			edgeID = string(n1) + "e" + string(n2)
+		} else {
+			dir = "up"
+			edgeID = string(n2) + "e" + string(n1)
+		}
+		t.Traffic[edgeID] = append(t.Traffic[edgeID], trafficPacket{color, dir})
+	}
+}
+
+func (t *trafficMap) removeRoute(r *route, color string) {
+
 }
 
 type nodeMap struct {
@@ -46,29 +95,37 @@ type nodeMap struct {
 }
 
 type node struct {
-	ID          nodeID   `json:"id"` // keys and ids is redundant? TODO
-	Connections []nodeID `json:"connections"`
-	// Modules     map[modID]*module `json:"modules"`
-	Slots       []*modSlot `json:"slots"`
-	Remoteness  float64    `json:"remoteness"`
+	ID          nodeID     `json:"id"` // keys and ids is redundant? TODO
+	Connections []nodeID   `json:"connections"`
+	Machines    []*machine `json:"machines"` // TODO why is this a list of pointerS?
+	Feature     feature    `json:"feature`
+	Remoteness  float64    //`json:"remoteness"`
 	playersHere []playerID
 }
 
-type modSlot struct {
-	sync.Mutex
-	challenge Challenge
-	Type      string  `json:"type"`
-	Module    *module `json:"module"`
-	Powered   bool    `json:"powered"`
+type challengeCriteria struct {
+	IDs        []int64  // list of acceptable challenge ids
+	Tags       []string // acceptable categories of challenge
+	Difficulty [][]int  // acceptable difficulties, [5] = level five, [3,5] = 3,4, or 5
 }
 
-type module struct {
-	id        modID  // `json:"id"`
+type machine struct {
+	sync.Mutex
+	// accepts   challengeCriteria
+	challenge Challenge
+	// Type      string `json:"type"`
+	Powered  bool   `json:"powered"`
+	builder  string // `json:"creator"`
+	TeamName string `json:"team"`
+	// solution  string
 	language  string // `json:"languageId"`
-	builder   string // `json:"creator"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
-	TeamName  string `json:"team"`
+}
+
+type feature struct {
+	Type string `json:"type"` // type of feature
+	machine
 }
 
 type team struct {

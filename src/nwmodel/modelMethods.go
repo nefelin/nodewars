@@ -17,28 +17,13 @@ import (
 
 // Initialization methods ------------------------------------------------------------------
 
-func newModSlot() *modSlot {
+func newMachine() *machine {
 	// get random challenge,
 	c := getRandomChallenge()
 	// log.Printf("Created slot with challengeID: %s\n", c.ID)
-	return &modSlot{
+	return &machine{
 		challenge: c,
-	}
-}
-
-// creates a new module by p based on the results from response in language l
-func newModule(p *Player, response ExecutionResult, lang string) *module {
-	id := moduleIDCount
-	moduleIDCount++
-
-	return &module{
-		id: id,
-		// testID:    testID,
-		language:  lang,
-		builder:   p.GetName(),
-		TeamName:  p.TeamName,
-		Health:    response.passed(),
-		MaxHealth: len(response.Graded),
+		Powered:   true,
 	}
 }
 
@@ -51,21 +36,6 @@ func NewTeam(n teamName) *team {
 		powered: make(map[*node]bool),
 	}
 }
-
-// NewNode ...
-// func NewNode() *node {
-// 	id := nodeIDCount
-// 	nodeIDCount++
-
-// 	connections := make([]int, 0)
-// 	modules := make(map[modID]*module)
-
-// 	return &node{
-// 		ID:          id,
-// 		Connections: connections,
-// 		Modules:     modules,
-// 	}
-// }
 
 func newNodeMap() nodeMap {
 	return nodeMap{
@@ -92,10 +62,11 @@ func NewDefaultModel() *GameModel {
 		Teams:   t,
 		Players: p,
 		// Routes:  r,
-		POEs:      poes,
-		languages: getLanguages(),
-		aChan:     aChan,
-		PointGoal: 1000,
+		POEs:          poes,
+		languages:     getLanguages(),
+		aChan:         aChan,
+		PointGoal:     1000,
+		pendingAlerts: make(map[playerID][]alert),
 	}
 
 	go actionConsumer(gm)
@@ -198,7 +169,6 @@ func (gm *GameModel) trailingTeam() string {
 	return tt.Name
 }
 
-// calcProcPow could be team method...
 func (gm *GameModel) calcProcPow(t *team) {
 	// for each node in t.powered add power for each module
 	// if a slot is producing, set slot.Processing = true so we can animate this
@@ -209,13 +179,12 @@ func (gm *GameModel) calcProcPow(t *team) {
 		modVal := node.getPowerPerMod()
 
 		// look at each slot
-		for _, slot := range node.Slots {
-			if slot.Module != nil {
-				if slot.Module.TeamName == t.Name {
-					slot.Powered = true
-					// if there's a module we own there, give us power for it
-					t.ProcPow += modVal
-				}
+		for _, mac := range node.Machines {
+			if mac.TeamName == t.Name {
+				mac.Powered = true
+
+				// if there's a module we own there, give us power for it
+				t.ProcPow += modVal
 			}
 		}
 	}
@@ -242,7 +211,7 @@ func (gm *GameModel) playersAt(n *node) []*Player {
 }
 
 func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
-	slot := p.slot()
+	slot := p.currentMachine()
 	if slot == nil {
 		log.Panic("Player is not attached to slot")
 	}
@@ -261,15 +230,48 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 }
 
 // TODO wrap these module methods in some function that combines allowed and eval traffic
-func (gm *GameModel) buildModule(p *Player, m *module) {
-	slot := p.slot()
+// func (gm *GameModel) buildModule(p *Player, m *machine) {
+// 	mac := p.currentMachine()
 
-	if slot == nil {
-		log.Panic("Player is not attached to slot")
+// 	if mac == nil {
+// 		log.Panic("Player is not attached to a machine")
+// 	}
+
+// 	if mac.TeamName != nil {
+// 		log.Panic(errors.New("Machine is not neutral"))
+// 	}
+
+// 	n := p.Route.Endpoint
+// 	t := gm.Teams[p.TeamName]
+
+// 	// track whether node allowed routing for active player before building
+// 	allowed := n.allowsRoutingFor(t)
+
+// 	mac = m
+
+// 	// if routing status has changed, recalculate powered nodes
+// 	if p.Route.Endpoint.allowsRoutingFor(t) != allowed {
+// 		gm.calcPoweredNodes(t)
+// 	}
+
+// 	// recalculate this teams processsing power
+// 	gm.calcProcPow(t)
+
+// 	// kick out other players working at this mac
+// 	gm.detachOtherPlayers(p, fmt.Sprintf("%s took control of the machine you were working on", p.name))
+// }
+
+func (gm *GameModel) claimMachine(p *Player, r ExecutionResult) {
+	mac := p.currentMachine()
+
+	if mac == nil {
+		log.Panic("Player is not attached to a machine")
+		return
 	}
 
-	if slot.Module != nil {
-		log.Panic(errors.New("Slot not empty"))
+	if mac.TeamName != "" {
+		log.Panic(errors.New("Machine is not neutral"))
+		return
 	}
 
 	n := p.Route.Endpoint
@@ -278,7 +280,7 @@ func (gm *GameModel) buildModule(p *Player, m *module) {
 	// track whether node allowed routing for active player before building
 	allowed := n.allowsRoutingFor(t)
 
-	slot.Module = m
+	mac.claim(p, r)
 
 	// if routing status has changed, recalculate powered nodes
 	if p.Route.Endpoint.allowsRoutingFor(t) != allowed {
@@ -288,11 +290,11 @@ func (gm *GameModel) buildModule(p *Player, m *module) {
 	// recalculate this teams processsing power
 	gm.calcProcPow(t)
 
-	// kick out other players working at this slot
-	gm.detachOtherPlayers(p, fmt.Sprintf("%s built a module in the slot you were working on", p.name))
+	// kick out other players working at this mac
+	gm.detachOtherPlayers(p, fmt.Sprintf("%s took control of the machine you were working on", p.name))
 }
 
-func (gm *GameModel) refactorModule(m *module, p *Player, newHealth int) {
+func (gm *GameModel) refactorMachine(m *machine, p *Player, newHealth int) {
 	// track old owner to evaluate traffic after module loss
 	oldTeam := gm.Teams[m.TeamName]
 
@@ -319,26 +321,27 @@ func (gm *GameModel) refactorModule(m *module, p *Player, newHealth int) {
 	gm.calcProcPow(pTeam)
 }
 
-func (gm *GameModel) removeModule(p *Player) {
-	slot := p.slot()
+func (gm *GameModel) resetMachine(p *Player) {
+	mac := p.currentMachine()
 
-	if slot == nil {
-		log.Panic("Player is not attached to slot")
+	if mac == nil {
+		log.Panic("Player is not attached to a machine")
+		return
 	}
 
-	if slot.Module == nil {
-		log.Panic("Slot empty")
+	if mac.TeamName == "" {
+		log.Panic("Machine is already neutral")
 		return
 	}
 
 	// track old owner to evaluate traffic after module loss
-	oldTeam := gm.Teams[slot.Module.TeamName]
+	oldTeam := gm.Teams[mac.TeamName]
 
 	// track whether node allowed routing for active player before refactor
 	allowed := p.Route.Endpoint.allowsRoutingFor(oldTeam)
 
 	// remove the module
-	err := p.Route.Endpoint.removeModule(p.slotNum)
+	err := p.Route.Endpoint.resetMachine(p.slotNum)
 	if err != nil {
 		log.Panic(err)
 	}
@@ -481,17 +484,40 @@ func (gm *GameModel) packScores() string {
 
 // calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
 func (gm *GameModel) calcState(p *Player) string {
-	stateMsg, err := json.Marshal(gm.Map)
-	fmt.Printf("State Message %s", stateMsg)
+
+	// calculate player location
+	var playerLoc nodeID
+	if p.Route != nil {
+		playerLoc = p.Route.Endpoint.ID
+	}
+
+	// compose state message
+	state := stateMessage{
+		nodeMap:   gm.Map,
+		Alerts:    gm.pendingAlerts[p.ID],
+		PlayerLoc: playerLoc,
+	}
+
+	// fmt.Printf("state: %v", state)
+	// clear dumped alerts
+	gm.pendingAlerts[p.ID] = nil
+
+	stateMsg, err := json.Marshal(state)
+
+	// fmt.Printf("\nState Message %v\n", stateMsg)
 	if err != nil {
 		log.Println(err)
 	}
+
 	return string(stateMsg)
 }
 
-func (gm *GameModel) broadcastAlertFlash(color string) {
+func (gm *GameModel) broadcastAlertFlash(color string, location nodeID) {
+	for _, v := range gm.pendingAlerts {
+		v = append(v, alert{color, location})
+	}
 	// TODO abstract this to messages
-	fmt.Println("This should add activity markers to the maps TODO")
+	// fmt.Println("This should add activity markers to the maps TODO")
 	// for _, player := range gm.Players {
 	// 	player.Outgoing <- nwmessage.AlertFlash(color)
 	// }
@@ -584,8 +610,11 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	if _, ok := gm.Players[p.ID]; ok {
 		return errors.New("player '" + p.GetName() + "' is already in this game")
 	}
+
 	p.inGame = true
 	gm.Players[p.ID] = p
+	gm.pendingAlerts[p.ID] = make([]alert, 0) // make alerts slot for new player
+
 	gm.setLanguage(p, "python")
 	// send initiall map state
 	p.Outgoing <- nwmessage.GraphReset()
@@ -610,6 +639,8 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	delete(gm.POEs, p.ID)
 
 	delete(gm.Players, p.ID)
+
+	delete(gm.pendingAlerts, p.ID)
 
 	// remove game infor from player object
 
@@ -739,33 +770,85 @@ func (gm *GameModel) setLanguage(p *Player, l string) error {
 	return nil
 }
 
-// module methods -------------------------------------------------------------------------
+// machine methods -------------------------------------------------------------------------
 
-func (m module) isFriendlyTo(t *team) bool {
-	if m.TeamName == t.Name {
+func (m *machine) isNeutral() bool {
+	if m.TeamName == "" {
 		return true
 	}
 	return false
 }
 
-// modSlot methods -------------------------------------------------------------------------
+func (m *machine) belongsTo(teamName string) bool {
+	if m.TeamName == teamName {
+		return true
+	}
+	return false
+}
+
+func (m *machine) reset() {
+	m.builder = ""
+	m.TeamName = ""
+	m.language = ""
+	m.Powered = true
+
+	m.loadChallenge()
+	m.Health = 0
+	m.MaxHealth = len(m.challenge.Cases)
+}
+
+func (m *machine) claim(p *Player, r ExecutionResult) {
+	m.builder = p.name
+	m.TeamName = p.TeamName
+	m.language = p.language
+	// m.Powered = true
+
+	m.Health = r.passed()
+	// m.MaxHealth = len(r.Graded)
+}
+
+// dummyClaim is used to claim a machine for a player without an execution result
+func (m *machine) dummyClaim(p *Player, str string) {
+	m.builder = p.name
+	m.TeamName = p.TeamName
+	m.language = p.language
+	// m.Powered = true
+
+	switch str {
+	case "FULL":
+		m.Health = m.MaxHealth
+	case "RAND":
+		m.Health = rand.Intn(m.MaxHealth) + 1
+	case "MIN":
+		m.Health = 1
+	}
+}
+
+// loadChallenge should use m.accepts to get a challenge matching criteria TODO
+func (m *machine) loadChallenge() {
+	m.challenge = getRandomChallenge()
+}
 
 // node methods -------------------------------------------------------------------------------
 
-func (n *node) buildDummyModule(p *Player) {
-	perfectScore := make([]grade, len(n.Slots[0].challenge.Cases))
+func (n *node) claimFreeMachine(p *Player) error {
+	neutral := make([]int, 0)
 
-	// pass all tests
-	for i := range perfectScore {
-		perfectScore[i].Grade = "Pass"
+	for i := range n.Machines {
+		if n.Machines[i].TeamName == "" {
+			neutral = append(neutral, i)
+		}
 	}
 
-	// make the response the right size
-	dummyResponse := ExecutionResult{
-		Graded: perfectScore,
+	if len(neutral) < 1 {
+		return errors.New(fmt.Sprintf("Node %d contains no neutral machines to claim", n.ID))
 	}
 
-	n.Slots[0].Module = newModule(p, dummyResponse, p.language)
+	target := neutral[rand.Intn(len(neutral))]
+
+	n.Machines[target].dummyClaim(p, "FULL")
+	return nil
+
 }
 
 func (n *node) getPowerPerMod() float32 {
@@ -773,10 +856,10 @@ func (n *node) getPowerPerMod() float32 {
 }
 
 func (n *node) initSlots() {
-	n.Slots = make([]*modSlot, len(n.Connections))
+	n.Machines = make([]*machine, len(n.Connections))
 	for i := range n.Connections {
-		newSlot := newModSlot()
-		n.Slots[i] = newSlot
+		mac := newMachine()
+		n.Machines[i] = mac
 	}
 }
 
@@ -820,13 +903,13 @@ func (n *node) allowsRoutingFor(t *team) bool {
 
 	// if a node has no slots, it allows routing for everyone
 	// allows creation of neutral hubs
-	if len(n.Slots) == 0 {
+	if len(n.Machines) == 0 {
 		return true
 	}
 
-	for _, slot := range n.Slots {
-		if slot.Module != nil {
-			if slot.Module.isFriendlyTo(t) {
+	for _, mac := range n.Machines {
+		if mac.TeamName != "" {
+			if mac.TeamName == t.Name && mac.Powered {
 				return true
 			}
 		}
@@ -834,37 +917,22 @@ func (n *node) allowsRoutingFor(t *team) bool {
 	return false
 }
 
-// func (n *node) addModule(m *module, slotIndex int) error {
-
-// 	slot := n.Slots[slotIndex]
-// 	if slot.Module == nil {
-// 		slot.Module = m
-// 		return nil
-// 	}
-
-// 	return errors.New("Slot not empty")
-// }
-
-// n.removeModule should never be called directly. only from gm.removeModule
-func (n *node) removeModule(slotIndex int) error {
-	if slotIndex < 0 || slotIndex > len(n.Slots)-1 {
+// n.resetMachine should never be called directly. only from gm.removeModule
+func (n *node) resetMachine(slotIndex int) error {
+	if slotIndex < 0 || slotIndex > len(n.Machines)-1 {
 		return errors.New("No valid attachment")
 	}
 
-	slot := n.Slots[slotIndex]
-	// log.Printf("removeModule slot: %v", slot)
+	machine := n.Machines[slotIndex]
 
-	if slot.Module == nil {
-		return errors.New("Slot is empty")
+	if machine.TeamName == "" {
+		return errors.New("Machine is alread neutral")
 	}
 
-	//empty slot
-	slot.Module = nil
+	// reset machine
+	machine.reset()
 
-	// assign new task to slot
-	slot.challenge = getRandomChallenge()
 	return nil
-
 }
 
 func (n *node) addPlayer(p *Player) {
@@ -1030,7 +1098,7 @@ func (m *nodeMap) addNodes(count int) []*node {
 			ID:          id,
 			Connections: connections,
 			Remoteness:  100,
-			Slots:       make([]*modSlot, 0),
+			Machines:    make([]*machine, 0),
 		}
 
 		enter[i] = newNode
@@ -1297,12 +1365,12 @@ func (p *Player) Prompt() string {
 }
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
-func (p *Player) slot() *modSlot {
-	if p.Route == nil || p.slotNum < 0 || p.slotNum >= len(p.Route.Endpoint.Slots) {
+func (p *Player) currentMachine() *machine {
+	if p.Route == nil || p.slotNum < 0 || p.slotNum >= len(p.Route.Endpoint.Machines) {
 		return nil
 	}
 
-	return p.Route.Endpoint.Slots[p.slotNum]
+	return p.Route.Endpoint.Machines[p.slotNum]
 }
 
 // GetName returns the players name if they have one, assigns one if they don't
@@ -1383,18 +1451,18 @@ func (t *team) removePlayer(p *Player) {
 // Stringers ----------------------------------------------------------------------------------
 
 func (n node) String() string {
-	return fmt.Sprintf("( <node> {ID: %v, Connections:%v, Modules:%v} )", n.ID, n.Connections, n.modIDs())
+	return fmt.Sprintf("( <node> {ID: %v, Connections:%v, Machines:%v} )", n.ID, n.Connections, n.Machines)
 }
 
-func (n node) modIDs() []modID {
-	ids := make([]modID, 0)
-	for _, slot := range n.Slots {
-		if slot.Module != nil {
-			ids = append(ids, slot.Module.id)
-		}
-	}
-	return ids
-}
+// func (n node) modIDs() []modID {
+// 	ids := make([]modID, 0)
+// 	for _, slot := range n.Machines {
+// 		if slot.TeamName != "" {
+// 			ids = append(ids, slot.Module.id)
+// 		}
+// 	}
+// 	return ids
+// }
 
 func (t team) String() string {
 	var playerList []string
@@ -1422,14 +1490,10 @@ func (r route) String() string {
 	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint.ID, strings.Join(nodeList, ", "))
 }
 
-func (m module) forMsg() string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
-}
-
 func (n node) forMsg() string {
 
 	slotList := ""
-	for i, slot := range n.Slots {
+	for i, slot := range n.Machines {
 		slotList += "\n" + strconv.Itoa(i) + ":" + slot.forMsg()
 	}
 
@@ -1438,16 +1502,20 @@ func (n node) forMsg() string {
 	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMemory Slots:%v", n.ID, connectList, slotList)
 }
 
-func (m modSlot) forMsg() string {
+func (m machine) forMsg() string {
 	switch {
-	case m.Module != nil:
-		return "(" + m.Module.forMsg() + ")"
+	case m.TeamName != "":
+		return "(" + m.details() + ")"
 	default:
-		return "( -empty- )"
+		return "( -neutral- )"
 	}
 }
 
-// func (m modSlot) forProbe() string {
+func (m machine) details() string {
+	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
+}
+
+// func (m machine) forProbe() string {
 // 	var header string
 // 	switch {
 // 	case m.Module != nil:
@@ -1481,6 +1549,6 @@ func (r route) forMsg() string {
 // 	return ret
 // }
 
-// func (m modSlot) String() string {
+// func (m machine) String() string {
 
 // }

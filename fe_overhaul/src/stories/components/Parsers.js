@@ -12,7 +12,7 @@ class Incoming {
 
 	    switch (data.sender) {
 	      case 'pseudoServer':
-	        if (this.debug) console.log('<Parsers.Incoming> routing to terminal')
+	        // if (this.debug) console.log('<Parsers.Incoming> routing to terminal')
 	        this.context.setState({tinyTermIn: data.data})
 	        break
 	      default:
