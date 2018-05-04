@@ -379,7 +379,9 @@ func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 
 	// calculate player location
 	var playerLoc nodeID
-	if p.Route != nil {
+	if p.Route == nil {
+		playerLoc = -1
+	} else {
 		playerLoc = p.Route.Endpoint.ID
 	}
 

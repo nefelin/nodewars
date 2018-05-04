@@ -811,9 +811,6 @@ class NWGraph {
             	// const radius = d3.select(this).select('.node-backing').attr('r')
             	const radius = SIZES.node_outer_radius
 
-            	// indicate of player is present
-            	self.drawPlayerHere(this, radius)
-
 				// draw node core coloring showing feature control and feature icons				
 				self.drawFeatures(this, radius)
 
@@ -827,7 +824,9 @@ class NWGraph {
 			    .on("start", this.dragstarted.bind(this))
 			    .on("drag", this.dragged.bind(this))
 			    .on("end", this.dragended.bind(this)))
-            
+
+		// indicate of player is present
+    	this.drawPlayerLocation(this)            
 		self.drawPowerTokens()
 		// this.nodeGroups = enter.merge(update)
 	}
@@ -946,34 +945,38 @@ class NWGraph {
 		// console.log('IDS', focusedIDs)
 	}
 
-	drawPlayerHere(context, radius) {
-		const thisNode = d3.select(context)
-		// console.log(datum)
-		let focusBox
+	drawPlayerLocation() {
+		const location = this.gameState.player_location
+		console.log('Player location!', location)
+		let node
+		if (location>-1){
+			 node = this.root.select('#node-'+location)
 
-		if (thisNode.datum().player_here) {
-			focusBox = thisNode.selectAll('.focus-box').data([1])
-			// console.log('Player is at node', datum.id)
-		} else {
-			focusBox = thisNode.selectAll('.focus-box').data([])
+		
+			if (this.focusBox) {
+				this.focusBox.transition().duration(250).style('opacity',0).remove()
+			}
+
+				
+			const factor = 2.1
+			const radius = node.select('.node-backing').attr('r')
+			const size = radius*factor
+
+			this.focusBox = node.append('rect').attr('class','focus-box')
+					.attr('stroke-dasharray', [size*.2, size*.6, size*.4, size*.6, size*.4, size*.6, size*.4, size*.6, size*.2])
+					.attr('x', -.5*size)
+					.attr('y', -.5*size)
+					.attr('width', size)
+					.attr('height', size)
+					.style('fill', 'none')
+					.style('stroke-width', SIZES.stroke_width)
+					.style('stroke', 'black')
+					.style('opacity',0)
+
+			this.focusBox
+					.transition().duration(250)
+					.style('opacity',1)
 		}
-
-		const factor = 2.1
-		const size = radius*factor
-		focusBox.enter().append('rect').attr('class','focus-box')
-				.attr('stroke-dasharray', [size*.2, size*.6, size*.4, size*.6, size*.4, size*.6, size*.4, size*.6, size*.2])
-				.attr('x', -.5*size)
-				.attr('y', -.5*size)
-				.attr('width', size)
-				.attr('height', size)
-				.style('fill', 'none')
-				.style('stroke-width', SIZES.stroke_width)
-				.style('stroke', 'black')
-				.style('opacity',0)
-				.transition().duration(250)
-				.style('opacity',1)
-
-		focusBox.exit().transition().duration(250).style('opacity',0).remove()
 	}
 
 	drawFeatures(context, nodeRadius) {
