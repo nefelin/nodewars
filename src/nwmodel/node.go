@@ -39,8 +39,21 @@ func (n *node) claimFreeMachine(p *Player) error {
 
 }
 
-func (n *node) getPowerPerMod() float32 {
+// coinVal calculates the coin produced per machine in a given node
+func (n *node) coinVal(t teamName) float32 {
 	return float32(n.Remoteness)
+}
+
+// coinProduction gives the total produced (for team t) in a given node
+func (n *node) coinProduction(t teamName) float32 {
+	var total float32
+	coinPerMac := n.coinVal(t)
+	for _, mac := range n.Machines {
+		if mac.TeamName == t && mac.Powered {
+			total += coinPerMac
+		}
+	}
+	return total
 }
 
 func (n *node) initMachines() {
@@ -83,7 +96,7 @@ func cutIntFromSlice(p int, s []int) []int {
 	return s
 }
 
-func (n *node) allowsRoutingFor(t *team) bool {
+func (n *node) hasMachineFor(t *team) bool {
 	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
 	if t == nil {
 		return true
@@ -98,18 +111,26 @@ func (n *node) allowsRoutingFor(t *team) bool {
 	// if we control a powered machine here we can route through
 	for _, mac := range n.Machines {
 		if mac.TeamName != "" {
-			if mac.TeamName == t.Name && mac.Powered {
+			if mac.TeamName == t.Name { // && mac.Powered {
 				return true
 			}
 		}
 	}
 
 	// or if we control a powered feature here we can route through
-	if n.Feature.TeamName == t.Name && n.Feature.Powered {
+	if n.Feature.TeamName == t.Name { // && n.Feature.Powered {
 		return true
 	}
 
 	return false
+}
+
+func (n *node) powerMachines(t teamName, onOff bool) {
+	for _, mac := range n.Machines {
+		if mac.TeamName == t {
+			mac.Powered = onOff
+		}
+	}
 }
 
 // n.resetMachine should never be called directly. only from gm.removeModule

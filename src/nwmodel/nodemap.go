@@ -297,7 +297,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 		tocheck = tocheck[1:]
 		// log.Printf("this: %v", thisNode)
 		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
-		if t == nil || thisNode.allowsRoutingFor(t) {
+		if t == nil || thisNode.hasMachineFor(t) {
 			retField.unchecked[thisNode] = true
 			retField.dist[thisNode] = 1000
 			seen[thisNode] = true
@@ -319,7 +319,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 // TODO get code review on this. I think I'm maybe not getting optimal route
 func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 
-	if source.allowsRoutingFor(t) {
+	if source.hasMachineFor(t) {
 		// if we're connecting to our POE, return a route which is only our POE
 		if source == target {
 			route := make([]*node, 1)

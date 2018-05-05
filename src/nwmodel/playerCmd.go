@@ -427,7 +427,7 @@ func cmdScore(p *Player, gm *GameModel, args []string, c string) nwmessage.Messa
 	var scoreStrs sort.StringSlice
 
 	for teamName, team := range gm.Teams {
-		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nProcessing Power: %.2f\nCalculations Completed: %.2f/%.0f", teamName, team.ProcPow, team.VicPoints, gm.PointGoal))
+		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoin Production: %.2f\nCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.VicPoints, gm.PointGoal))
 	}
 
 	scoreStrs.Sort()

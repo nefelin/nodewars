@@ -123,36 +123,37 @@ func (gm *GameModel) trailingTeam() string {
 	return tt.Name
 }
 
-func (gm *GameModel) calcProcPow(t *team) {
+func (gm *GameModel) updateCoinPerTick(t *team) {
 	// for each node in t.powered add power for each module
 	// if a slot is producing, set slot.Processing = true so we can animate this
-	t.ProcPow = 0
+
+	// reset
+	t.coinPerTick = 0
 	// go through each node
-	for node := range t.powered {
+	for _, node := range t.powered {
 		// store the powerpermod of that node
-		modVal := node.getPowerPerMod()
-
-		// look at each slot
-		for _, mac := range node.Machines {
-			if mac.TeamName == t.Name {
-				mac.Powered = true
-
-				// if there's a module we own there, give us power for it
-				t.ProcPow += modVal
-			}
-		}
+		t.coinPerTick += node.coinProduction(t.Name)
 	}
 }
 
 func (gm *GameModel) calcPoweredNodes(t *team) {
 	for _, n := range gm.Map.Nodes {
-		delete(t.powered, n)
+		// clear previus powered status
+		t.powered = nil
 		// t.powered[n] = false
-		if n.allowsRoutingFor(t) {
+		if n.hasMachineFor(t) {
 			if gm.Map.routeToNode(t, n, t.poe) != nil {
-				t.powered[n] = true
+				// power machines
+				n.powerMachines(t.Name, true)
+
+				// add to our list for production calc
+				t.powered = append(t.powered, n)
+			} else {
+				// depower machines
+				n.powerMachines(t.Name, false)
 			}
 		}
+
 	}
 }
 
@@ -200,17 +201,17 @@ func (gm *GameModel) claimMachine(p *Player, r ExecutionResult) {
 	t := gm.Teams[p.TeamName]
 
 	// track whether node allowed routing for active player before building
-	allowed := n.allowsRoutingFor(t)
+	allowed := n.hasMachineFor(t)
 
 	mac.claim(p, r)
 
 	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.allowsRoutingFor(t) != allowed {
+	if p.Route.Endpoint.hasMachineFor(t) != allowed {
 		gm.calcPoweredNodes(t)
 	}
 
 	// recalculate this teams processsing power
-	gm.calcProcPow(t)
+	gm.updateCoinPerTick(t)
 
 	// kick out other players working at this mac
 	gm.detachOtherPlayers(p, fmt.Sprintf("%s took control of the machine you were working on", p.name))
@@ -222,7 +223,7 @@ func (gm *GameModel) refactorMachine(m *machine, p *Player, newHealth int) {
 
 	pTeam := gm.Teams[p.TeamName]
 	// track whether node allowed routing for active player before refactor
-	allowed := p.Route.Endpoint.allowsRoutingFor(pTeam)
+	allowed := p.Route.Endpoint.hasMachineFor(pTeam)
 
 	// refactor module to new owner and health
 	m.TeamName = p.TeamName
@@ -232,15 +233,15 @@ func (gm *GameModel) refactorMachine(m *machine, p *Player, newHealth int) {
 	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 
 	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.allowsRoutingFor(pTeam) != allowed {
+	if p.Route.Endpoint.hasMachineFor(pTeam) != allowed {
 		gm.calcPoweredNodes(pTeam)
 	}
 
 	// recalculate old teams processsing power
-	gm.calcProcPow(oldTeam)
+	gm.updateCoinPerTick(oldTeam)
 
 	// recalculate this teams processsing power
-	gm.calcProcPow(pTeam)
+	gm.updateCoinPerTick(pTeam)
 }
 
 func (gm *GameModel) resetMachine(p *Player) {
@@ -260,7 +261,7 @@ func (gm *GameModel) resetMachine(p *Player) {
 	oldTeam := gm.Teams[mac.TeamName]
 
 	// track whether node allowed routing for active player before refactor
-	allowed := p.Route.Endpoint.allowsRoutingFor(oldTeam)
+	allowed := p.Route.Endpoint.hasMachineFor(oldTeam)
 
 	// remove the module
 	err := p.Route.Endpoint.resetMachine(p.slotNum)
@@ -272,12 +273,12 @@ func (gm *GameModel) resetMachine(p *Player) {
 	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 
 	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.allowsRoutingFor(oldTeam) != allowed {
+	if p.Route.Endpoint.hasMachineFor(oldTeam) != allowed {
 		gm.calcPoweredNodes(oldTeam)
 	}
 
 	// recalculate teams processsing power
-	gm.calcProcPow(oldTeam)
+	gm.updateCoinPerTick(oldTeam)
 
 	// kick out other players working at this slot
 	gm.detachOtherPlayers(p, fmt.Sprintf("%s removed the module you were working on", p.name))
@@ -317,8 +318,8 @@ func (gm *GameModel) tick() {
 	winners := make([]string, 0)
 
 	for _, team := range gm.Teams {
-		gm.calcProcPow(team)
-		team.VicPoints += team.ProcPow
+		gm.updateCoinPerTick(team)
+		team.VicPoints += team.coinPerTick
 		if team.VicPoints >= gm.PointGoal {
 			winners = append(winners, team.Name)
 		}
@@ -664,7 +665,7 @@ func (gm *GameModel) breakConnection(p *Player, alert bool) {
 
 func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 	// if the module no longer supports routing for this modules team
-	if !n.allowsRoutingFor(t) {
+	if !n.hasMachineFor(t) {
 		for _, player := range gm.Players {
 			// check each player who is on team's route
 			if player.TeamName == t.Name {
