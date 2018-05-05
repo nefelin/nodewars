@@ -1,7 +1,7 @@
-// export const BlankMap = JSON.parse({"map":{"nodes":[{"id":0,"connections":[1],"slots":[{"type":"","module":null,"powered":false}],"remoteness":1},{"id":1,"connections":[0,2],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":2,"connections":[1,3],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666},{"id":3,"connections":[2,4,9],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.5},{"id":4,"connections":[3,5],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666},{"id":5,"connections":[4,6],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":6,"connections":[5,7],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":1},{"id":7,"connections":[6,8],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":1},{"id":8,"connections":[7,9],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":9,"connections":[3,8],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666}],"poes":{"0":true,"6":true,"7":true}},"teams":{"blue":{"name":"blue","procPow":0,"vicPoints":0},"red":{"name":"red","procPow":0,"vicPoints":0}},"players":{"1":{"id":1,"team":"","route":null,"ChatMode":false}},"poes":{},"pointGoal":1000})
+// export const BlankMap = JSON.parse({"map":{"nodes":[{"id":0,"connections":[1],"machines":[{"type":"","module":null,"powered":false}],"remoteness":1},{"id":1,"connections":[0,2],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":2,"connections":[1,3],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666},{"id":3,"connections":[2,4,9],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.5},{"id":4,"connections":[3,5],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666},{"id":5,"connections":[4,6],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":6,"connections":[5,7],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":1},{"id":7,"connections":[6,8],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":1},{"id":8,"connections":[7,9],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.8333333333333334},{"id":9,"connections":[3,8],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"remoteness":0.6666666666666666}],"poes":{"0":true,"6":true,"7":true}},"teams":{"blue":{"name":"blue","procPow":0,"vicPoints":0},"red":{"name":"red","procPow":0,"vicPoints":0}},"players":{"1":{"id":1,"team":"","route":null,"ChatMode":false}},"poes":{},"pointGoal":1000})
 export const SingleNode = {
 							"nodes":[
-								{"id":0,"connections":[],"slots":[
+								{"id":0,"connections":[],"machines":[
 									{ "owner":"blue", "type":"", "powered":false },
 									{ "owner":"blue", "type":"", "powered":false },
 									{ "owner":"", "type":"", "powered":true },
@@ -15,7 +15,7 @@ export const SingleNode = {
 
 export const SingleNodeChange = {
 							"nodes":[
-								{"id":0,"connections":[],"slots":[
+								{"id":0,"connections":[],"machines":[
 									{ "owner":"blue", "type":"", "powered":true },
 									{ "owner":"blue", "type":"", "powered":true },
 									{ "owner":"blue", "type":"", "powered":true },
@@ -29,7 +29,7 @@ export const SingleNodeChange = {
 
 export const SingleNodeNoFeature = {
 							"nodes":[
-									{"id":0,"connections":[],"slots":[
+									{"id":0,"connections":[],"machines":[
 										{ "owner":"blue", "type":"", "powered":false },
 										{ "owner":"blue", "type":"", "powered":false },
 										{ "owner":"blue", "type":"", "powered":false },
@@ -40,8 +40,52 @@ export const SingleNodeNoFeature = {
 								],
 								"alerts": {}, "traffic": {}
 							  }
+
+export const DoubleNode = {
+							"nodes":[
+								{"id":0,"connections":[1],"machines":[
+									{ "owner":"blue", "type":"", "powered":true },
+									{ "owner":"", "type":"", "powered":true },
+								],
+								"player_here":false,"feature":{"type":"","owner":"", "powered": true},"remoteness":1},
+								{"id":1,"connections":[0],"machines":[
+									{ "owner":"blue", "type":"", "powered":true },
+									{ "owner":"", "type":"", "powered":true },
+								],
+								"player_here":false,"feature":{"type":"","owner":"", "powered": true},"remoteness":1},
+							],
+							"alerts": {},
+							"traffic": {
+									"1e0": [
+										{"owner":"red", "dir":"up"},
+									],
+								},
+						  }
+export const DoubleNodeChange = {
+							"nodes":[
+								{"id":0,"connections":[1],"machines":[
+									{ "owner":"blue", "type":"", "powered":true },
+									{ "owner":"", "type":"", "powered":true },
+								],
+								"player_here":false,"feature":{"type":"","owner":"", "powered": true},"remoteness":1},
+								{"id":1,"connections":[0],"machines":[
+									{ "owner":"blue", "type":"", "powered":true },
+									{ "owner":"", "type":"", "powered":true },
+								],
+								"player_here":false,"feature":{"type":"","owner":"", "powered": true},"remoteness":1},
+							],
+							"alerts": {},
+							"traffic": {
+									"1e0": [
+										{"owner":"red", "dir":"up"},
+										{"owner":"blue", "dir":"down"},
+									],
+								},
+						  }
+
+
 export const SimpleMap = {"nodes":[
-									{"id":0,"connections":[1,2,4],"slots":[
+									{"id":0,"connections":[1,2,4],"machines":[
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"", "type":"", "powered":true },
@@ -50,12 +94,12 @@ export const SimpleMap = {"nodes":[
 									],
 									"feature":{ "owner":"blue", "type":"cloak", "powered":false },"remoteness":.5},
 
-									{"id":1,"connections":[0,3,2,6],"slots":[
+									{"id":1,"connections":[0,3,2,6],"machines":[
 										{"type":"","owner":"","powered":true},
 										{"type":"","owner":"","powered":true}
 									],
 									"feature":{"type":"poe","owner":"red", "powered":true},"remoteness":1},
-									{"id":2,"connections":[0,1,6],"slots":[
+									{"id":2,"connections":[0,1,6],"machines":[
 										{ "owner":"red", "type":"", "powered":true },
 										{ "owner":"red", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":false },
@@ -63,13 +107,13 @@ export const SimpleMap = {"nodes":[
 										{ "owner":"", "type":"", "powered":true },
 									],
 									"feature":{ "owner":"red", "type":"firewall", "powered":false },"remoteness":1},
-									{"id":3,"connections":[1,4],"slots":[
+									{"id":3,"connections":[1,4],"machines":[
 										{"type":"","owner":"","powered":true},
 										{"type":"","owner":"","powered":true},
 										{"type":"","owner":"","powered":true},
 									],
 									"feature":{"type":"overclock","owner":"red", "powered":true },"remoteness":0.8333333333333334},
-									{"id":4,"connections":[3,5,0],"slots":[
+									{"id":4,"connections":[3,5,0],"machines":[
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"", "type":"", "powered":true },
@@ -77,12 +121,12 @@ export const SimpleMap = {"nodes":[
 										{ "owner":"", "type":"", "powered":true },
 									],
 									"feature":{ "owner":"", "type":"", "powered":true },"remoteness":1},
-									{"id":5,"connections":[4],"slots":[
+									{"id":5,"connections":[4],"machines":[
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"red", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
 									],"feature":{"type":"poe","owner":"blue", "powered":true },"remoteness":1},
-									{"id":6,"connections":[1,2],"slots":[
+									{"id":6,"connections":[1,2],"machines":[
 										{"type":"","module":null,"powered":false},
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
@@ -126,7 +170,7 @@ export const SimpleMap = {"nodes":[
 								}
 
 export const SimpleMapChange = {"nodes":[
-									{"id":0,"connections":[1,2,4],"slots":[
+									{"id":0,"connections":[1,2,4],"machines":[
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"", "type":"", "powered":true },
@@ -134,8 +178,8 @@ export const SimpleMapChange = {"nodes":[
 										{ "owner":"", "type":"", "powered":true },
 									],
 									"feature":{ "owner":"blue", "type":"cloak", "powered":true },"remoteness":.5},
-									{"id":1,"connections":[0,3,2,6],"slots":[{"type":"","module":null,"powered":false}],"feature":{"type":"poe","owner":"red"},"remoteness":1},
-									{"id":2,"connections":[0,1,6],"slots":[
+									{"id":1,"connections":[0,3,2,6],"machines":[{"type":"","module":null,"powered":false}],"feature":{"type":"poe","owner":"red"},"remoteness":1},
+									{"id":2,"connections":[0,1,6],"machines":[
 										{ "owner":"red", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":false },
@@ -143,8 +187,8 @@ export const SimpleMapChange = {"nodes":[
 										{ "owner":"", "type":"", "powered":true },
 									],
 									"feature":{"owner":"red", "type":"firewall", "powered":true},"remoteness":1},
-									{"id":3,"connections":[1,4],"slots":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"feature":{"type":"overclock","owner":"red"},"remoteness":0.8333333333333334},
-									{"id":4,"connections":[3,5,0],"slots":[
+									{"id":3,"connections":[1,4],"machines":[{"type":"","module":null,"powered":false},{"type":"","module":null,"powered":false}],"feature":{"type":"overclock","owner":"red"},"remoteness":0.8333333333333334},
+									{"id":4,"connections":[3,5,0],"machines":[
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"red", "type":"", "powered":true },
@@ -152,12 +196,12 @@ export const SimpleMapChange = {"nodes":[
 										{ "owner":"", "type":"", "powered":true },
 									],
 									"feature":{ "owner":"", "type":"", "powered":true},"remoteness":1},
-									{"id":5,"connections":[4],"slots":[
+									{"id":5,"connections":[4],"machines":[
 										{ "owner":"", "type":"", "powered":true },
 										{ "owner":"red", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
 									],"feature":{ "owner":"blue", "type":"poe", "powered": true },"remoteness":1},
-									{"id":6,"connections":[1,2],"slots":[
+									{"id":6,"connections":[1,2],"machines":[
 										{"type":"","module":null,"powered":false},
 										{ "owner":"blue", "type":"", "powered":true },
 										{ "owner":"blue", "type":"", "powered":true },
@@ -202,7 +246,7 @@ export const SimpleMapChange = {"nodes":[
 								
 // export const TwoNodeTraffic = {
 // 								"nodes":[
-// 									{"id":0,"connections":[1],"slots":[
+// 									{"id":0,"connections":[1],"machines":[
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
@@ -211,7 +255,7 @@ export const SimpleMapChange = {"nodes":[
 // 									],
 // 									"player_here":true,"feature":{"type":"poe","owner":"blue"},"remoteness":1},
 									
-// 									{"id":1,"connections":[0,2],"slots":[
+// 									{"id":1,"connections":[0,2],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },
@@ -224,7 +268,7 @@ export const SimpleMapChange = {"nodes":[
 // 									},
 // 									"remoteness":1},
 
-// 									{"id":2,"connections":[1],"slots":[
+// 									{"id":2,"connections":[1],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },
@@ -251,7 +295,7 @@ export const SimpleMapChange = {"nodes":[
 
 // export const TwoNodeTrafficTwo = {
 // 								"nodes":[
-// 									{"id":0,"connections":[1],"slots":[
+// 									{"id":0,"connections":[1],"machines":[
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
@@ -260,7 +304,7 @@ export const SimpleMapChange = {"nodes":[
 // 									],
 // 									"feature":{"type":"poe","owner":"blue"},"remoteness":1},
 									
-// 									{"id":1,"connections":[0,2],"slots":[
+// 									{"id":1,"connections":[0,2],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },
@@ -273,7 +317,7 @@ export const SimpleMapChange = {"nodes":[
 // 									},
 // 									"remoteness":1},
 
-// 									{"id":2,"connections":[1],"slots":[
+// 									{"id":2,"connections":[1],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },
@@ -306,7 +350,7 @@ export const SimpleMapChange = {"nodes":[
 
 // export const TwoNodeNoTraffic = {
 // 								"nodes":[
-// 									{"id":0,"connections":[1],"slots":[
+// 									{"id":0,"connections":[1],"machines":[
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
 // 										{ "owner":"", "type":"", "powered":true },
@@ -315,7 +359,7 @@ export const SimpleMapChange = {"nodes":[
 // 									],
 // 									"feature":{"type":"poe","owner":"blue"},"remoteness":1},
 									
-// 									{"id":1,"connections":[0,2],"slots":[
+// 									{"id":1,"connections":[0,2],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },
@@ -328,7 +372,7 @@ export const SimpleMapChange = {"nodes":[
 // 									},
 // 									"remoteness":1},
 
-// 									{"id":2,"connections":[1],"slots":[
+// 									{"id":2,"connections":[1],"machines":[
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"red", "type":"", "powered":true },
 // 										{ "owner":"blue", "type":"", "powered":false },

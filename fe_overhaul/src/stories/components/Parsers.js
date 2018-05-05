@@ -8,7 +8,8 @@ class Incoming {
 
 	handle = (m) => {
 		const data = JSON.parse(m.data)
-	    if (this.debug) console.log('<Parsers.Incoming> received message,', data)
+	    if (this.debug)
+	    	if (data.type != "scoreState") console.log('<Parsers.Incoming> received message,', data)
 
 	    switch (data.sender) {
 	      case 'pseudoServer':

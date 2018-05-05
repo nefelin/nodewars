@@ -57,9 +57,9 @@ storiesOf('ScoreBoard', module)
 storiesOf('Graph Map', module)
 	.add('D3 Wrapper', () => {
 		return (
-			<div>
+			<div style={{height:400, width:400, border:'1px solid black'}}>
 			<p>Graph should tie all elements together into a force layout</p>
-			<Graph dataset={ Maps.SingleNode } onClick={() => alert('test')}/>
+			<Graph debug={true} dataset={ Maps.SingleNode } onClick={() => alert('test')}/>
 
 			</div>
 		)

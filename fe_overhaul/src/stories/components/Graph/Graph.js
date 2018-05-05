@@ -21,13 +21,13 @@ class Graph extends Component {
   componentDidMount() {
     // console.log('did mount size', this.props.size)
     if (this.props.dataset)
-      this.update(dataset);
+      this.update(this.props.dataset);
     // this.resize()
   }
-  componentWillReceiveProps({ dataset }) {
+  componentWillReceiveProps(newProps) {
     // console.log('will receive size', this.props.size)
-    if (this.props.dataset)
-      this.update(dataset);
+    if (newProps.dataset)
+      this.update(newProps.dataset);
   }
 
   shouldComponentUpdate() {
@@ -74,19 +74,21 @@ class Graph extends Component {
   // }
 
   render() {
-    // return (
-    //     <div>
-    //       <div id='graph'/>
-    //       {Object.keys(Maps).map((mapName) => {
-    //         return <button key={mapName} onClick={() => this.update(Maps[mapName])} > { mapName } </button>  
-    //       })}
-          
-    //     </div>
-    // );
-
-    return (
-        <div style={{boxSizing: 'border-box'}} id='graph'/>
-    )
+    if (this.props.debug) {
+      return (
+          <div style={{height:400, width:400, border:'1px solid black'}}>
+            <div id='graph'/>
+            {Object.keys(Maps).map((mapName) => {
+              return <button key={mapName} onClick={() => this.update(Maps[mapName])} > { mapName } </button>  
+            })}
+            
+          </div>
+      );
+    } else {
+      return (
+          <div style={{boxSizing: 'border-box'}} id='graph'/>
+      )
+    }
   }
 }
 

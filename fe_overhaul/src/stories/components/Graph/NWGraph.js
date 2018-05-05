@@ -431,8 +431,11 @@ class NWGraph {
 			this.FLAGS.traffic_running = true
 			if (this.nodeGroups)
 				this.drawTraffic()
+
 			this.trafficSemaphore = this.newSemaphore()
+
 			window.requestAnimationFrame(this.trafficDaemon)
+
 			if (this.traffic)
 				this.traffic.transition().duration(500).style('opacity', 1)
 		} else {
@@ -442,22 +445,24 @@ class NWGraph {
 				.style('opacity', 0)
 				.on('end', () => this.FLAGS.traffic_running = false)
 				.remove()
-			// this.FLAGS.traffic_running = false
 		}
 	}
 
 	trafficDaemon = (time, other) => {
 		const self = this
 		// console.log('trafficDaemon e', time, 'other', other)
+
+		// non spammy clock for logging
 		const delta = time - this.lastTrafficTick
 		this.lastTrafficTick = time
 		log = false
 		this.trafficClock += delta
 		if (this.trafficClock > 2000){
-			// console.log('tick')
+			// console.log(this)
 			log = true
 			this.trafficClock = 0 
 		}
+
 
 		if (this.traffic){
             this.traffic
@@ -494,13 +499,15 @@ class NWGraph {
 					  .attr('transform', 'translate(' + transX + ',' + transY + ')')
 
 					// Check if packet is out of sight
-					const p1 = {x: d3.select(this).select('circle').attr('cx'), y:d3.select(this).select('circle').attr('cy')}
-					
+					const p1 = {x: transX, y:transY}
+
+					// console.log('distance', distance(p1,target), 'hideDist', hideDist)
 					if (distance(p1,target) < hideDist) {
 						d.dead = true
 
 						self.deadTrafficCount[d.traffic.length] = (d.traffic.length in self.deadTrafficCount) ? self.deadTrafficCount[d.traffic.length] + 1 : 1
-						
+						// console.log('Dead traffic', self.deadTrafficCount)
+
 						// restart trip
 						d.progress = 0
 					}
@@ -519,14 +526,20 @@ class NWGraph {
 				for (let tier of Object.keys(this.deadTrafficCount)){
 					const thisTier = this.trafficLayer.selectAll('.tier-'+tier)
 
-					if (this.deadTrafficCount[tier] >= thisTier._groups[0].length) {
+					// console.log('Checking tier', tier)
+
+					if (this.deadTrafficCount[tier] >= thisTier.size()) {
+
+						// console.log('All traffic in tier', tier, 'is dead')
+
 						thisTier.each(function(d) {
 							if (d.traffic.length > 1){
 									if (d.packetNum == d.traffic.length-1)
 										d.packetNum = 0
 									else 
 										d.packetNum++
-									d3.select(this).style('fill', d => TEAMCOLORS[d.traffic[d.packetNum].owner])
+									// console.log('Semaphore, cycling traffic. PacketNum:', d.packetNum, 'packet:', d.traffic[d.packetNum])
+									d3.select(this).select('.traffic-front').style('fill', d => TEAMCOLORS[d.traffic[d.packetNum].owner])
 								}
 							d.dead = false
 							self.deadTrafficCount[tier] = 0
@@ -627,7 +640,7 @@ class NWGraph {
 
 		if (this.initialized){
 			console.log("NWGraph updating...")
-			// console.log('newState:', newState)
+			console.log('newState:', newState)
 			let newMap = this.gameState ? false : true
 
 			if (this.gameState && this.gameState.nodes.length != newState.nodes.length){
@@ -1061,7 +1074,7 @@ class NWGraph {
 
 	}
 
-	composeSlotData(data) {
+	composeMachineData(data) {
 		const newData = []
 			for (let mac of data.machines){
 				// console.log(mac)
@@ -1069,7 +1082,7 @@ class NWGraph {
 				const size = 1
 				// const value = data.remoteness/1//parseInt(data.id)%3 + 1 // Math.ceil(Math.random()*3) // groupData.coinVal TODO implement node value system on backend
 				const value = (parseInt(data.id)%4)*2 + 1
-				// console.log('composeSlotData', data)
+				// console.log('composeMachineData', data)
 				const powered = mac.powered//mac.module != null ? data.powered.indexOf(mac.module.owner) != -1 : true// powered if node is powered by owner
 				// console.log('slot:' + slot)
 				newData.push({ size, owner, value, powered })
@@ -1082,7 +1095,7 @@ class NWGraph {
 
 		const thisNode = d3.select(context)
 		const groupData = d3.select(context).data()[0]
-		const data = this.composeSlotData(groupData)
+		const data = this.composeMachineData(groupData)
 		
 		// Tell d3.pie where to find slice info in data structure
 		const pie = d3.pie()
