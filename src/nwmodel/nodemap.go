@@ -89,6 +89,16 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 	}
 }
 
+func (m *nodeMap) collectEmptyPoes() []*node {
+	poes := make([]*node, 0)
+	for _, node := range m.Nodes {
+		if node.Feature.Type == "poe" {
+			poes = append(poes, node)
+		}
+	}
+	return poes
+}
+
 // initPoes right now places poes at remotest locations, which is not idea if remoteness = value
 func (m *nodeMap) initPoes(n int) {
 	// make a map of remotesnesses to nodes

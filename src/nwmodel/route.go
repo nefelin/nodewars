@@ -51,6 +51,11 @@ func (t *trafficMap) addRoute(r *route, color string) {
 			n2 = r.Nodes[i+1].ID
 		}
 
+		// if we're connecting to poe, ignore
+		if n1 == n2 {
+			continue
+		}
+
 		if n1 > n2 {
 			dir = "down"
 			edge = strconv.Itoa(n1) + "e" + strconv.Itoa(n2)

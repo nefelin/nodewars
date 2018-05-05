@@ -83,10 +83,10 @@ func (m *machine) claim(p *Player, r ExecutionResult) {
 }
 
 // dummyClaim is used to claim a machine for a player without an execution result
-func (m *machine) dummyClaim(p *Player, str string) {
-	m.builder = p.name
-	m.TeamName = p.TeamName
-	m.language = "python"
+func (m *machine) dummyClaim(teamName string, str string) {
+	// m.builder = p.name
+	m.TeamName = teamName
+	m.language = "python" // TODO find ore elegent solution for this
 	// m.Powered = true
 
 	switch str {

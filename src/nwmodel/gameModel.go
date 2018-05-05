@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"nwmessage"
 	"time"
 )
@@ -29,7 +30,6 @@ type GameModel struct {
 // NewDefaultModel Generic game model
 func NewDefaultModel() *GameModel {
 	m := newRandMap(10)
-	t := makeDummyTeams()
 	p := make(map[playerID]*Player)
 	// poes := make(map[playerID]*node)
 
@@ -37,7 +37,7 @@ func NewDefaultModel() *GameModel {
 
 	gm := &GameModel{
 		Map:     m,
-		Teams:   t,
+		Teams:   make(map[string]*team),
 		Players: p,
 		// Routes:  r,
 		// POEs:          poes,
@@ -47,15 +47,20 @@ func NewDefaultModel() *GameModel {
 		pendingAlerts: make(map[playerID][]alert),
 	}
 
+	err := gm.addTeams(makeDummyTeams())
+	if err != nil {
+		fmt.Println(err)
+	}
+
 	go actionConsumer(gm)
 
 	return gm
 }
 
-func makeDummyTeams() map[teamName]*team {
-	teams := make(map[teamName]*team)
-	teams["red"] = NewTeam("red")
-	teams["blue"] = NewTeam("blue")
+func makeDummyTeams() []*team {
+	teams := make([]*team, 2)
+	teams[0] = NewTeam("red")
+	teams[1] = NewTeam("blue")
 	return teams
 }
 
@@ -70,9 +75,41 @@ func (gm *GameModel) Recv(msg nwmessage.Message) {
 	gm.aChan <- msg
 }
 
+// Addteams can only be called once. After addteams is called unused poes are removed
+func (gm *GameModel) addTeams(teams []*team) error {
+	nodes := gm.Map.collectEmptyPoes()
+
+	// add each team to gm.Teams
+	for _, t := range teams {
+		gm.Teams[t.Name] = t
+	}
+
+	// find a poe for each team
+	for i, t := range teams {
+		if len(nodes) < 1 {
+			// TODO alternative approach would be to add poes when we run out...
+			return fmt.Errorf("Ran out of poes with %d teams left to place", len(teams)-i)
+		}
+
+		myPoe := rand.Intn(len(nodes))
+		gm.setTeamPoe(t, nodes[myPoe].ID)
+		nodes = append(nodes[:myPoe], nodes[myPoe+1:]...)
+	}
+
+	// remove any leftovers
+	if len(nodes) > 0 {
+		for _, node := range nodes {
+			node.Feature.Type = ""
+		}
+	}
+
+	return nil
+}
+
 // trailingTeam should hand back either smallest team or currently losing team, depending on game settings TODO
 func (gm *GameModel) trailingTeam() string {
 	var tt *team
+	// fmt.Printf("<trailingTeam> gm.Teams %v\n", gm.Teams)
 	for _, team := range gm.Teams {
 		if tt == nil {
 			tt = team
@@ -82,6 +119,7 @@ func (gm *GameModel) trailingTeam() string {
 			tt = team
 		}
 	}
+	// fmt.Printf("<trailingTeam> returning %v\n", tt)
 	return tt.Name
 }
 
@@ -461,11 +499,7 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	// set the teams poe
 	t.poe = node
 
-	// claim feature for random player on team
-	for player := range t.players {
-		node.Feature.dummyClaim(player, "MIN")
-		break
-	}
+	node.Feature.dummyClaim(t.Name, "MIN")
 	return nil
 }
 
@@ -521,6 +555,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
+	fmt.Printf("Removing player, %s", p.name)
 	if _, ok := gm.Players[p.ID]; !ok {
 		return errors.New("player '" + p.GetName() + "' is not registered")
 	}

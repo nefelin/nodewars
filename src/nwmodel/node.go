@@ -34,7 +34,7 @@ func (n *node) claimFreeMachine(p *Player) error {
 
 	target := neutral[rand.Intn(len(neutral))]
 
-	n.Machines[target].dummyClaim(p, "FULL")
+	n.Machines[target].dummyClaim(p.TeamName, "FULL")
 	return nil
 
 }

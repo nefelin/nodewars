@@ -28,7 +28,7 @@ var mapCmdList = map[string]playerCommand{
 	"ap": cmdAddPoes,
 	// "rp": cmdRemPoes,
 
-	"bake": cmdBakeSlots,
+	"bake": cmdBakeMap,
 
 	// slot node_num, [criteria] what (takes challenge of this but not that, etc...)
 }
@@ -57,7 +57,7 @@ func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	}
 
 	gm.broadcastGraphReset()
-	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
+	gm.psBroadcastExcept(p, nwmessage.PsAlert("Nodes added to map"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
 }
@@ -125,8 +125,9 @@ func cmdAddPoes(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 	return nwmessage.PsSuccess(fmt.Sprintf("Added poes to nodes %v", targs))
 }
 
-func cmdBakeSlots(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdBakeMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	gm.Map.initAllNodes()
+	gm.addTeams(makeDummyTeams())
 	gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was baked and is ready to play"))
 	gm.broadcastState()
