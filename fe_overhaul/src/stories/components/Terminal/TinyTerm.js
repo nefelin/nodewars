@@ -13,7 +13,6 @@ class TinyTerm extends React.Component {
 		this.state = {
 			commandHistory: [],
 			page: "",
-			// prompt: this.props.prompt || "prompt> ",
 			command: "",
 			cursor: this.props.cursor || "\u258c",
 			focused: "false"
@@ -25,7 +24,7 @@ class TinyTerm extends React.Component {
 		this.handleLoseFocus = this.handleLoseFocus.bind(this)
 
 		this.sendCommand = this.sendCommand.bind(this)
-		this.updatePage = this.updatePage.bind(this)
+		this.recv = this.recv.bind(this)
 
 		this.input = React.createRef()
 		this.container = React.createRef()
@@ -41,16 +40,18 @@ class TinyTerm extends React.Component {
 
 	}
 	
-	componentWillReceiveProps(props) {
-		// console.log('tinyTerm receiving props',props)
-		if (props.incoming)
-			this.updatePage(props.incoming)
-		// this.setState({
-		// 	page: this.state.page + props.incoming
-		// })
-	}
+	// componentWillReceiveProps(props) {
+	// 	// console.log('tinyTerm receiving props',props)
+	// 	if (props.incoming!=""){
+	// 		console.log('TinyTerm receiving', props)
+	// 		this.updatePage(props.incoming)
+	// 	}
+	// 	// this.setState({
+	// 	// 	page: this.state.page + props.incoming
+	// 	// })
+	// }
 
-	updatePage(newContent) {
+	recv(newContent) {
 		this.setState({
 			page: this.state.page + newContent,
 		}, () => this.container.current.scrollTop = this.container.current.scrollHeight)
@@ -78,7 +79,7 @@ class TinyTerm extends React.Component {
 	
 	sendCommand(cmd) {
 		// console.log((this.state.page + cmd + '\n').split('\n'))
-		this.updatePage(cmd + '\n')
+		this.recv(cmd + '\n')
 		this.setState({ command: "" })
 		this.props.onSend(cmd)
 	}
@@ -110,11 +111,6 @@ class TinyTerm extends React.Component {
 		}
 
 		const contentStyle = {
-			// display: 'inline',
-			// position: 'absolute',
-			// bottom: 0,
-			// backgroundColor: bgColor,
-			// color: textColor,
 			width: '100%',
 			boxSizing: 'border-box',
 			padding: 5,
@@ -145,5 +141,4 @@ class TinyTerm extends React.Component {
 	}
 }
 
-// {this.props.response ? this.state.prompt : null } <input style={inputStyle} value={this.state.prompt + this.state.command} onChange={this.handleChange}></input>
 export default TinyTerm

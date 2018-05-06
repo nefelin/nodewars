@@ -14,8 +14,9 @@ class Incoming {
 	    switch (data.sender) {
 	      case 'pseudoServer':
 	        // if (this.debug) console.log('<Parsers.Incoming> routing to terminal')
-	        this.context.setState({tinyTermIn: data.data})
+	        this.context.terminal.current.recv(data.data)
 	        break
+
 	      default:
 	      	switch (data.type){
 	      		case 'teamState':
@@ -47,9 +48,14 @@ class Outgoing {
 		this.debug = debug || false
 	}
 
-	parseCmd(msg) {
-		if (this.debug) console.log('wrapping player command in message object')
-		this.ws.send(JSON.stringify({type: 'playerCmd', data: msg}))
+	parseCmd(cmd) {
+		// if (this.debug) console.log('wrapping player command in message object')
+		this.ws.send(JSON.stringify({type: 'playerCmd', data: cmd}))
+	}
+
+	componentState(component, data) {
+		// if (this.debug) console.log('sending', component, 'state:', data)
+		this.ws.send(JSON.stringify({type: component + 'State', data: data}))
 	}
 }
 

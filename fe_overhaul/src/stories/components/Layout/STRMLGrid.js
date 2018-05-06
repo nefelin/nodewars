@@ -42,7 +42,7 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
-      tinyTermIn: "",
+      // tinyTermIn: "",
 
       compilerOutput: "Execution completed in 0.323 seconds...",
 
@@ -50,7 +50,8 @@ class STRMLGrid extends React.Component {
 
       // graph: null
     }
-
+    
+    this.terminal = React.createRef()
     this.graph = React.createRef()
   }
   
@@ -71,18 +72,16 @@ class STRMLGrid extends React.Component {
     this.currentLayout = JSON.stringify(e)
   }
 
-  copyLayout(orig) {
-    // Needs to copy all the fields except mins and maxs
-    // Apply mins and maxes to copied layout
-    // return new layout
-  }
-
   handleAceChange = (val) => {
-    this.setState({ aceContent: val })
+    this.setState({ aceContent: val },
+      () => this.outgoing.componentState("editor", this.state.aceContent)
+      )
   }
 
   handleStdinChange = (e) => {
-    this.setState({ stdin: e.target.value })
+    this.setState({ stdin: e.target.value },
+      () => this.outgoing.componentState("stdin", this.state.stdin)
+      )
   }
 
   handleSelect = (win, menu, item) => {
@@ -173,7 +172,7 @@ class STRMLGrid extends React.Component {
 
           <div key="terminal">
             <STRMLWindow menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
-              <TinyTerm incoming={this.state.tinyTermIn} grabFocus={true} onSend={this.handleTermSend}/>
+              <TinyTerm ref={this.terminal} grabFocus={true} onSend={this.handleTermSend}/>
             </STRMLWindow>
           </div>
 

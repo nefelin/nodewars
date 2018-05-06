@@ -123,11 +123,16 @@ func incomingHandler(d *Dispatcher, msg nwmessage.Message, p *nwmodel.Player) {
 
 	case "playerCmd":
 		d.Recv(msg)
-		// d.getRoom(p.ID).recv(msg)
-		// res := cmdHandler(msg, p)
-		// if res.Data != "" {
-		// 	p.outgoing <- res
-		// }
+
+	case "editorState":
+		// fmt.Println("Received editorState msg")
+		p.EditorState = msg.Data
+
+	case "stdinState":
+		p.StdinState = msg.Data
+
+	case "terminalState":
+		// this really requires diffing to avoid being unwieldy
 
 	default:
 		p.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}

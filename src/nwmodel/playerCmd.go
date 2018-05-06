@@ -113,8 +113,8 @@ func actionConsumer(gm *GameModel) {
 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
 		}
 
-		if p.compiling == false && p.dialogue == nil {
-			p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+		if p.dialogue == nil {
+			p.sendPrompt()
 		}
 	}
 }
@@ -394,12 +394,7 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 }
 
 func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-
-	if len(args) > 0 {
-		p.stdin = strings.Join(args, " ")
-	} else {
-		p.stdin = ""
-	}
+	c = p.EditorState
 
 	// TODO handle compiler error
 	if c == "" {
@@ -409,7 +404,9 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	// passed error checks on args
 
 	go func() {
-		response := getOutput(p.language, c, p.stdin)
+		defer p.sendPrompt()
+
+		response := getOutput(p.language, c, p.StdinState)
 		p.Outgoing <- nwmessage.PsSuccess("Finished running (check output box)")
 
 		if response.Message.Type == "error" {
@@ -418,6 +415,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 		}
 
 		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%v", response.Stdouts[0]))
+
 	}()
 
 	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))
@@ -476,8 +474,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	sampleIO := pSlot.challenge.SampleIO
 	description := pSlot.challenge.ShortDesc
 
-	stdin := sampleIO[0].Input
-	p.Outgoing <- nwmessage.StdinState(stdin)
+	p.stdinState(sampleIO[0].Input)
 
 	// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
 	resp := ""
@@ -488,7 +485,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 			editText += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.currentMachine().language))
 		}
 
-		p.Outgoing <- nwmessage.EditState(editText)
+		p.editorState(editText)
 	} else {
 		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 	}
@@ -503,6 +500,9 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 }
 
 func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	// temporary hack:
+	c = p.EditorState
+	// fmt.Printf("cmdMake p.EditorState: %s\n", p.EditorState)
 
 	// TODO handle compiler error
 	if c == "" {
@@ -523,10 +523,12 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	// passed error checks on args
 
 	go func(p *Player, gm *GameModel, c string) {
+		defer p.sendPrompt()
+
 		slot := p.currentMachine()
 		// log.Printf("Make goroutine, slot.challenge.ID: %s", slot.challenge.ID)
 		response := submitTest(slot.challenge.ID, p.language, c)
-		p.compiling = false
+		// p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
 
 		if response.Message.Type == "error" {
@@ -611,12 +613,13 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return
 	}(p, gm, c)
 
-	p.compiling = true
+	// p.compiling = true
 	p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Compiling...")
 }
 
 func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+	c = p.EditorState
 
 	slot := p.currentMachine()
 
@@ -670,11 +673,12 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 	// passed error checks on args
 
 	go func(p *Player, gm *GameModel, c string) {
+		defer p.sendPrompt()
 		slot := p.currentMachine()
 
 		response := submitTest(slot.challenge.ID, p.language, c)
 
-		p.compiling = false
+		// p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
 
 		if response.Message.Type == "error" {
@@ -721,10 +725,11 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			"Solution too weak: %d/%d, need %d/%d to remove",
 			response.passed(), len(response.Graded), slot.Health, slot.MaxHealth,
 		))
+
 		return
 	}(p, gm, c)
 
-	p.compiling = true
+	// p.compiling = true
 	p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Removing module...")
 
