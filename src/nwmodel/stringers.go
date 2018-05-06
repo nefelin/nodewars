@@ -49,14 +49,14 @@ func (r route) String() string {
 
 func (n node) forMsg() string {
 
-	slotList := ""
-	for i, slot := range n.Machines {
-		slotList += "\n" + strconv.Itoa(i) + ":" + slot.forMsg()
+	macList := ""
+	for i, mac := range n.Machines {
+		macList += "\n" + strconv.Itoa(i) + ":" + mac.forMsg()
 	}
 
 	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
 
-	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMemory Slots:%v", n.ID, connectList, slotList)
+	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nFeature: \n%s\nMachines: %v", n.ID, connectList, n.Feature, macList)
 }
 
 func (m machine) forMsg() string {
@@ -70,6 +70,14 @@ func (m machine) forMsg() string {
 
 func (m machine) details() string {
 	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
+}
+
+func (f feature) String() string {
+	retStr := f.machine.forMsg()
+	if f.Type != "" {
+		retStr += fmt.Sprintf(", %s", f.Type)
+	}
+	return retStr
 }
 
 // func (m machine) forProbe() string {
