@@ -67,7 +67,7 @@ var gameCmdList = map[string]playerCommand{
 
 	"who": cmdWho,
 
-	"ls": cmdLs, // list modules/slot. out of spec but for expediency
+	"ls": cmdLs, // list modules/mac. out of spec but for expediency
 
 	"sp": cmdSetPOE,
 	// "boilerplate": cmdLoadBoilerplate,
@@ -452,19 +452,19 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		return nwmessage.PsError(fmt.Errorf("Machine '%d' does not exist", slotNum))
 	}
 
-	// passed checks, set player slot to target
+	// passed checks, set player mac to target
 	p.slotNum = slotNum
 	pSlot := p.currentMachine()
 
-	// if the slot has an enemy module, player's language is set to that module's
+	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false
 	if !pSlot.isNeutral() && !pSlot.belongsTo(p.TeamName) {
 		langLock = true
 		gm.setLanguage(p, pSlot.language)
 	}
-	// log.Printf("Playyer attached to slot: %d, challengeID: %s\n", p.slotNum, pSlot.challenge.ID)
+	// log.Printf("Playyer attached to mac: %d, challengeID: %s\n", p.slotNum, pSlot.challenge.ID)
 
-	// Send slot info to edit buffer
+	// Send mac info to edit buffer
 	msgPostfix := "\nchallenge details loaded to codebox"
 
 	// get language details
@@ -490,7 +490,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 	}
 
-	retText := fmt.Sprintf("Attached to slot %d: \ncontents:%v", slotNum, pSlot.forMsg())
+	retText := fmt.Sprintf("Attached to mac %d: \ncontents:%v", slotNum, pSlot.forMsg())
 	retText += msgPostfix
 	if langLock {
 		// TODO add this message to codebox
@@ -509,15 +509,15 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		return nwmessage.PsError(errors.New("No code submitted"))
 	}
 
-	slot := p.currentMachine()
+	mac := p.currentMachine()
 
-	if slot == nil {
-		return nwmessage.PsError(errors.New("Not attached to slot"))
+	if mac == nil {
+		return nwmessage.PsError(errors.New("Not attached to mac"))
 	}
 
 	// enforce module language
-	if !slot.isNeutral() && !slot.belongsTo(p.TeamName) && slot.language != p.language {
-		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", slot.language, slot.language))
+	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language {
+		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
 	}
 
 	// passed error checks on args
@@ -525,9 +525,9 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	go func(p *Player, gm *GameModel, c string) {
 		defer p.sendPrompt()
 
-		slot := p.currentMachine()
-		// log.Printf("Make goroutine, slot.challenge.ID: %s", slot.challenge.ID)
-		response := submitTest(slot.challenge.ID, p.language, c)
+		mac := p.currentMachine()
+		// log.Printf("Make goroutine, mac.challenge.ID: %s", mac.challenge.ID)
+		response := submitTest(mac.challenge.ID, p.language, c)
 		// p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
 
@@ -547,47 +547,47 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		// if there's no error show graded results, regardless of what happens with the module:
 		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
 
-		// LOCK SLOT
-		slot.Lock()
-		defer slot.Unlock()
+		// LOCK mac
+		mac.Lock()
+		defer mac.Unlock()
 
-		if !slot.isNeutral() {
+		if !mac.isNeutral() {
 			// in case we're refactoring a friendly module
-			if slot.belongsTo(p.TeamName) {
+			if mac.belongsTo(p.TeamName) {
 
-				slot.Health = newModHealth
-				slot.language = p.language
+				mac.Health = newModHealth
+				mac.language = p.language
 
 				gm.broadcastState()
 				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", slot.Health, slot.MaxHealth, slot.language))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
 				return
 			}
 
 			// hostile module
 			switch {
-			case newModHealth < slot.Health:
-				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), slot.Health, slot.MaxHealth))
+			case newModHealth < mac.Health:
+				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
 				return
 
-			case newModHealth == slot.Health:
-				p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, slot.MaxHealth))
+			case newModHealth == mac.Health:
+				p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, mac.MaxHealth))
 				return
 
-			case newModHealth > slot.Health:
+			case newModHealth > mac.Health:
 				// // track old owner to evaluate traffic after module loss
-				oldTeamName := slot.TeamName
+				oldTeamName := mac.TeamName
 
 				// // refactor module to new owner and health
-				// slot.TeamName = p.TeamName
-				// slot.Health = newModHealth
+				// mac.TeamName = p.TeamName
+				// mac.Health = newModHealth
 
 				// // evaluate routing of player trffic through node
 				// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 				// // ensure new owner is powering node
 				// gm.Teams[p.TeamName].powerOn(p.Route.Endpoint)
 
-				gm.refactorMachine(slot, p, newModHealth)
+				gm.refactorMachine(mac, p, newModHealth)
 
 				// update map state
 				gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
@@ -595,13 +595,13 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 				// broadcast terminal messages
 				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeamName, slot.Health, slot.MaxHealth))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeamName, mac.Health, mac.MaxHealth))
 				return
 			}
 
 		}
 
-		// slot is empty, simply install...
+		// mac is empty, simply install...
 		// newMod := newModule(p, response, p.language)
 
 		gm.claimMachine(p, response)
@@ -609,7 +609,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 		gm.broadcastState()
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.language, slot.Health, slot.MaxHealth))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
 		return
 	}(p, gm, c)
 
@@ -621,18 +621,18 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
 	c = p.EditorState
 
-	slot := p.currentMachine()
+	mac := p.currentMachine()
 
-	if slot == nil {
-		return nwmessage.PsError(errors.New("Not attached to slot"))
+	if mac == nil {
+		return nwmessage.PsError(errors.New("Not attached to mac"))
 	}
 
-	if slot.isNeutral() {
+	if mac.isNeutral() {
 		return nwmessage.PsError(errors.New("Machine is neutral"))
 	}
 
 	// if we're removing a friendly module, just do it:
-	if slot.belongsTo(p.TeamName) {
+	if mac.belongsTo(p.TeamName) {
 		// TODO hacky, refactor
 		if len(args) == 0 {
 			args = append(args, "")
@@ -674,9 +674,9 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 	go func(p *Player, gm *GameModel, c string) {
 		defer p.sendPrompt()
-		slot := p.currentMachine()
+		mac := p.currentMachine()
 
-		response := submitTest(slot.challenge.ID, p.language, c)
+		response := submitTest(mac.challenge.ID, p.language, c)
 
 		// p.compiling = false
 		p.Outgoing <- nwmessage.TerminalUnpause()
@@ -698,12 +698,12 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		// if there's no error, show graded results, regardless of what happens with the module:
 		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
 
-		// LOCK SLOT
-		slot.Lock()
-		defer slot.Unlock()
+		// LOCK mac
+		mac.Lock()
+		defer mac.Unlock()
 
-		if newModHealth >= slot.Health {
-			oldTeamName := slot.TeamName
+		if newModHealth >= mac.Health {
+			oldTeamName := mac.TeamName
 
 			// err := p.Route.Endpoint.removeModule(p.slotNum)
 			// if err != nil {
@@ -724,7 +724,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
 			"Solution too weak: %d/%d, need %d/%d to remove",
-			response.passed(), len(response.Graded), slot.Health, slot.MaxHealth,
+			response.passed(), len(response.Graded), mac.Health, mac.MaxHealth,
 		))
 
 		return
@@ -772,24 +772,24 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 }
 
 // func validateSlotIs(wants string, p *Player, slotNum int) error {
-// 	// check validity of player.Route and slot number
+// 	// check validity of player.Route and mac number
 // 	switch {
 // 	case p.Route == nil:
 // 		return errors.New(noConnectStr)
 
 // 	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
-// 		return fmt.Errorf("Slot '%v' does not exist", slotNum)
+// 		return fmt.Errorf("mac '%v' does not exist", slotNum)
 // 	}
 
 // 	switch wants {
 // 	case "full":
 // 		if p.Route.Endpoint.slots[slotNum].Module == nil {
-// 			return fmt.Errorf("slot '%v' is empty", slotNum)
+// 			return fmt.Errorf("mac '%v' is empty", slotNum)
 // 		}
 // 		return nil
 // 	case "empty":
 // 		if p.Route.Endpoint.slots[slotNum].Module != nil {
-// 			return fmt.Errorf("slot '%v' is full", slotNum)
+// 			return fmt.Errorf("mac '%v' is full", slotNum)
 // 		}
 // 		return nil
 // 	}
@@ -802,11 +802,11 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 // 		return errors.New(noConnectStr)
 
 // 	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
-// 		return fmt.Errorf("Slot '%v' does not exist", slotNum)
+// 		return fmt.Errorf("mac '%v' does not exist", slotNum)
 
 // 	case p.Route.Endpoint.slots[slotNum].Module == nil:
 // 		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
-// 		return fmt.Errorf("slot '%v' is empty", slotNum)
+// 		return fmt.Errorf("mac '%v' is empty", slotNum)
 // 	}
 // 	return nil
 // }

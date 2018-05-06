@@ -43,8 +43,11 @@ func newFeature() *feature {
 }
 
 // machine methods -------------------------------------------------------------------------
+
+// resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *machine) resetChallenge() {
 	m.challenge = getRandomChallenge()
+	m.MaxHealth = len(m.challenge.Cases)
 }
 
 func (m *machine) isNeutral() bool {
@@ -67,9 +70,8 @@ func (m *machine) reset() {
 	m.language = ""
 	m.Powered = true
 
-	m.loadChallenge()
 	m.Health = 0
-	m.MaxHealth = len(m.challenge.Cases)
+	m.resetChallenge()
 }
 
 func (m *machine) claim(p *Player, r ExecutionResult) {
@@ -99,7 +101,8 @@ func (m *machine) dummyClaim(teamName string, str string) {
 	}
 }
 
-// loadChallenge should use m.accepts to get a challenge matching criteria TODO
-func (m *machine) loadChallenge() {
-	m.challenge = getRandomChallenge()
-}
+// func (m *machine) loadChallenge() {
+// 	m.challenge = getRandomChallenge()
+
+// 	fmt.Printf("Loaded challenge, %v\n", m.challenge)
+// }

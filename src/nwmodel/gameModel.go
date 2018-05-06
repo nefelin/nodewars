@@ -451,7 +451,6 @@ func (gm *GameModel) pushActionAlert(color string, location nodeID) {
 	for k := range gm.pendingAlerts {
 		gm.pendingAlerts[k] = append(gm.pendingAlerts[k], alert{color, location})
 	}
-	fmt.Printf("pending Alerts: %v\n", gm.pendingAlerts)
 }
 
 // send a pseudoServer message to all players
