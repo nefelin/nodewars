@@ -338,7 +338,7 @@ func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 
 			if m.nodesTouch(thisNode, target) {
 				nodePool.prev[target] = thisNode
-				route := constructPath(nodePool.prev, target)
+				route := constructRoute(nodePool.prev, target)
 				// log.Println("Found target!")
 				return route
 			}
@@ -361,9 +361,9 @@ func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 }
 
 // helper functions for routeToNode ------------------------------------------------------------
-// constructPath takes the routes discovered via routeToNode and the endpoint (target) and creates a slice of the correct path, note order is still reversed and path contains source but not target node
-func constructPath(prevMap map[*node]*node, t *node) []*node {
-	// log.Printf("constructPath working from prev: %v", prevMap)
+// constructRoute takes the routes discovered via routeToNode and the endpoint (target) and creates a slice of the correct path, note order is still reversed and path contains source but not target node
+func constructRoute(prevMap map[*node]*node, t *node) []*node {
+	// log.Printf("constructRoute working from prev: %v", prevMap)
 
 	route := make([]*node, 0)
 

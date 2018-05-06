@@ -1,6 +1,8 @@
 package nwmodel
 
-import "strconv"
+import (
+	"strconv"
+)
 
 type route struct {
 	Endpoint *node   `json:"endpoint"`
@@ -21,6 +23,18 @@ func (r route) length() int {
 	return len(r.Nodes)
 }
 
+// asIds reverses the order of the nodes and stores ids only
+func (r route) asIds() []nodeID {
+	nodeCount := len(r.Nodes)
+	list := make([]nodeID, nodeCount+1)
+
+	list[nodeCount] = r.Endpoint.ID
+	for i := 0; i < nodeCount; i++ {
+		list[i] = r.Nodes[nodeCount-1-i].ID
+	}
+	return list
+}
+
 // traficMap and packet used to create more easily rendered statemessages
 type trafficMap struct {
 	Traffic map[string][]packet `json:"traffic"`
@@ -39,17 +53,13 @@ func newTrafficMap() *trafficMap {
 
 // TODO route is stored reversed?
 func (t *trafficMap) addRoute(r *route, color string) {
-	for i, n := range r.Nodes {
-		n1 := n.ID
-		var n2 nodeID
+	// fmt.Printf("asIds test: %v", r.asIds())
+	nodeIDs := r.asIds()
+	for i := 0; i < len(nodeIDs)-1; i++ {
+		n1 := nodeIDs[i]
+		n2 := nodeIDs[i+1]
 
 		var dir, edge string
-
-		if i == len(r.Nodes)-1 {
-			n2 = r.Endpoint.ID
-		} else {
-			n2 = r.Nodes[i+1].ID
-		}
 
 		// if we're connecting to poe, ignore
 		if n1 == n2 {
