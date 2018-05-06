@@ -590,8 +590,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				gm.refactorMachine(slot, p, newModHealth)
 
 				// update map state
+				gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 				gm.broadcastState()
-				gm.broadcastAlertFlash(p.TeamName, p.Route.Endpoint.ID)
 
 				// broadcast terminal messages
 				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
@@ -606,8 +606,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 		gm.claimMachine(p, response)
 
+		gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 		gm.broadcastState()
-		gm.broadcastAlertFlash(p.TeamName, p.Route.Endpoint.ID)
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", slot.language, slot.Health, slot.MaxHealth))
 		return
@@ -713,8 +713,9 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
 			gm.resetMachine(p)
 
+			gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 			gm.broadcastState()
-			gm.broadcastAlertFlash(p.TeamName, p.Route.Endpoint.ID)
+
 			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
 			p.Outgoing <- nwmessage.PsSuccess("Module removed")
 			return

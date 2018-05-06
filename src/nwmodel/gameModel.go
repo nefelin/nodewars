@@ -433,10 +433,11 @@ func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 	}
 
 	// fmt.Printf("state: %v", state)
-	// clear dumped alerts
-	gm.pendingAlerts[p.ID] = nil
 
 	stateMsg, err := json.Marshal(state)
+	// fmt.Printf("statemessage: %s\n", stateMsg)
+	// clear dumped alerts
+	gm.pendingAlerts[p.ID] = nil
 
 	// fmt.Printf("\nState Message %v\n", stateMsg)
 	if err != nil {
@@ -446,15 +447,11 @@ func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 	return string(stateMsg)
 }
 
-func (gm *GameModel) broadcastAlertFlash(color string, location nodeID) {
-	for _, v := range gm.pendingAlerts {
-		v = append(v, alert{color, location})
+func (gm *GameModel) pushActionAlert(color string, location nodeID) {
+	for k := range gm.pendingAlerts {
+		gm.pendingAlerts[k] = append(gm.pendingAlerts[k], alert{color, location})
 	}
-	// TODO abstract this to messages
-	// fmt.Println("This should add activity markers to the maps TODO")
-	// for _, player := range gm.Players {
-	// 	player.Outgoing <- nwmessage.AlertFlash(color)
-	// }
+	fmt.Printf("pending Alerts: %v\n", gm.pendingAlerts)
 }
 
 // send a pseudoServer message to all players
@@ -550,7 +547,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	p.Outgoing <- nwmessage.GraphState(gm.calcState(p, routeMap))
 
 	// send initial prompt state
-	p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+	p.sendPrompt()
 	return nil
 }
 

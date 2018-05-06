@@ -694,8 +694,8 @@ class NWGraph {
 			// show notifications
 			if (this.FLAGS.Alerts) {
 				if (this.gameState.alerts){
-					for (let loc of Object.keys(this.gameState.alerts)) {
-						alertBlip(this.root.select('#node-'+loc), undefined, SIZES.node_outer_radius+SIZES.stroke_width, SIZES.node_outer_radius*1.3, 700, TEAMCOLORS[this.gameState.alerts[loc]])
+					for (alert of this.gameState.alerts) {
+						alertBlip(this.root.select('#node-'+alert.location), undefined, SIZES.node_outer_radius+SIZES.stroke_width, SIZES.node_outer_radius*1.3, 700, TEAMCOLORS[alert.team])
 					}
 				}
 			}
