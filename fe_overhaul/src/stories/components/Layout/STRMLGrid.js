@@ -72,32 +72,52 @@ class STRMLGrid extends React.Component {
 
   handleKeyPress = (e) => {
       var evtobj = window.event ? event : e
-      
+      console.log('keypress crtl-' + e.keyCode)
       if (evtobj.ctrlKey) {
         switch(evtobj.keyCode) {
-          case 16:
+          case 192: // '`'
             // console.log('switch focus')
             this.toggleFocus()
             break
 
-          case 13:
+          case 188: // ','
+            // console.log('switch focus')
+            this.toggleFocus('terminal')
+            break
+
+          case 190: // '.'
+            // console.log('switch focus')
+            this.toggleFocus('editor')
+            break
+
+          case 13: // 'enter'
             // console.log('make')
             this.outgoing.parseCmd('make')
             break
 
-          case 220:
+          case 220: // '\'
             // console.log('test')
             this.outgoing.parseCmd('test')
             break
 
           default:
-            console.log('keypress crtl-' + e.keyCode)
+            
         }
       }
   }
 
-  toggleFocus = () => {
-    this.termHasFocus = !this.termHasFocus
+  toggleFocus = (target) => {
+    switch (target) {
+      case 'terminal':
+        this.termHasFocus = true
+        break
+      case 'editor':
+        this.termHasFocus = false
+        break
+      default:
+        this.termHasFocus = !this.termHasFocus
+    }
+    
 
     if (this.termHasFocus){
       console.log('focusing on term')
@@ -105,7 +125,7 @@ class STRMLGrid extends React.Component {
     }
     else {
       console.log('focusing on editor')
-      console.log('editor', this.editor.current.editor)
+      // console.log('editor', this.editor.current.editor)
       this.editor.current.editor.focus()
     }
   }
