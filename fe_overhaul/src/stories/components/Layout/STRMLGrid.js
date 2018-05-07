@@ -61,6 +61,35 @@ class STRMLGrid extends React.Component {
     const inParser = new Parsers.Incoming(this, true)
     const ws = new NWSocket(inParser)
     this.outgoing = new Parsers.Outgoing(ws, this, true)
+
+    // Set up keyboard shortcuts
+    
+    document.onkeydown = this.handleKeyPress;
+  }
+
+  handleKeyPress = (e) => {
+      var evtobj = window.event ? event : e
+      
+      if (evtobj.ctrlKey) {
+        switch(evtobj.keyCode) {
+          case 16:
+            console.log('switch focus')
+            break
+
+          case 13:
+            // console.log('make')
+            this.outgoing.parseCmd('make')
+            break
+
+          case 220:
+            // console.log('test')
+            this.outgoing.parseCmd('test')
+            break
+
+          default:
+            console.log('keypress crtl-' + e.keyCode)
+        }
+      }
   }
 
   handleTermSend = (cmd) => {
