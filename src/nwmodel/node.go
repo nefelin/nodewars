@@ -62,6 +62,9 @@ func (n *node) initMachines() {
 		n.Machines[i] = newMachine()
 		n.Machines[i].resetChallenge()
 	}
+
+	n.Feature.machine = *newMachine()
+	n.Feature.machine.resetChallenge()
 }
 
 // addConnection is reciprocol

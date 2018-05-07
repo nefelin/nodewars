@@ -27,12 +27,12 @@ func newNodeMap() nodeMap {
 // nodeMap methods -----------------------------------------------------------------------------
 
 func (m *nodeMap) initAllNodes() {
-	m.initAllSlots()
+	m.initAllMachines()
 	m.initAllRemoteness()
 }
 
-func (m *nodeMap) initAllSlots() {
-	// initialize each node's slots
+func (m *nodeMap) initAllMachines() {
+	// initialize each node's machines
 	for _, node := range m.Nodes {
 		node.initMachines()
 	}
