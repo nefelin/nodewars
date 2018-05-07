@@ -10,8 +10,8 @@ import (
 	"strings"
 )
 
-// type playerCommand func(p *Player, gm *GameModel, args []string, code string) nwmessage.Message
-type playerCommand func(*Player, *GameModel, []string, string) nwmessage.Message
+// type playerCommand func(p *Player, gm *GameModel, args []string) nwmessage.Message
+type playerCommand func(*Player, *GameModel, []string) nwmessage.Message
 
 var gameCmdList = map[string]playerCommand{
 	// chat functions
@@ -100,12 +100,12 @@ func actionConsumer(gm *GameModel) {
 				continue
 			}
 			// if the games not locked, allow map to me modified.
-			res := handlerFunc(p, gm, msg[1:], m.Code)
+			res := handlerFunc(p, gm, msg[1:])
 			if res.Data != "" {
 				p.Outgoing <- res
 			}
 		} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
-			res := handlerFunc(p, gm, msg[1:], m.Code)
+			res := handlerFunc(p, gm, msg[1:])
 			if res.Data != "" {
 				p.Outgoing <- res
 			}
@@ -114,12 +114,12 @@ func actionConsumer(gm *GameModel) {
 		}
 
 		if p.dialogue == nil {
-			p.sendPrompt()
+			p.SendPrompt()
 		}
 	}
 }
 
-func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdYell(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	if len(args) == 0 {
 		return nwmessage.PsError(errors.New("Need a message to yell"))
@@ -131,7 +131,7 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	return nwmessage.Message{}
 }
 
-// func cmdTell(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// func cmdTell(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 // 	if len(args) < 2 {
 // 		return nwmessage.PsError(errors.New("Need a recipient and a message"))
@@ -153,7 +153,7 @@ func cmdYell(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 // 	return nwmessage.Message{}
 // }
 
-func cmdTeamChat(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdTeamChat(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsNoTeam()
 	}
@@ -170,7 +170,7 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 
 }
 
-func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	if p.Route == nil {
 		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))
@@ -191,11 +191,11 @@ func cmdSay(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 	return nwmessage.Message{}
 }
 
-// func cmdSetName(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+// func cmdSetName(p *Player, gm *GameModel, args []string) nwmessage.Message {
 // 	return nwmessage.PsError(errors.New("Can't change name in a game"))
 // }
 
-func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 || args[0] == "" {
@@ -204,7 +204,7 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 		// }
 		tt := gm.trailingTeam()
 		p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("Auto-assigning to team '%s'", tt))
-		return cmdJoinTeam(p, gm, []string{tt}, c)
+		return cmdJoinTeam(p, gm, []string{tt})
 	}
 
 	err := gm.assignPlayerToTeam(p, teamName(args[0]))
@@ -234,7 +234,7 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	return nwmessage.PsSuccess(retStr)
 }
 
-func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdLang(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if len(args) == 0 {
 		return nwmessage.PsError(errors.New("Expected one argument, received zero"))
 	}
@@ -265,7 +265,7 @@ func cmdLang(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	return nwmessage.PsSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 
-func cmdListLanguages(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdListLanguages(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	var langs sort.StringSlice
 
 	for l := range gm.languages {
@@ -277,7 +277,7 @@ func cmdListLanguages(p *Player, gm *GameModel, args []string, c string) nwmessa
 	return nwmessage.PsNeutral("This game supports:\n" + strings.Join(langs, "\n"))
 }
 
-func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdConnect(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsError(errors.New("Join a team first"))
 	}
@@ -301,7 +301,7 @@ func cmdConnect(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 	return nwmessage.PsSuccess(fmt.Sprintf("Connected to established : %s", route.forMsg()))
 }
 
-func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdWho(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	// Sort team names
 	whoStr := ""
@@ -325,7 +325,7 @@ func cmdWho(p *Player, gm *GameModel, args []string, c string) nwmessage.Message
 	return nwmessage.PsNeutral(whoStr)
 }
 
-func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	if p.Route == nil {
 		return nwmessage.PsNoConnection()
@@ -354,7 +354,7 @@ func cmdLs(p *Player, gm *GameModel, args []string, c string) nwmessage.Message 
 	return nwmessage.PsNeutral(retMsg)
 }
 
-func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdSetPOE(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if p.TeamName == "" {
 		return nwmessage.PsNoTeam()
 	}
@@ -393,8 +393,8 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
 }
 
-func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	c = p.EditorState
+func cmdTestCode(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	c := p.EditorState
 
 	// TODO handle compiler error
 	if c == "" {
@@ -404,7 +404,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	// passed error checks on args
 
 	go func() {
-		defer p.sendPrompt()
+		defer p.SendPrompt()
 
 		response := getOutput(p.language, c, p.StdinState)
 		p.Outgoing <- nwmessage.PsSuccess("Finished running (check output box)")
@@ -421,7 +421,7 @@ func cmdTestCode(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))
 }
 
-func cmdScore(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdScore(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	var scoreStrs sort.StringSlice
 
 	for teamName, team := range gm.Teams {
@@ -434,7 +434,7 @@ func cmdScore(p *Player, gm *GameModel, args []string, c string) nwmessage.Messa
 }
 
 // TODO refactor cmdAttach for clarity and redundancy
-func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	slotNum, err := validateOneIntArg(args)
 	if err != nil {
 		return nwmessage.PsError(err)
@@ -499,9 +499,9 @@ func cmdAttach(p *Player, gm *GameModel, args []string, c string) nwmessage.Mess
 	return nwmessage.PsSuccess(retText)
 }
 
-func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// temporary hack:
-	c = p.EditorState
+	c := p.EditorState
 	// fmt.Printf("cmdMake p.EditorState: %s\n", p.EditorState)
 
 	// TODO handle compiler error
@@ -512,7 +512,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	mac := p.currentMachine()
 
 	if mac == nil {
-		return nwmessage.PsError(errors.New("Not attached to mac"))
+		return nwmessage.PsError(errors.New("Not attached to a machine"))
 	}
 
 	// enforce module language
@@ -520,16 +520,15 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
 	}
 
-	// passed error checks on args
+	// passed error checks
 
 	go func(p *Player, gm *GameModel, c string) {
-		defer p.sendPrompt()
+		defer p.SendPrompt()
 
 		mac := p.currentMachine()
 		// log.Printf("Make goroutine, mac.challenge.ID: %s", mac.challenge.ID)
 		response := submitTest(mac.challenge.ID, p.language, c)
 		// p.compiling = false
-		p.Outgoing <- nwmessage.TerminalUnpause()
 
 		if response.Message.Type == "error" {
 			p.Outgoing <- nwmessage.PsCompileFail()
@@ -540,7 +539,7 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 		newModHealth := response.passed()
 
 		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module failed all tests"))
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution failed all tests"))
 			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
 			return
 		}
@@ -559,15 +558,15 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				mac.language = p.language
 
 				gm.broadcastState()
-				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly module to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
+				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
 				return
 			}
 
 			// hostile module
 			switch {
 			case newModHealth < mac.Health:
-				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
+				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
 				return
 
 			case newModHealth == mac.Health:
@@ -578,15 +577,6 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				// // track old owner to evaluate traffic after module loss
 				oldTeamName := mac.TeamName
 
-				// // refactor module to new owner and health
-				// mac.TeamName = p.TeamName
-				// mac.Health = newModHealth
-
-				// // evaluate routing of player trffic through node
-				// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
-				// // ensure new owner is powering node
-				// gm.Teams[p.TeamName].powerOn(p.Route.Endpoint)
-
 				gm.refactorMachine(mac, p, newModHealth)
 
 				// update map state
@@ -594,8 +584,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 				gm.broadcastState()
 
 				// broadcast terminal messages
-				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s module, new module health: %d/%d", oldTeamName, mac.Health, mac.MaxHealth))
+				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
+				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeamName, mac.Health, mac.MaxHealth))
 				return
 			}
 
@@ -608,8 +598,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 
 		gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 		gm.broadcastState()
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a module in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Module constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Machine constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
 		return
 	}(p, gm, c)
 
@@ -618,8 +608,8 @@ func cmdMake(p *Player, gm *GameModel, args []string, c string) nwmessage.Messag
 	return nwmessage.PsBegin("Compiling...")
 }
 
-func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
-	c = p.EditorState
+func cmdRemoveModule(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	c := p.EditorState
 
 	mac := p.currentMachine()
 
@@ -655,10 +645,10 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			// gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
 			gm.resetMachine(p)
 			gm.broadcastState()
-			return nwmessage.PsSuccess("Module removed")
+			return nwmessage.PsSuccess("Machine reset")
 
 		case flag == "-no":
-			return nwmessage.PsError(errors.New("Removal aborted"))
+			return nwmessage.PsError(errors.New("Reset aborted"))
 
 		default:
 			return nwmessage.PsError(errors.New("Unknown flag, use -y for automatic confirmation"))
@@ -673,7 +663,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 	// passed error checks on args
 
 	go func(p *Player, gm *GameModel, c string) {
-		defer p.sendPrompt()
+		defer p.SendPrompt()
 		mac := p.currentMachine()
 
 		response := submitTest(mac.challenge.ID, p.language, c)
@@ -690,7 +680,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 		newModHealth := response.passed()
 
 		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Module failed all tests"))
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution failed all tests"))
 			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
 			return
 		}
@@ -716,8 +706,8 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 			gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 			gm.broadcastState()
 
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) removed a (%s) module in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
-			p.Outgoing <- nwmessage.PsSuccess("Module removed")
+			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
+			p.Outgoing <- nwmessage.PsSuccess("Machine reset")
 			return
 
 		}
@@ -732,11 +722,11 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string, c string) nwmessag
 
 	// p.compiling = true
 	p.Outgoing <- nwmessage.TerminalPause()
-	return nwmessage.PsBegin("Removing module...")
+	return nwmessage.PsBegin("Resetting machine...")
 
 }
 
-func cmdLoadMod(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdLoadMod(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.Message{}
 }
 
@@ -755,7 +745,7 @@ func validateOneIntArg(args []string) (int, error) {
 
 // Async Confirmation Dialogues
 func beginRemoveModuleConf(p *Player, gm *GameModel) {
-	p.Outgoing <- nwmessage.PsDialogue("Removing friendly module, (y)es to confirm\nany other key to abort: ")
+	p.Outgoing <- nwmessage.PsDialogue("Resetting friendly machine, (y)es to confirm\nany other key to abort: ")
 	p.dialogue = nwmessage.NewDialogue([]nwmessage.Fn{
 		func(d *nwmessage.Dialogue, s string) nwmessage.Message {
 			if s == "y" || s == "ye" || s == "yes" {
@@ -766,7 +756,7 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 
 			p.dialogue = nil
 
-			return cmdRemoveModule(p, gm, []string{d.GetProp("flag")}, "")
+			return cmdRemoveModule(p, gm, []string{d.GetProp("flag")})
 		},
 	})
 }
