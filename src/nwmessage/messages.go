@@ -22,10 +22,10 @@ const (
 
 	challengeStateStr  = "challengeState"
 	compOutStateStr    = "compOutState"
-	editStateStr       = "EditorState"
+	editStateStr       = "editorState"
 	graphStateStr      = "graphState"
 	scoreStateStr      = "scoreState"
-	StdinStateStr      = "StdinState"
+	StdinStateStr      = "stdinState"
 	teamStateStr       = "teamState"
 	graphResetStr      = "graphReset"
 	resultStateStr     = "resultState"

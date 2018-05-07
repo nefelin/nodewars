@@ -31,6 +31,7 @@ class Incoming {
 		      			this.context.graph.current.reset()
 	      			break
 	      		case 'editorState':
+	      			// if (this.debug) console.log('setting aceContent state', data.data)
 	      			this.context.setState({ aceContent: data.data })
 	      			break
 	      		case 'stdinState':
