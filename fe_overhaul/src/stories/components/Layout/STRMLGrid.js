@@ -52,7 +52,10 @@ class STRMLGrid extends React.Component {
     }
     
     this.terminal = React.createRef()
+    this.editor = React.createRef()
     this.graph = React.createRef()
+
+    this.termHasFocus = true
   }
   
 
@@ -73,7 +76,8 @@ class STRMLGrid extends React.Component {
       if (evtobj.ctrlKey) {
         switch(evtobj.keyCode) {
           case 16:
-            console.log('switch focus')
+            // console.log('switch focus')
+            this.toggleFocus()
             break
 
           case 13:
@@ -90,6 +94,20 @@ class STRMLGrid extends React.Component {
             console.log('keypress crtl-' + e.keyCode)
         }
       }
+  }
+
+  toggleFocus = () => {
+    this.termHasFocus = !this.termHasFocus
+
+    if (this.termHasFocus){
+      console.log('focusing on term')
+      this.terminal.current.focus()
+    }
+    else {
+      console.log('focusing on editor')
+      console.log('editor', this.editor.current.editor)
+      this.editor.current.editor.focus()
+    }
   }
 
   handleTermSend = (cmd) => {
@@ -219,6 +237,7 @@ class STRMLGrid extends React.Component {
           <div key="codepad">
             <STRMLWindow menuBar={[{ name: 'Ace Editor' }]} onSelect={this.handleSelect}>
               <AceEditor
+                  ref={this.editor}
                   style={fill}
                   mode="golang"
                   theme="monokai"

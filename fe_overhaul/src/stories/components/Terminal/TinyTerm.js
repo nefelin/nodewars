@@ -20,7 +20,7 @@ class TinyTerm extends React.Component {
 
 		this.handleKeyPress = this.handleKeyPress.bind(this)
 		this.handleChange = this.handleChange.bind(this)
-		this.handleFocus = this.handleFocus.bind(this)
+		this.focus = this.focus.bind(this)
 		this.handleLoseFocus = this.handleLoseFocus.bind(this)
 
 		this.sendCommand = this.sendCommand.bind(this)
@@ -32,7 +32,7 @@ class TinyTerm extends React.Component {
 
 	componentDidMount() {
 		if (this.props.grabFocus)
-			this.handleFocus()
+			this.focus()
 		else {
 			this.input.current.blur()
 			this.handleLoseFocus()
@@ -58,7 +58,7 @@ class TinyTerm extends React.Component {
 		// TODO is there a way to hide the scrollbar here?
 	}
 
-	handleFocus() {
+	focus() {
 		this.input.current.focus()
 		this.setState({focused: true})
 	}
@@ -129,7 +129,7 @@ class TinyTerm extends React.Component {
 		// console.log(pageContent)
 
 		return (
-			<div className="TinyTerm" onClick={this.handleFocus} ref={this.container} style={style}>
+			<div className="TinyTerm" onClick={this.focus} ref={this.container} style={style}>
 					{pageContent} {this.state.command}
 					
 					<span className={"TinyTerm-cursor" + (this.state.focused ? " focused" : "")}>{this.state.cursor}</span>
