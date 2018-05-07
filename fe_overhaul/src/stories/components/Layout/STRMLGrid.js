@@ -72,7 +72,7 @@ class STRMLGrid extends React.Component {
 
   handleKeyPress = (e) => {
       var evtobj = window.event ? event : e
-      console.log('keypress crtl-' + e.keyCode)
+      // console.log('keypress', e.keyCode)
       if (evtobj.ctrlKey) {
         switch(evtobj.keyCode) {
           case 192: // '`'
@@ -120,11 +120,11 @@ class STRMLGrid extends React.Component {
     
 
     if (this.termHasFocus){
-      console.log('focusing on term')
+      // console.log('focusing on term')
       this.terminal.current.focus()
     }
     else {
-      console.log('focusing on editor')
+      // console.log('focusing on editor')
       // console.log('editor', this.editor.current.editor)
       this.editor.current.editor.focus()
     }
@@ -171,7 +171,21 @@ class STRMLGrid extends React.Component {
             }
         }
         break
-
+      
+      case 'Ace Editor':
+        switch (menu) {
+          case 'Build':
+            switch (item){
+              case 'Make, (crtl-enter)':
+                this.outgoing.parseCmd('make')
+                break
+              case 'Test, (crtl-\\)':
+                this.outgoing.parseCmd('test')
+                break
+            }
+            break
+        }
+        break
       default:
         console.log('Routing for', win, menu, item, 'missing')
     }
@@ -255,7 +269,7 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="codepad">
-            <STRMLWindow menuBar={[{ name: 'Ace Editor' }]} onSelect={this.handleSelect}>
+            <STRMLWindow menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (crtl-enter)', 'Test, (crtl-\\)']}]} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}

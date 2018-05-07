@@ -135,6 +135,6 @@ func incomingHandler(d *Dispatcher, msg nwmessage.Message, p *nwmodel.Player) {
 		// this really requires diffing to avoid being unwieldy
 
 	default:
-		p.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type), ""}
+		p.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
 	}
 }

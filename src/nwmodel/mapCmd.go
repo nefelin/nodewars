@@ -33,7 +33,7 @@ var mapCmdList = map[string]playerCommand{
 	// slot node_num, [criteria] what (takes challenge of this but not that, etc...)
 }
 
-func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdAddNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	var nodeCount int
 	if len(args) != 2 {
 		return nwmessage.PsError(errors.New("Need (2) args, a quantity to generate and a node to anchor to"))
@@ -62,7 +62,7 @@ func cmdAddNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Me
 	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
 }
 
-func cmdAddString(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdAddString(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	var nodeCount int
 	if len(args) == 0 {
 		// return nwmessage.PsError(errors.New("Need either one or two arguments, received zero"))
@@ -101,7 +101,7 @@ func cmdAddString(p *Player, gm *GameModel, args []string, c string) nwmessage.M
 	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
 }
 
-func cmdAddPoes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdAddPoes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	targs := make([]int, len(args))
 
 	for i := range targs {
@@ -125,7 +125,7 @@ func cmdAddPoes(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 	return nwmessage.PsSuccess(fmt.Sprintf("Added poes to nodes %v", targs))
 }
 
-func cmdBakeMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdBakeMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	gm.Map.initAllNodes()
 	gm.addTeams(makeDummyTeams())
 	gm.broadcastGraphReset()
@@ -134,7 +134,7 @@ func cmdBakeMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Mes
 	return nwmessage.PsSuccess(fmt.Sprintf("Map baked and ready to play"))
 }
 
-func cmdRemoveNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdRemoveNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if len(args) == 0 {
 		return nwmessage.PsError(errors.New("Need at least one node to remove"))
 	}
@@ -161,7 +161,7 @@ func cmdRemoveNodes(p *Player, gm *GameModel, args []string, c string) nwmessage
 	return nwmessage.PsSuccess(fmt.Sprintf("Removed nodes, ", toRemove))
 }
 
-func cmdLinkNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdLinkNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if len(args) != 2 {
 		return nwmessage.PsError(errors.New("Need exactly two nodes to link"))
 	}
@@ -210,7 +210,7 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string, c string) nwmessage.M
 	return nwmessage.PsSuccess("")
 }
 
-func cmdNewBlankMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdNewBlankMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	if len(args) != 0 {
 		return nwmessage.PsError(errors.New("Command does not accept arguments"))
@@ -227,7 +227,7 @@ func cmdNewBlankMap(p *Player, gm *GameModel, args []string, c string) nwmessage
 	return nwmessage.PsSuccess("Generating new blank map...")
 }
 
-func cmdNewRandMap(p *Player, gm *GameModel, args []string, c string) nwmessage.Message {
+func cmdNewRandMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// TODO fix d3 to update...
 	for _, t := range gm.Teams {
 		if t.poe != nil {

@@ -10,8 +10,8 @@ type Message struct {
 	Type   string `json:"type"`
 	Sender string `json:"sender"`
 	Data   string `json:"data"`
-	Code   string `json:"code"`
-} // TODO fix code submission to append to other data, this is unnecessary
+	// Code   string `json:"code"`
+}
 
 const (
 	alertStr       = "alert"
@@ -22,10 +22,10 @@ const (
 
 	challengeStateStr  = "challengeState"
 	compOutStateStr    = "compOutState"
-	editStateStr       = "editorState"
+	editStateStr       = "EditorState"
 	graphStateStr      = "graphState"
 	scoreStateStr      = "scoreState"
-	stdinStateStr      = "stdinState"
+	StdinStateStr      = "StdinState"
 	teamStateStr       = "teamState"
 	graphResetStr      = "graphReset"
 	resultStateStr     = "resultState"
@@ -144,7 +144,7 @@ func EditState(msg string) Message {
 
 func StdinState(msg string) Message {
 	return Message{
-		Type:   stdinStateStr,
+		Type:   StdinStateStr,
 		Sender: serverStr,
 		Data:   msg,
 	}

@@ -89,11 +89,11 @@ func actionConsumer(d *Dispatcher) {
 							p.Outgoing <- res
 						}
 					} else {
-						p.Outgoing <- nwmessage.PsError(fmt.Errorf("Unknown command, '%s'", msg[0]))
+						p.Outgoing <- nwmessage.PsError(fmt.Errorf("Unknown lobby command, '%s'", msg[0]))
 					}
 				}
 				// if play is not in the middle of something (which in the lobby they never should be) send prompt
-				p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+				p.SendPrompt()
 			} else {
 				// PLAYER IN GAME
 
@@ -197,7 +197,7 @@ func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 	// put player in the game
 	newGame.AddPlayer(p)
 
-	// p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+	// p.SendPrompt()
 	return nwmessage.PsSuccess(fmt.Sprintf("New game, '%s', created and joined", args[0]))
 }
 
@@ -272,7 +272,7 @@ func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mess
 	// put player in the game
 	game.AddPlayer(p)
 
-	// p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+	// p.SendPrompt()
 	return nwmessage.PsSuccess(fmt.Sprintf("Joined game, '%s'", args[0]))
 }
 
@@ -291,7 +291,7 @@ func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mes
 	d.Lobby.AddPlayer(p)
 
 	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Left game, '%s'", gameName))
-	p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+	p.SendPrompt()
 	return nwmessage.Message{}
 }
 

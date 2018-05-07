@@ -65,7 +65,7 @@ func (p *Player) editorState(s string) {
 	p.Outgoing <- nwmessage.EditState(s)
 }
 
-func (p *Player) sendPrompt() {
+func (p *Player) SendPrompt() {
 	p.Outgoing <- nwmessage.PsPrompt(p.Prompt())
 }
 

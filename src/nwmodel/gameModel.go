@@ -546,13 +546,13 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	p.Outgoing <- nwmessage.GraphState(gm.calcState(p, routeMap))
 
 	// send initial prompt state
-	p.sendPrompt()
+	p.SendPrompt()
 	return nil
 }
 
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
-	fmt.Printf("Removing player, %s", p.name)
+	fmt.Printf("<gm.RemovePlayer> Removing player, %s\n", p.name)
 	if _, ok := gm.Players[p.ID]; !ok {
 		return errors.New("player '" + p.GetName() + "' is not registered")
 	}

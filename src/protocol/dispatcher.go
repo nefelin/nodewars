@@ -104,7 +104,8 @@ func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
 		d.games[gameID].RemovePlayer(p)
 		delete(d.locations, p.ID)
 	} else {
-		delete(d.Lobby.players, p.ID)
+		// delete(d.Lobby.players, p.ID)
+		d.Lobby.RemovePlayer(p)
 	}
 
 	p.Socket.Close()
