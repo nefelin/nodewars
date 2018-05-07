@@ -962,15 +962,14 @@ class NWGraph {
 		const location = this.gameState.player_location
 		console.log('Player location!', location)
 		let node
-		if (location>-1){
-			 node = this.root.select('#node-'+location)
-
 		
-			if (this.focusBox) {
+		if (this.focusBox) {
 				this.focusBox.transition().duration(250).style('opacity',0).remove()
 			}
 
-				
+		if (location>-1){
+			 node = this.root.select('#node-'+location)
+
 			const factor = 2.1
 			const radius = node.select('.node-backing').attr('r')
 			const size = radius*factor

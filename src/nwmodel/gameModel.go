@@ -664,8 +664,10 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 			// check each player who is on team's route
 			if player.TeamName == t.Name {
 				// and if it contained that node, break the players connection
-				if _, ok := player.Route.containsNode(n); ok {
-					player.breakConnection(true)
+				if player.Route != nil {
+					if _, ok := player.Route.containsNode(n); ok {
+						player.breakConnection(true)
+					}
 				}
 			}
 		}
