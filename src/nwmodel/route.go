@@ -10,6 +10,7 @@ type route struct {
 }
 
 // route methods --------------------------------------------
+
 func (r route) containsNode(n *node) (int, bool) {
 	for i, node := range r.Nodes {
 		if n == node {
@@ -28,6 +29,7 @@ func (r route) asIds() []nodeID {
 	nodeCount := len(r.Nodes)
 	list := make([]nodeID, nodeCount+1)
 
+	// fmt.Printf("Route: %v\n,Nodecount: %d\nList: %v\n", r, nodeCount, list)
 	list[nodeCount] = r.Endpoint.ID
 	for i := 0; i < nodeCount; i++ {
 		list[i] = r.Nodes[nodeCount-1-i].ID

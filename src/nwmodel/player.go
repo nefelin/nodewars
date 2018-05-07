@@ -1,6 +1,7 @@
 package nwmodel
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -96,6 +97,21 @@ func (p *Player) Prompt() string {
 	prompt += promptEndChar
 
 	return prompt
+}
+
+func (p *Player) breakConnection(forced bool) {
+	if p.Route == nil {
+		// log.Panic("No route for player")
+		return
+	}
+
+	p.Route.Endpoint.removePlayer(p)
+	p.slotNum = -1
+	p.Route = nil
+
+	if forced {
+		p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
+	}
 }
 
 // TODO refactor this, modify how slots are tracked, probably with IDs

@@ -622,7 +622,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 	if routeNodes != nil {
 		// log.Println("Successful Connect")
 		// log.Printf("Route to target: %v", routeNodes)
-		gm.breakConnection(p, false)
+		p.breakConnection(false)
 		route := gm.establishConnection(p, routeNodes, target) // This should add player traffic to each intermediary and establish a connection on n
 		return route, nil
 	}
@@ -641,23 +641,21 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 	// return gm.Routes[p.ID]
 }
 
-func (gm *GameModel) breakConnection(p *Player, alert bool) {
-	// if _, exists := gm.Routes[p.ID]; exists {
-	if p.Route != nil {
-		p.Route.Endpoint.removePlayer(p)
-		// delete(gm.Routes, p.ID)
-		p.Route = nil
+// func (gm *GameModel) breakConnection(p *Player, alert bool) {
+// 	// if _, exists := gm.Routes[p.ID]; exists {
+// 	if p.Route == nil {
+// 		// log.Panic("No route for player")
+// 		return
+// 	}
 
-		if alert {
-			p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
-		}
-	}
+// 	p.Route.Endpoint.removePlayer(p)
+// 	p.slotNum = -1
+// 	p.Route = nil
 
-	// detach from any slots
-	if p.slotNum != -1 {
-		p.slotNum = -1
-	}
-}
+// 	if alert {
+// 		p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
+// 	}
+// }
 
 func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 	// if the module no longer supports routing for this modules team
@@ -667,7 +665,7 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 			if player.TeamName == t.Name {
 				// and if it contained that node, break the players connection
 				if _, ok := player.Route.containsNode(n); ok {
-					gm.breakConnection(player, true)
+					player.breakConnection(true)
 				}
 			}
 		}
