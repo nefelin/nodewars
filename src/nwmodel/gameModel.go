@@ -111,12 +111,26 @@ func (gm *GameModel) addTeams(teams []*team) error {
 // trailingTeam should hand back either smallest team or currently losing team, depending on game settings TODO
 func (gm *GameModel) trailingTeam() string {
 	var tt *team
-	// fmt.Printf("<trailingTeam> gm.Teams %v\n", gm.Teams)
+
+	// convert map to list
+	teamList := make([]*team, 0)
 	for _, team := range gm.Teams {
+		teamList = append(teamList, team)
+	}
+
+	// scramble list
+	for i := range teamList {
+		j := rand.Intn(i + 1)
+		teamList[i], teamList[j] = teamList[j], teamList[i]
+	}
+
+	// fmt.Printf("<trailingTeam> gm.Teams %v\n", gm.Teams)
+	for _, team := range teamList {
 		if tt == nil {
 			tt = team
 			continue
 		}
+
 		if len(team.players) < len(tt.players) {
 			tt = team
 		}

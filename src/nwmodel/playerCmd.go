@@ -36,9 +36,6 @@ var gameCmdList = map[string]playerCommand{
 
 	// // world interaction
 	"con": cmdConnect,
-	// disconnect
-	// "disconnect": cmdDisconnect,
-	// "dis":        cmdDisconnect,
 
 	"lang": cmdLang,
 
@@ -54,26 +51,15 @@ var gameCmdList = map[string]playerCommand{
 	"rm":     cmdRemoveModule,
 	"remove": cmdRemoveModule,
 
-	// "rf":    cmdRefac,
-	// "ref":   cmdRefac,
-	// "refac": cmdRefac,
-
 	"at":     cmdAttach,
 	"att":    cmdAttach,
 	"attach": cmdAttach,
-
-	// "nm": cmdNewMap,
-	// what am I attached to? what's my task? what's my language set to?
-	// "st":   cmdStatus,
-	// "stat": cmdStatus,
 
 	"who": cmdWho,
 
 	"ls": cmdLs, // list modules/mac. out of spec but for expediency
 
 	"sp": cmdSetPOE,
-	// "boilerplate": cmdLoadBoilerplate,
-	// "bp":          cmdLoadBoilerplate,
 }
 
 func actionConsumer(gm *GameModel) {
@@ -201,9 +187,6 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 || args[0] == "" {
-		// if p.TeamName == "" {
-		// 	return nwmessage.PsNoTeam()
-		// }
 		tt := gm.trailingTeam()
 		p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("Auto-assigning to team '%s'", tt))
 		return cmdJoinTeam(p, gm, []string{tt})
@@ -534,7 +517,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			}
 		} else {
 			if len(args) > 0 {
-				p.Outgoing <- nwmessage.PsError(errors.New("Ignoring argument! Cannot change type of an installed feature"))
+				p.Outgoing <- nwmessage.PsError(errors.New("Ignoring argument! Cannot change the type on an installed feature"))
 			}
 		}
 	}
@@ -551,11 +534,9 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			return
 		}
 
-		// LOCK machine
 		mac.Lock()
-		defer mac.Unlock()
-
 		gm.claimMachine(p, response, feaType)
+		mac.Unlock()
 	}()
 
 	// p.Outgoing <- nwmessage.TerminalPause()
