@@ -515,113 +515,50 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		return nwmessage.PsError(err)
 	}
 
-	c := p.EditorState
 	mac := p.currentMachine()
 
 	var feaType feature.Type
 
+	// Abstract this TODO
 	if mac.isFeature() {
-		if len(args) < 1 {
-			return nwmessage.PsError(errors.New("Make requires one argument when attached to a feature"))
-		}
+		if mac.Type == feature.None {
+			if len(args) < 1 {
+				return nwmessage.PsError(errors.New("Make requires one argument when attached to an untyped feature"))
+			}
 
-		var err error
-		feaType, err = feature.FromString(args[0])
+			var err error
+			feaType, err = feature.FromString(args[0])
 
-		if err != nil {
-			return nwmessage.PsError(fmt.Errorf("Invalid feature type, '%s'", args[0]))
+			if err != nil {
+				return nwmessage.PsError(fmt.Errorf("Invalid feature type, '%s'", args[0]))
+			}
+		} else {
+			if len(args) > 0 {
+				p.Outgoing <- nwmessage.PsError(errors.New("Ignoring argument! Cannot change type of an installed feature"))
+			}
 		}
 	}
-
-	// enforce module language
-	// if !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language {
-	// 	nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
-	// }
 
 	// passed error checks
 
 	go func() {
 		defer p.SendPrompt()
 
-		// mac := p.currentMachine()
-		// log.Printf("Make goroutine, mac.challenge.ID: %s", mac.challenge.ID)
-		response := submitTest(mac.challenge.ID, p.language, c)
-		// p.compiling = false
+		response, err := p.submitCode()
 
-		if response.Message.Type == "error" {
-			p.Outgoing <- nwmessage.PsCompileFail()
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s\nErrors:\n%s", response.Graded, response.Message.Data))
+		if err != nil {
+			p.Outgoing <- nwmessage.PsError(err)
 			return
 		}
 
-		newModHealth := response.passed()
-
-		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution failed all tests"))
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
-			return
-		}
-		// if there's no error show graded results, regardless of what happens with the module:
-		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
-
-		// LOCK mac
+		// LOCK machine
 		mac.Lock()
 		defer mac.Unlock()
 
-		if !mac.isNeutral() {
-			// in case we're refactoring a friendly module
-			if mac.belongsTo(p.TeamName) {
-
-				mac.Health = newModHealth
-				mac.language = p.language
-
-				gm.broadcastState()
-				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
-				return
-			}
-
-			// hostile module
-			switch {
-			case newModHealth < mac.Health:
-				p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
-				return
-
-			case newModHealth == mac.Health:
-				p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", newModHealth, mac.MaxHealth))
-				return
-
-			case newModHealth > mac.Health:
-				// // track old owner to evaluate traffic after module loss
-				oldTeamName := mac.TeamName
-
-				gm.refactorMachine(mac, p, newModHealth)
-
-				// update map state
-				gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
-				gm.broadcastState()
-
-				// broadcast terminal messages
-				gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
-				p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeamName, mac.Health, mac.MaxHealth))
-				return
-			}
-
-		}
-
-		// mac is empty, simply install...
-		gm.claimMachine(p, response)
-		p.Route.Endpoint.Feature.Type = feaType
-
-		gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
-		gm.broadcastState()
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Machine constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
-		return
+		gm.claimMachine(p, response, feaType)
 	}()
 
-	// p.compiling = true
-	p.Outgoing <- nwmessage.TerminalPause()
+	// p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Compiling...")
 }
 

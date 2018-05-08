@@ -185,64 +185,178 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 	}
 }
 
-func (gm *GameModel) claimMachine(p *Player, r ExecutionResult) {
+// func (gm *GameModel) claimMachine(p *Player, r ExecutionResult) {
+// 	mac := p.currentMachine()
+
+// 	n := p.Route.Endpoint
+// 	t := gm.Teams[p.TeamName]
+
+// 	// track whether node allowed routing for active player before building
+// 	allowed := n.hasMachineFor(t)
+
+// 	mac.claim(p, r)
+
+// 	// if routing status has changed, recalculate powered nodes
+// 	if p.Route.Endpoint.hasMachineFor(t) != allowed {
+// 		gm.calcPoweredNodes(t)
+// 	}
+
+// 	// recalculate this teams processsing power
+// 	gm.updateCoinPerTick(t)
+
+// 	// kick out other players working at this mac
+// 	gm.detachOtherPlayers(p, fmt.Sprintf("%s took control of the machine you were working on", p.name))
+// }
+
+// func (gm *GameModel) refactorMachine(m *machine, p *Player, response ExecutionResult) {
+// 	solutionStrength := response.passed()
+
+// 	var hostile bool
+
+// 	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) {
+// 		hostile = true
+// 	}
+
+// 	if hostile {
+// 		switch {
+// 		case solutionStrength < mac.Health:
+// 			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
+// 			return
+
+// 		case solutionStrength == mac.Health:
+// 			p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", solutionStrength, mac.MaxHealth))
+// 			return
+// 		}
+
+// 	}
+
+// 	// track old owner to evaluate traffic after module loss
+// 	oldTeam := gm.Teams[m.TeamName]
+// 	newTeam := gm.Teams[p.TeamName]
+
+// 	// track whether node allowed routing for active player before refactor
+// 	allowed := p.Route.Endpoint.hasMachineFor(newTeam)
+// 	// TODO I think we need to do same for old team, but test first
+
+// 	// refactor module to new owner and health
+// 	m.TeamName = p.TeamName
+// 	m.language = p.language
+// 	m.Health = solutionStrength
+
+// 	// evaluate routing of player trffic through node
+// 	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+
+// 	// if routing status has changed, recalculate powered nodes
+// 	if p.Route.Endpoint.hasMachineFor(newTeam) != allowed {
+// 		gm.calcPoweredNodes(newTeam)
+// 	}
+
+// 	// recalculate coin production
+// 	gm.updateCoinPerTick(oldTeam)
+// 	gm.updateCoinPerTick(newTeam)
+
+// 	// map alert
+// 	gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
+
+// 	// update map
+// 	gm.broadcastState()
+
+// 	// do terminal messaging
+// 	if hostile {
+// 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+// 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth))
+// 	} else if !mac.isNeutral() {
+// 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+// 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
+// 	} else {
+// 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+// 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Machine constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
+// 	}
+// }
+func (gm *GameModel) claimMachine(p *Player, response ExecutionResult, fType feature.Type) {
 	mac := p.currentMachine()
+	solutionStrength := response.passed()
 
-	if mac == nil {
-		log.Panic("Player is not attached to a machine")
-		return
+	var hostile bool
+	var friendly bool
+
+	if !mac.isNeutral() {
+		if !mac.belongsTo(p.TeamName) {
+			hostile = true
+		} else {
+			friendly = true
+		}
 	}
 
-	if mac.TeamName != "" {
-		log.Panic(errors.New("Machine is not neutral"))
-		return
+	if hostile {
+		switch {
+		case solutionStrength < mac.Health:
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Graded), mac.Health, mac.MaxHealth))
+			return
+
+		case solutionStrength == mac.Health:
+			p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", solutionStrength, mac.MaxHealth))
+			return
+		}
+
 	}
 
-	n := p.Route.Endpoint
-	t := gm.Teams[p.TeamName]
-
-	// track whether node allowed routing for active player before building
-	allowed := n.hasMachineFor(t)
-
-	mac.claim(p, r)
-
-	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.hasMachineFor(t) != allowed {
-		gm.calcPoweredNodes(t)
-	}
-
-	// recalculate this teams processsing power
-	gm.updateCoinPerTick(t)
-
-	// kick out other players working at this mac
-	gm.detachOtherPlayers(p, fmt.Sprintf("%s took control of the machine you were working on", p.name))
-}
-
-func (gm *GameModel) refactorMachine(m *machine, p *Player, newHealth int) {
 	// track old owner to evaluate traffic after module loss
-	oldTeam := gm.Teams[m.TeamName]
+	newTeam := gm.Teams[p.TeamName]
+	oldTeam := gm.Teams[mac.TeamName]
 
-	pTeam := gm.Teams[p.TeamName]
 	// track whether node allowed routing for active player before refactor
-	allowed := p.Route.Endpoint.hasMachineFor(pTeam)
+	allowed := p.Route.Endpoint.hasMachineFor(newTeam)
+	oldAllowed := p.Route.Endpoint.hasMachineFor(newTeam)
+
+	// TODO I think we need to do same for old team, but test first
 
 	// refactor module to new owner and health
-	m.TeamName = p.TeamName
-	m.Health = newHealth
-
-	// evaluate routing of player trffic through node
-	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
-
-	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.hasMachineFor(pTeam) != allowed {
-		gm.calcPoweredNodes(pTeam)
+	mac.TeamName = p.TeamName
+	mac.language = p.language
+	mac.Health = solutionStrength
+	if mac.Type == feature.None {
+		mac.Type = fType
 	}
 
-	// recalculate old teams processsing power
-	gm.updateCoinPerTick(oldTeam)
+	// evaluate routing of player trffic through node
+	if hostile {
+		gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+	}
 
-	// recalculate this teams processsing power
-	gm.updateCoinPerTick(pTeam)
+	// if routing status has changed, recalculate powered nodes
+	if p.Route.Endpoint.hasMachineFor(newTeam) != allowed {
+		gm.calcPoweredNodes(newTeam)
+	}
+	if hostile {
+		if p.Route.Endpoint.hasMachineFor(oldTeam) != oldAllowed {
+			gm.calcPoweredNodes(oldTeam)
+		}
+	}
+
+	// recalculate coin production
+	gm.updateCoinPerTick(newTeam)
+	if hostile {
+		gm.updateCoinPerTick(oldTeam)
+	}
+
+	// map alert
+	gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
+
+	// update map
+	gm.broadcastState()
+
+	// do terminal messaging
+	if hostile {
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth))
+	} else if friendly {
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
+	} else {
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
+	}
 }
 
 func (gm *GameModel) resetMachine(p *Player) {

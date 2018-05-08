@@ -115,6 +115,27 @@ func (p *Player) canSubmit() error {
 
 }
 
+func (p *Player) submitCode() (ExecutionResult, error) {
+	response := submitTest(p.currentMachine().challenge.ID, p.language, p.EditorState)
+
+	if response.Message.Type == "error" {
+		//p.Outgoing <- nwmessage.PsCompileFail()
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s\nErrors:\n%s", response.Graded, response.Message.Data))
+		return response, fmt.Errorf("Compiled failed")
+	}
+
+	if response.passed() == 0 {
+		//p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution failed all tests"))
+		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
+		return response, fmt.Errorf("Solution failed all tests")
+	}
+
+	// if there's no error show graded results, regardless of what happens with the module:
+	p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
+
+	return response, nil
+}
+
 func (p *Player) breakConnection(forced bool) {
 	if p.Route == nil {
 		// log.Panic("No route for player")
