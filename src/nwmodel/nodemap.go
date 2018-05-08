@@ -4,6 +4,8 @@ import (
 	"errors"
 	"log"
 	"sort"
+
+	"feature"
 )
 
 type nodeMap struct {
@@ -84,7 +86,7 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 			continue
 		}
 		// make an available POE for each nodeID passed
-		m.Nodes[id].Feature.Type = "poe"
+		m.Nodes[id].Feature.Type = feature.POE
 		// m.POEs[id] = true
 	}
 }
@@ -92,7 +94,7 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 func (m *nodeMap) collectEmptyPoes() []*node {
 	poes := make([]*node, 0)
 	for _, node := range m.Nodes {
-		if node.Feature.Type == "poe" {
+		if node.Feature.Type == feature.POE {
 			poes = append(poes, node)
 		}
 	}

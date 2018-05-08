@@ -8,6 +8,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"feature"
 )
 
 // type playerCommand func(p *Player, gm *GameModel, args []string) nwmessage.Message
@@ -456,7 +458,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	_, addOk := p.Route.Endpoint.addressMap[macAddress]
 
 	if !addOk {
-		return nwmessage.PsError(fmt.Errorf("Invalid address, '%s", macAddress))
+		return nwmessage.PsError(fmt.Errorf("Invalid address, '%s'", macAddress))
 	}
 
 	// passed checks, set player mac to target
@@ -507,9 +509,8 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 }
 
 func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	// temporary hack:
+
 	c := p.EditorState
-	// fmt.Printf("cmdMake p.EditorState: %s\n", p.EditorState)
 
 	// TODO handle compiler error
 	if c == "" {
@@ -522,6 +523,21 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		return nwmessage.PsError(errors.New("Not attached to a machine"))
 	}
 
+	var feaType feature.Type
+	// _ = feaType
+	if mac.isFeature() {
+		if len(args) < 1 {
+			return nwmessage.PsError(errors.New("Make requires one argument when attached to a feature"))
+		}
+
+		var err error
+		feaType, err = feature.FromString(args[0])
+
+		if err != nil {
+			return nwmessage.PsError(fmt.Errorf("Invalid feature type, '%s'", args[0]))
+		}
+	}
+
 	// enforce module language
 	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language {
 		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
@@ -529,10 +545,10 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	// passed error checks
 
-	go func(p *Player, gm *GameModel, c string) {
+	go func() {
 		defer p.SendPrompt()
 
-		mac := p.currentMachine()
+		// mac := p.currentMachine()
 		// log.Printf("Make goroutine, mac.challenge.ID: %s", mac.challenge.ID)
 		response := submitTest(mac.challenge.ID, p.language, c)
 		// p.compiling = false
@@ -599,16 +615,15 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		}
 
 		// mac is empty, simply install...
-		// newMod := newModule(p, response, p.language)
-
 		gm.claimMachine(p, response)
+		p.Route.Endpoint.Feature.Type = feaType
 
 		gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
 		gm.broadcastState()
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Machine constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
 		return
-	}(p, gm, c)
+	}()
 
 	// p.compiling = true
 	p.Outgoing <- nwmessage.TerminalPause()

@@ -12,7 +12,7 @@ type node struct {
 	ID          nodeID     `json:"id"` // keys and ids is redundant? TODO
 	Connections []nodeID   `json:"connections"`
 	Machines    []*machine `json:"machines"` // TODO why is this a list of pointerS?
-	Feature     *feature   `json:"feature"`
+	Feature     *machine   `json:"feature"`
 	Remoteness  float64    //`json:"remoteness"`
 	playersHere []playerID
 	addressMap  map[string]*machine
@@ -64,15 +64,14 @@ func (n *node) initMachines() {
 		n.Machines[i].resetChallenge()
 	}
 
-	n.Feature.machine = *newMachine()
-	n.Feature.machine.isFeature = true
-	n.Feature.machine.resetChallenge()
+	n.Feature = newFeature()
+	n.Feature.resetChallenge()
 
 	n.initAddressMap()
 }
 
 func (n *node) initAddressMap() {
-	n.addressMap[newMacAddress(2)] = &n.Feature.machine
+	n.addressMap[newMacAddress(2)] = n.Feature
 
 	for _, m := range n.Machines {
 		newAddress := newMacAddress(2)

@@ -8,6 +8,8 @@ import (
 	"math/rand"
 	"nwmessage"
 	"time"
+
+	"feature"
 )
 
 // GameModel holds all state information
@@ -99,7 +101,7 @@ func (gm *GameModel) addTeams(teams []*team) error {
 	// remove any leftovers
 	if len(nodes) > 0 {
 		for _, node := range nodes {
-			node.Feature.Type = ""
+			node.Feature.Type = feature.None
 		}
 	}
 
@@ -166,9 +168,8 @@ func (gm *GameModel) playersAt(n *node) []*Player {
 }
 
 func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
-	slot := p.currentMachine()
-	if slot == nil {
-		log.Panic("Player is not attached to slot")
+	if p.currentMachine == nil {
+		log.Panic("Player is not attached to a machine")
 	}
 
 	for _, player := range gm.playersAt(p.Route.Endpoint) {
@@ -177,7 +178,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 
 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from slot %d", player.slotNum))
+			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from machine %d", player.slotNum))
 			player.Outgoing <- nwmessage.EditState(editMsg)
 			player.slotNum = -1
 		}
@@ -485,7 +486,7 @@ func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
 	}
 
 	node := gm.Map.Nodes[ni]
-	if node.Feature.Type != "poe" {
+	if node.Feature.Type != feature.POE {
 		return fmt.Errorf("No Point of Entry feature at Node, '%d'", ni)
 	}
 

@@ -1,6 +1,7 @@
 package nwmodel
 
 import (
+	"feature"
 	"math/rand"
 	"sync"
 )
@@ -15,27 +16,17 @@ type machine struct {
 	TeamName string `json:"owner"`
 
 	// solution  string // store solution used to pass. could be useful for later mechanics
-	isFeature bool
+	Type feature.Type `json:"type"` // NA for non-features, none or other feature.Type for features
 
 	language  string // `json:"languageId"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
 }
 
-type feature struct {
-	Type string `json:"type"` // type of feature
-	machine
-}
-
-type featureType string
-
-const (
-	POE       featureType = "poe"
-	Cloak     featureType = "cloak"
-	Firewall  featureType = "cloak"
-	Overclock featureType = "overclock"
-	None      featureType = ""
-)
+// type feature struct {
+// 	Type featureType `json:"type"` // type of feature
+// 	machine
+// }
 
 type challengeCriteria struct {
 	IDs        []int64  // list of acceptable challenge ids
@@ -46,12 +37,15 @@ type challengeCriteria struct {
 // init methods
 
 func newMachine() *machine {
-	return &machine{Powered: true}
+	return &machine{
+		Powered: true,
+	}
 }
 
-func newFeature() *feature {
-	return &feature{
-		machine: machine{Powered: true},
+func newFeature() *machine {
+	return &machine{
+		Type:    feature.None,
+		Powered: true,
 	}
 }
 
@@ -68,6 +62,16 @@ func (m *machine) isNeutral() bool {
 		return true
 	}
 	return false
+}
+
+func (m *machine) isFeature() bool {
+	// fmt.Printf("machine Type: %v", m.Type)
+	// fmt.Printf("Feature NA: %v", feature.NA)
+	// fmt.Printf("Equal: %v", m.Type == feature.NA)
+	if m.Type == nil {
+		return false
+	}
+	return true
 }
 
 func (m *machine) belongsTo(teamName string) bool {

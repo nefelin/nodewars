@@ -71,7 +71,7 @@ func (n node) forMsg() string {
 
 func (m machine) forMsg() string {
 	var feature string
-	if m.isFeature {
+	if m.isFeature() {
 		feature = " (feature)"
 	}
 
@@ -85,14 +85,6 @@ func (m machine) forMsg() string {
 
 func (m machine) details() string {
 	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
-}
-
-func (f feature) String() string {
-	retStr := f.machine.forMsg()
-	if f.Type != "" {
-		retStr += fmt.Sprintf(", %s", f.Type)
-	}
-	return retStr
 }
 
 // func (m machine) forProbe() string {
