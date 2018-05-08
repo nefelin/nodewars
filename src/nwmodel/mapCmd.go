@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"nwmessage"
 	"strconv"
+
+	"validation"
 )
 
 var mapCmdList = map[string]playerCommand{
@@ -234,10 +236,11 @@ func cmdNewRandMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			return nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
 		}
 	}
-	nodeCount, err := validateOneIntArg(args)
+	argc, err := validation.Validate([]string{"Int"}, args)
 	if err != nil {
 		return nwmessage.PsError(err)
 	}
+	nodeCount := argc[0].(int)
 
 	// nodeIdcount should be irrelevant since its now tied to maps
 	// nodeIDCount = 0

@@ -524,7 +524,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	var feaType feature.Type
-	// _ = feaType
+
 	if mac.isFeature() {
 		if len(args) < 1 {
 			return nwmessage.PsError(errors.New("Make requires one argument when attached to a feature"))
@@ -746,23 +746,6 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string) nwmessage.Message 
 	p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Resetting machine...")
 
-}
-
-func cmdLoadMod(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	return nwmessage.Message{}
-}
-
-func validateOneIntArg(args []string) (int, error) {
-	if len(args) < 1 {
-		return 0, fmt.Errorf("Expected 1 argument, received %v", len(args))
-	}
-
-	target, err := strconv.Atoi(args[0])
-	if err != nil {
-		return 0, fmt.Errorf("expected integer, got '%v'", args[0])
-	}
-
-	return target, nil
 }
 
 // Async Confirmation Dialogues
