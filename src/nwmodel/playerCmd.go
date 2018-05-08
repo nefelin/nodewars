@@ -510,18 +510,13 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
+	err := p.canSubmit()
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
+
 	c := p.EditorState
-
-	// TODO handle compiler error
-	if c == "" {
-		return nwmessage.PsError(errors.New("No code submitted"))
-	}
-
 	mac := p.currentMachine()
-
-	if mac == nil {
-		return nwmessage.PsError(errors.New("Not attached to a machine"))
-	}
 
 	var feaType feature.Type
 
@@ -539,9 +534,9 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// enforce module language
-	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language {
-		nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
-	}
+	// if !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language {
+	// 	nwmessage.PsError(fmt.Errorf("This module is written in %s, your code must be written in %s", mac.language, mac.language))
+	// }
 
 	// passed error checks
 

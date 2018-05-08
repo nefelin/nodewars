@@ -101,6 +101,20 @@ func (p *Player) Prompt() string {
 	return prompt
 }
 
+func (p *Player) canSubmit() error {
+	mac := p.currentMachine()
+	switch {
+	case p.EditorState == "":
+		return errors.New("No code to submit")
+	case mac == nil:
+		return errors.New("Not attached to a machine")
+	case !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.language:
+		return fmt.Errorf("This machine is written in %s, your code must also be written in %s", mac.language, mac.language)
+	}
+	return nil
+
+}
+
 func (p *Player) breakConnection(forced bool) {
 	if p.Route == nil {
 		// log.Panic("No route for player")
