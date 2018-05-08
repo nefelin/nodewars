@@ -64,7 +64,7 @@ func (n *node) initMachines() {
 		n.Machines[i].resetChallenge()
 	}
 
-	n.Feature = newFeature()
+	// n.Feature = newFeature(n.Feature.Type) // Preserve type in case map contains feature type info
 	n.Feature.resetChallenge()
 
 	n.initAddressMap()
