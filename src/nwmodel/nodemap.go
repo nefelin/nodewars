@@ -161,6 +161,7 @@ func (m *nodeMap) newNode() *node {
 		Remoteness:  100,
 		Machines:    []*machine{newMachine()},
 		Feature:     newFeature(),
+		addressMap:  make(map[string]*machine),
 	}
 }
 

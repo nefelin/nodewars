@@ -3,6 +3,7 @@ package nwmodel
 // Stringers ----------------------------------------------------------------------------------
 import (
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -49,22 +50,36 @@ func (r route) String() string {
 
 func (n node) forMsg() string {
 
+	// sort keys for consistent presentation
+	addList := make([]string, 0)
+	for add := range n.addressMap {
+		addList = append(addList, add)
+	}
+	sort.Strings(addList)
+
+	// compose list of all machines
 	macList := ""
-	for i, mac := range n.Machines {
-		macList += "\n" + strconv.Itoa(i) + ":" + mac.forMsg()
+	for _, add := range addList {
+		mac := n.addressMap[add]
+		macList += "\n" + add + ":" + mac.forMsg()
 	}
 
 	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
 
-	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nFeature: \n%s\nMachines: %v", n.ID, connectList, n.Feature, macList)
+	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
 }
 
 func (m machine) forMsg() string {
+	var feature string
+	if m.isFeature {
+		feature = " (feature)"
+	}
+
 	switch {
 	case m.TeamName != "":
-		return "(" + m.details() + ")"
+		return "(" + m.details() + ")" + feature
 	default:
-		return "( -neutral- )"
+		return "( -neutral- )" + feature
 	}
 }
 

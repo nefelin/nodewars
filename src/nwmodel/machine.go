@@ -7,13 +7,16 @@ import (
 
 type machine struct {
 	sync.Mutex
-	// accepts   challengeCriteria
+	// accepts   challengeCriteria // store what challenges can fill this machine
 	challenge Challenge
 	// Type      string `json:"type"`
 	Powered  bool   `json:"powered"`
 	builder  string // `json:"creator"`
 	TeamName string `json:"owner"`
-	// solution  string
+
+	// solution  string // store solution used to pass. could be useful for later mechanics
+	isFeature bool
+
 	language  string // `json:"languageId"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
@@ -23,6 +26,16 @@ type feature struct {
 	Type string `json:"type"` // type of feature
 	machine
 }
+
+type featureType string
+
+const (
+	POE       featureType = "poe"
+	Cloak     featureType = "cloak"
+	Firewall  featureType = "cloak"
+	Overclock featureType = "overclock"
+	None      featureType = ""
+)
 
 type challengeCriteria struct {
 	IDs        []int64  // list of acceptable challenge ids

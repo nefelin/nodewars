@@ -15,6 +15,7 @@ type node struct {
 	Feature     *feature   `json:"feature"`
 	Remoteness  float64    //`json:"remoteness"`
 	playersHere []playerID
+	addressMap  map[string]*machine
 }
 
 // node methods -------------------------------------------------------------------------------
@@ -64,7 +65,25 @@ func (n *node) initMachines() {
 	}
 
 	n.Feature.machine = *newMachine()
+	n.Feature.machine.isFeature = true
 	n.Feature.machine.resetChallenge()
+
+	n.initAddressMap()
+}
+
+func (n *node) initAddressMap() {
+	n.addressMap[newMacAddress(2)] = &n.Feature.machine
+
+	for _, m := range n.Machines {
+		newAddress := newMacAddress(2)
+		_, ok := n.addressMap[newAddress]
+		for ok {
+			newAddress = newMacAddress(2)
+			_, ok = n.addressMap[newAddress]
+		}
+		n.addressMap[newAddress] = m
+	}
+
 }
 
 // addConnection is reciprocol
@@ -162,6 +181,17 @@ func (n *node) removePlayer(p *Player) {
 	n.playersHere = cutIntFromSlice(p.ID, n.playersHere)
 }
 
+// helper to generate macAddresses
+const charBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
+
+func newMacAddress(n int) string {
+	b := make([]byte, n)
+	for i := range b {
+		b[i] = charBytes[rand.Intn(len(charBytes))]
+	}
+	return string(b)
+}
+
 // helper function for removing player from slice of players
 func cutStrFromSlice(p string, s []string) []string {
 	for i, thisP := range s {
@@ -175,16 +205,3 @@ func cutStrFromSlice(p string, s []string) []string {
 	// log.Println("Player not found in slice")
 	return s
 }
-
-// func cutPFromSlice(s []*Player, p *Player) []*Player {
-// 	for i, thisP := range s {
-// 		if p == thisP {
-// 			// swaps the last element with the found element and returns with the last element cut
-// 			s[len(s)-1], s[i] = s[i], s[len(s)-1]
-// 			return s[:len(s)-1]
-// 		}
-// 	}
-// 	// log.Printf("CutPlayer returning: %v", s)
-// 	log.Println("Player not found in slice")
-// 	return s
-// }

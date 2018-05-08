@@ -435,34 +435,41 @@ func cmdScore(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 // TODO refactor cmdAttach for clarity and redundancy
 func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	slotNum, err := validateOneIntArg(args)
-	if err != nil {
-		return nwmessage.PsError(err)
-	}
+	// slotNum, err := validateOneIntArg(args)
+	// if err != nil {
+	// 	return nwmessage.PsError(err)
+	// }
 
 	// if err = validateSlotIs("either", p, slotNum); err != nil {
 	// 	return nwmessage.PsError(err)
 	// }
 
-	switch {
-	case p.Route == nil:
-		return nwmessage.PsNoConnection()
+	if len(args) < 1 {
+		return nwmessage.PsError(errors.New("Attach requires one argument"))
+	}
 
-	case slotNum > len(p.Route.Endpoint.Machines)-1 || slotNum < 0:
-		return nwmessage.PsError(fmt.Errorf("Machine '%d' does not exist", slotNum))
+	if p.Route == nil {
+		return nwmessage.PsNoConnection()
+	}
+
+	macAddress := args[0]
+	_, addOk := p.Route.Endpoint.addressMap[macAddress]
+
+	if !addOk {
+		return nwmessage.PsError(fmt.Errorf("Invalid address, '%s", macAddress))
 	}
 
 	// passed checks, set player mac to target
-	p.slotNum = slotNum
-	pSlot := p.currentMachine()
+	p.macAddress = macAddress
+	mac := p.currentMachine()
 
 	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false
-	if !pSlot.isNeutral() && !pSlot.belongsTo(p.TeamName) {
+	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) {
 		langLock = true
-		gm.setLanguage(p, pSlot.language)
+		gm.setLanguage(p, mac.language)
 	}
-	// log.Printf("Playyer attached to mac: %d, challengeID: %s\n", p.slotNum, pSlot.challenge.ID)
+	// log.Printf("Playyer attached to mac: %d, challengeID: %s\n", p.slotNum, mac.challenge.ID)
 
 	// Send mac info to edit buffer
 	msgPostfix := "\nchallenge details loaded to codebox"
@@ -471,8 +478,8 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	langDetails := gm.languages[p.language]
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
-	sampleIO := pSlot.challenge.SampleIO
-	description := pSlot.challenge.ShortDesc
+	sampleIO := mac.challenge.SampleIO
+	description := mac.challenge.ShortDesc
 
 	p.stdinState(sampleIO[0].Input)
 
@@ -490,11 +497,11 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 	}
 
-	retText := fmt.Sprintf("Attached to mac %d: \ncontents:%v", slotNum, pSlot.forMsg())
+	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.forMsg())
 	retText += msgPostfix
 	if langLock {
 		// TODO add this message to codebox
-		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", pSlot.language)
+		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", mac.language)
 	}
 	return nwmessage.PsSuccess(retText)
 }

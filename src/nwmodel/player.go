@@ -25,7 +25,9 @@ type Player struct {
 	Outgoing chan nwmessage.Message `json:"-"`
 	language string                 // current working language
 
-	slotNum   int                 // currently attached to slotNum of current node
+	slotNum    int    // currently attached to slotNum of current node
+	macAddress string // address of the machine player is current attached to
+
 	dialogue  *nwmessage.Dialogue // this holds any dialogue the players in the middle of
 	compiling bool                // this is used to block player action while submitted code is compiling
 	ChatMode  bool                // track whether player is in chatmode or not (for use in lobby)
@@ -116,11 +118,11 @@ func (p *Player) breakConnection(forced bool) {
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) currentMachine() *machine {
-	if p.Route == nil || p.slotNum < 0 || p.slotNum >= len(p.Route.Endpoint.Machines) {
+	if p.Route == nil {
 		return nil
 	}
 
-	return p.Route.Endpoint.Machines[p.slotNum]
+	return p.Route.Endpoint.addressMap[p.macAddress]
 }
 
 // GetName returns the players name if they have one, assigns one if they don't
