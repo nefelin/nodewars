@@ -82,11 +82,12 @@ func (m *nodeMap) findNodeEccentricity(n *node) int {
 func (m *nodeMap) addPoes(ns ...nodeID) {
 	for _, id := range ns {
 		// skip bad ids
-		if !m.nodeExists(id) {
+		node := m.getNode(id)
+		if node == nil {
 			continue
 		}
 		// make an available POE for each nodeID passed
-		m.Nodes[id].Feature.Type = feature.POE
+		node.Feature.Type = feature.POE
 		// m.POEs[id] = true
 	}
 }
@@ -238,23 +239,23 @@ func fillNodeSliceHoles(ns []*node) []*node {
 
 func (m *nodeMap) connectNodes(n1, n2 nodeID) error {
 	// Check existence of both elements
-	if m.nodeExists(n1) && m.nodeExists(n2) {
+	node1 := m.getNode(n1)
+	node2 := m.getNode(n2)
 
-		// add connection value to each node,
-		m.Nodes[n1].addConnection(m.Nodes[n2])
-		return nil
-
+	if node1 == nil && node2 == nil {
+		log.Println("connectNodes error")
+		return errors.New("One or both nodes out of range")
 	}
 
-	log.Println("connectNodes error")
-	return errors.New("One or both nodes out of range")
+	m.Nodes[n1].addConnection(m.Nodes[n2])
+	return nil
 }
 
-func (m *nodeMap) nodeExists(n nodeID) bool {
-	if n > -1 && n < len(m.Nodes) {
-		return true
+func (m *nodeMap) getNode(n nodeID) *node {
+	if n < 0 || n > len(m.Nodes)-1 {
+		return nil
 	}
-	return false
+	return m.Nodes[n]
 }
 
 // nodesConnections takes one of the maps nodes and converts its connections (in the form of nodeIDs) into pointers to actual node objects

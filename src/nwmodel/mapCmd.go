@@ -113,7 +113,7 @@ func cmdAddPoes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		if err != nil {
 			return nwmessage.PsError(err)
 		}
-		if !gm.Map.nodeExists(targetNode) {
+		if nodeCheck := gm.Map.getNode(targetNode); nodeCheck == nil {
 			return nwmessage.PsError(fmt.Errorf("Node %d does not exist", targetNode))
 		}
 		targs[i] = targetNode
@@ -148,7 +148,7 @@ func cmdRemoveNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			return nwmessage.PsError(err)
 		}
 
-		if !gm.Map.nodeExists(targetNode) {
+		if nodeCheck := gm.Map.getNode(targetNode); nodeCheck == nil {
 			return nwmessage.PsError(fmt.Errorf("Node %d not found", targetNode))
 		}
 
@@ -176,7 +176,7 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		if err != nil {
 			return nwmessage.PsError(err)
 		}
-		if !gm.Map.nodeExists(targetNode) {
+		if nodeCheck := gm.Map.getNode(targetNode); nodeCheck == nil {
 			return nwmessage.PsError(fmt.Errorf("Node %d does not exist", targetNode))
 		}
 
@@ -213,6 +213,9 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 }
 
 func cmdNewBlankMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	if gm.running {
+		return nwmessage.PsError(errors.New("Cannot alter map while game is running"))
+	}
 
 	if len(args) != 0 {
 		return nwmessage.PsError(errors.New("Command does not accept arguments"))
@@ -231,11 +234,10 @@ func cmdNewBlankMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 func cmdNewRandMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// TODO fix d3 to update...
-	for _, t := range gm.Teams {
-		if t.poe != nil {
-			return nwmessage.PsError(errors.New("Cannot alter map after a Point of Entry is set"))
-		}
+	if gm.running {
+		return nwmessage.PsError(errors.New("Cannot alter map while game is running"))
 	}
+
 	argc, err := validation.Validate([]string{"Int"}, args)
 	if err != nil {
 		return nwmessage.PsError(err)

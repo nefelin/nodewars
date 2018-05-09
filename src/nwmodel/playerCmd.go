@@ -59,7 +59,7 @@ var gameCmdList = map[string]playerCommand{
 
 	"ls": cmdLs, // list modules/mac. out of spec but for expediency
 
-	"sp": cmdSetPOE,
+	// "sp": cmdSetPOE,
 }
 
 func actionConsumer(gm *GameModel) {
@@ -199,10 +199,14 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	retStr := fmt.Sprintf("You're on the " + args[0] + " team")
 
-	tp := gm.Teams[p.TeamName].poe
-
-	if tp == nil {
+	if len(gm.Teams[p.TeamName].poes) < 1 {
 		retStr += "\nYour team doesn't have a point of entry yet.\nUse 'sp node_id' to set one and begin playing"
+	}
+
+	var tp *node
+	for n := range gm.Teams[p.TeamName].poes {
+		tp = n
+		break
 	}
 
 	if tp != nil {
@@ -339,44 +343,46 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsNeutral(retMsg)
 }
 
-func cmdSetPOE(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	if p.TeamName == "" {
-		return nwmessage.PsNoTeam()
-	}
+// func cmdSetPOE(p *Player, gm *GameModel, args []string) nwmessage.Message {
+// 	if p.TeamName == "" {
+// 		return nwmessage.PsNoTeam()
+// 	}
 
-	newPOE, err := strconv.Atoi(args[0])
-	if err != nil {
-		return nwmessage.PsError(fmt.Errorf("expected integer, got '%v'", args[0]))
-	}
+// 	nodeId, err := strconv.Atoi(args[0])
+// 	if err != nil {
+// 		return nwmessage.PsError(fmt.Errorf("expected integer, got '%v'", args[0]))
+// 	}
 
-	err = gm.setTeamPoe(gm.Teams[p.TeamName], newPOE)
-	if err != nil {
-		return nwmessage.PsError(err)
-	}
+// 	newPoe, err = gm.Map.getNode(nodeId)
+// 	if err != nil {
+// 		return nwmessage.PsError(err)
+// 	}
 
-	// TODO handle initial poe module more elegently
-	gm.calcPoweredNodes(gm.Teams[p.TeamName])
+// 	err = gm.Teams[p.TeamName].addPoe(newPOE)
+// 		if err != nil {
+// 		return nwmessage.PsError(err)
+// 	}
 
-	for player := range gm.Teams[p.TeamName].players {
-		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
-	}
+// 	for player := range gm.Teams[p.TeamName].players {
+// 		_, _ = gm.tryConnectPlayerToNode(player, newPOE)
+// 	}
 
-	// if all teams have their poe set
-	var ready int
-	for _, team := range gm.Teams {
-		if team.poe != nil {
-			ready++
-		}
-	}
+// 	// if all teams have their poe set
+// 	var ready int
+// 	for _, team := range gm.Teams {
+// 		if len(team.poes) > 0 {
+// 			ready++
+// 		}
+// 	}
 
-	// start the game
-	if len(gm.Teams) == ready {
-		gm.startGame()
-	}
+// 	// start the game
+// 	if len(gm.Teams) == ready {
+// 		gm.startGame()
+// 	}
 
-	gm.broadcastState()
-	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
-}
+// 	gm.broadcastState()
+// 	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
+// }
 
 func cmdTestCode(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
@@ -408,16 +414,7 @@ func cmdScore(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsNeutral(strings.Join(scoreStrs, "\n"))
 }
 
-// TODO refactor cmdAttach for clarity and redundancy
 func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	// slotNum, err := validateOneIntArg(args)
-	// if err != nil {
-	// 	return nwmessage.PsError(err)
-	// }
-
-	// if err = validateSlotIs("either", p, slotNum); err != nil {
-	// 	return nwmessage.PsError(err)
-	// }
 
 	if len(args) < 1 {
 		return nwmessage.PsError(errors.New("Attach requires one argument"))
@@ -536,8 +533,6 @@ func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message 
 		return nwmessage.PsError(err)
 	}
 
-	// All checks passed:
-	// passed error checks on args
 	go func() {
 		mac := p.currentMachine()
 		response, err := p.submitCode()
@@ -574,43 +569,3 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 		},
 	})
 }
-
-// func validateSlotIs(wants string, p *Player, slotNum int) error {
-// 	// check validity of player.Route and mac number
-// 	switch {
-// 	case p.Route == nil:
-// 		return errors.New(noConnectStr)
-
-// 	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
-// 		return fmt.Errorf("mac '%v' does not exist", slotNum)
-// 	}
-
-// 	switch wants {
-// 	case "full":
-// 		if p.Route.Endpoint.slots[slotNum].Module == nil {
-// 			return fmt.Errorf("mac '%v' is empty", slotNum)
-// 		}
-// 		return nil
-// 	case "empty":
-// 		if p.Route.Endpoint.slots[slotNum].Module != nil {
-// 			return fmt.Errorf("mac '%v' is full", slotNum)
-// 		}
-// 		return nil
-// 	}
-// 	return nil
-// }
-
-// func slotValidateNotEmpty(p *Player, slotNum int) error {
-// 	switch {
-// 	case p.Route == nil:
-// 		return errors.New(noConnectStr)
-
-// 	case slotNum > len(p.Route.Endpoint.slots)-1 || slotNum < 0:
-// 		return fmt.Errorf("mac '%v' does not exist", slotNum)
-
-// 	case p.Route.Endpoint.slots[slotNum].Module == nil:
-// 		// log.Printf("slots target: %v", p.Route.Endpoint.slots[target])
-// 		return fmt.Errorf("mac '%v' is empty", slotNum)
-// 	}
-// 	return nil
-// }

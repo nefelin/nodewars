@@ -93,9 +93,16 @@ func (gm *GameModel) addTeams(teams []*team) error {
 			return fmt.Errorf("Ran out of poes with %d teams left to place", len(teams)-i)
 		}
 
-		myPoe := rand.Intn(len(nodes))
-		gm.setTeamPoe(t, nodes[myPoe].ID)
-		nodes = append(nodes[:myPoe], nodes[myPoe+1:]...)
+		poeIndex := rand.Intn(len(nodes))
+		poeNode := nodes[poeIndex]
+
+		poeNode.Feature.dummyClaim(t.Name, "MIN")
+		err := t.addPoe(poeNode)
+		if err != nil {
+			panic(err)
+		}
+
+		nodes = append(nodes[:poeIndex], nodes[poeIndex+1:]...)
 	}
 
 	// remove any leftovers
@@ -115,7 +122,7 @@ func (gm *GameModel) trailingTeam() string {
 	// convert map to list
 	teamList := make([]*team, 0)
 	for _, team := range gm.Teams {
-		if team.poe != nil {
+		if len(team.poes) > 0 {
 			teamList = append(teamList, team)
 		}
 	}
@@ -156,22 +163,26 @@ func (gm *GameModel) updateCoinPerTick(t *team) {
 
 func (gm *GameModel) calcPoweredNodes(t *team) {
 	for _, n := range gm.Map.Nodes {
-		// clear previus powered status
+		// clear previous list of powered nodes
 		t.powered = nil
-		// t.powered[n] = false
-		if n.hasMachineFor(t) {
-			if gm.Map.routeToNode(t, n, t.poe) != nil {
-				// power machines
-				n.powerMachines(t.Name, true)
 
-				// add to our list for production calc
+		if n.hasMachineFor(t) {
+			var foundPower bool
+
+			for poe := range t.poes {
+				if gm.Map.routeToNode(t, n, poe) != nil {
+					foundPower = true
+					break
+				}
+			}
+
+			if foundPower {
+				n.powerMachines(t.Name, true)
 				t.powered = append(t.powered, n)
 			} else {
-				// depower machines
 				n.powerMachines(t.Name, false)
 			}
 		}
-
 	}
 }
 
@@ -291,6 +302,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 // }
 func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType feature.Type) {
 	mac := p.currentMachine()
+	node := p.Route.Endpoint
 	solutionStrength := response.passed()
 
 	var hostile bool
@@ -317,13 +329,20 @@ func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType 
 
 	}
 
+	var oldTeam *team
+	var oldAllowed bool
+
 	// track old owner to evaluate traffic after module loss
 	newTeam := gm.Teams[p.TeamName]
-	oldTeam := gm.Teams[mac.TeamName]
+	if hostile {
+		oldTeam = gm.Teams[mac.TeamName]
+	}
 
 	// track whether node allowed routing for active player before refactor
-	allowed := p.Route.Endpoint.hasMachineFor(newTeam)
-	oldAllowed := p.Route.Endpoint.hasMachineFor(newTeam)
+	allowed := node.hasMachineFor(newTeam)
+	if hostile {
+		oldAllowed = node.hasMachineFor(oldTeam)
+	}
 
 	// TODO I think we need to do same for old team, but test first
 
@@ -331,21 +350,35 @@ func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType 
 	mac.TeamName = p.TeamName
 	mac.language = p.language
 	mac.Health = solutionStrength
+
 	if mac.Type == feature.None {
 		mac.Type = fType
+	} else if mac.Type == feature.POE {
+		err := newTeam.addPoe(node)
+		if err != nil {
+			panic(err)
+		}
+
+		if hostile {
+			oldTeam.remPoe(node)
+			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has lost a Point of Entry to %s!", oldTeam.Name, newTeam.Name)))
+			if len(oldTeam.poes) < 1 {
+				gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has been eliminated!", oldTeam.Name)))
+			}
+		}
 	}
 
 	// evaluate routing of player trffic through node
 	if hostile {
-		gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+		gm.evalTrafficForTeam(node, oldTeam)
 	}
 
 	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.hasMachineFor(newTeam) != allowed {
+	if node.hasMachineFor(newTeam) != allowed {
 		gm.calcPoweredNodes(newTeam)
 	}
 	if hostile {
-		if p.Route.Endpoint.hasMachineFor(oldTeam) != oldAllowed {
+		if node.hasMachineFor(oldTeam) != oldAllowed {
 			gm.calcPoweredNodes(oldTeam)
 		}
 	}
@@ -357,26 +390,27 @@ func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType 
 	}
 
 	// map alert
-	gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
+	gm.pushActionAlert(p.TeamName, node.ID)
 
 	// update map
 	gm.broadcastState()
 
 	// do terminal messaging
 	if hostile {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth))
 	} else if friendly {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, node.ID)))
 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
 	} else {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, p.Route.Endpoint.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, node.ID)))
 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
 	}
 }
 
 func (gm *GameModel) tryResetMachine(p *Player, r ExecutionResult) {
 	mac := p.currentMachine()
+	node := p.Route.Endpoint
 	solutionStrength := r.passed()
 
 	if mac.isNeutral() {
@@ -395,16 +429,16 @@ func (gm *GameModel) tryResetMachine(p *Player, r ExecutionResult) {
 	oldTeam := gm.Teams[mac.TeamName]
 
 	// track whether node allowed routing for active player before refactor
-	allowed := p.Route.Endpoint.hasMachineFor(oldTeam)
+	allowed := node.hasMachineFor(oldTeam)
 
 	// reset the machine
 	mac.reset()
 
 	// evaluate routing of player trffic through node
-	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
+	gm.evalTrafficForTeam(node, oldTeam)
 
 	// if routing status has changed, recalculate powered nodes
-	if p.Route.Endpoint.hasMachineFor(oldTeam) != allowed {
+	if node.hasMachineFor(oldTeam) != allowed {
 		gm.calcPoweredNodes(oldTeam)
 	}
 
@@ -413,16 +447,24 @@ func (gm *GameModel) tryResetMachine(p *Player, r ExecutionResult) {
 
 	// if machine was poe, remove team poe pointer
 	if mac.Type == feature.POE {
-		oldTeam.poe = nil
+		err := oldTeam.remPoe(node)
+		if err != nil {
+			panic(err)
+		}
+
+		gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has lost a Point of Entry!", oldTeam.Name)))
+		if len(oldTeam.poes) < 1 {
+			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has been eliminated!", oldTeam.Name)))
+		}
 	}
 
 	// kick out other players working at this slot
 	// gm.detachOtherPlayers(p, fmt.Sprintf("%s removed the module you were working on", p.name))
-	gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
+	gm.pushActionAlert(p.TeamName, node.ID)
 	gm.broadcastState()
 
 	// terminal messaging
-	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
 	p.Outgoing <- nwmessage.PsSuccess("Machine reset")
 }
 
@@ -502,11 +544,9 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 	}
 
 	// Clear map specific data:
-	// gm.POEs = make(map[playerID]*node)
 	for _, t := range gm.Teams {
-		t.poe = nil
+		t.poes = nil
 	}
-	// log.Println(gm.POEs)
 
 	// send our new state
 	gm.broadcastState()
@@ -617,57 +657,18 @@ func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
 	}
 }
 
-func (gm *GameModel) setTeamPoe(t *team, ni nodeID) error {
-	if t.poe != nil {
-		return fmt.Errorf("Team %s already has a point of entry at node '%d'", t.Name, t.poe.ID)
+func (gm *GameModel) setPlayerName(p *Player, n string) error {
+
+	// check to see if name is in use
+	for _, player := range gm.Players {
+		if player.name == n {
+			return errors.New("Name '" + n + "' already in use")
+		}
 	}
 
-	if !gm.Map.nodeExists(ni) {
-		return fmt.Errorf("Node '%d' does not exist", ni)
-	}
-
-	node := gm.Map.Nodes[ni]
-	if node.Feature.Type != feature.POE {
-		return fmt.Errorf("No Point of Entry feature at Node, '%d'", ni)
-	}
-
-	if node.Feature.TeamName != "" {
-		return errors.New("That point of entry is already taken")
-	}
-
-	// set the teams poe
-	t.poe = node
-
-	node.Feature.dummyClaim(t.Name, "MIN")
+	p.name = n
 	return nil
 }
-
-// func (gm *GameModel) setPlayerName(p *Player, n string) error {
-
-// 	// check to see if name is in use
-// 	for _, player := range gm.Players {
-// 		if player.Name == n {
-// 			return errors.New("Name '" + n + "' already in use")
-// 		}
-// 	}
-// 	// if not, set it and return no error
-// 	p.GetName() = n
-// 	return nil
-// }
-
-// func (gm *GameModel) setPlayerPOE(p *Player, n nodeID) bool {
-// 	// TODO move this node validity check to a nodeMap method
-// 	// if nodeID is valid
-
-// 	if gm.Map.nodeExists(n) {
-
-// 		gm.POEs[p.ID] = gm.Map.Nodes[n]
-
-// 		return true
-// 	}
-
-// 	return false
-// }
 
 // AddPlayer ...
 func (gm *GameModel) AddPlayer(p *Player) error {
@@ -730,7 +731,7 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 		return errors.New("You're already on the " + p.TeamName + " team")
 	} else if team.isFull() {
 		return errors.New("The " + tn + " team is full")
-	} else if team.poe == nil {
+	} else if len(team.poes) < 1 {
 		return errors.New("The " + tn + " team is dead (poe was eliminated)")
 	}
 
@@ -745,34 +746,32 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
 
-	// TODO report errors here
-	// source, poeOK := gm.POEs[p.ID]
-
 	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
-	source := gm.Teams[p.TeamName].poe
-	if source == nil {
+	team := gm.Teams[p.TeamName]
+
+	if len(team.poes) < 1 {
 		return nil, errors.New("No point of entry")
 	}
 
-	if !gm.Map.nodeExists(n) {
+	target := gm.Map.getNode(n)
+	if target == nil {
 		return nil, fmt.Errorf("%v is not a valid node", n)
 	}
 
-	// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, gm.POEs[p.ID].ID)
+	for source := range team.poes {
+		// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, gm.POEs[p.ID].ID)
+		routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
+		if routeNodes != nil {
+			// log.Println("Successful Connect")
+			// log.Printf("Route to target: %v", routeNodes)
+			p.breakConnection(false)
+			route := gm.establishConnection(p, routeNodes, target)
+			return route, nil
+		}
 
-	target := gm.Map.Nodes[n]
-
-	routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
-	if routeNodes != nil {
-		// log.Println("Successful Connect")
-		// log.Printf("Route to target: %v", routeNodes)
-		p.breakConnection(false)
-		route := gm.establishConnection(p, routeNodes, target) // This should add player traffic to each intermediary and establish a connection on n
-		return route, nil
 	}
 	// log.Println("Cannot Connect")
 	return nil, errors.New("No route exists")
-
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically
@@ -815,13 +814,6 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 				}
 			}
 		}
-
-		// if this is a POE, announce that teams elimination
-		if t.poe == n {
-			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has been ELIMINATED!", t.Name)))
-
-		}
-
 	}
 }
 
