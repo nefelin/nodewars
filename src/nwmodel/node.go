@@ -1,7 +1,6 @@
 package nwmodel
 
 import (
-	"errors"
 	"fmt"
 	"math/rand"
 )
@@ -155,22 +154,22 @@ func (n *node) powerMachines(t teamName, onOff bool) {
 }
 
 // n.resetMachine should never be called directly. only from gm.removeModule
-func (n *node) resetMachine(slotIndex int) error {
-	if slotIndex < 0 || slotIndex > len(n.Machines)-1 {
-		return errors.New("No valid attachment")
-	}
+// func (n *node) resetMachine(slotIndex int) error {
+// 	if slotIndex < 0 || slotIndex > len(n.Machines)-1 {
+// 		return errors.New("No valid attachment")
+// 	}
 
-	machine := n.Machines[slotIndex]
+// 	machine := n.Machines[slotIndex]
 
-	if machine.TeamName == "" {
-		return errors.New("Machine is alread neutral")
-	}
+// 	if machine.TeamName == "" {
+// 		return errors.New("Machine is alread neutral")
+// 	}
 
-	// reset machine
-	machine.reset()
+// 	// reset machine
+// 	machine.reset()
 
-	return nil
-}
+// 	return nil
+// }
 
 func (n *node) addPlayer(p *Player) {
 	n.playersHere = append(n.playersHere, p.ID)

@@ -115,7 +115,9 @@ func (gm *GameModel) trailingTeam() string {
 	// convert map to list
 	teamList := make([]*team, 0)
 	for _, team := range gm.Teams {
-		teamList = append(teamList, team)
+		if team.poe != nil {
+			teamList = append(teamList, team)
+		}
 	}
 
 	// scramble list
@@ -287,7 +289,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 // 		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Machine constructed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
 // 	}
 // }
-func (gm *GameModel) claimMachine(p *Player, response ExecutionResult, fType feature.Type) {
+func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType feature.Type) {
 	mac := p.currentMachine()
 	solutionStrength := response.passed()
 
@@ -309,7 +311,7 @@ func (gm *GameModel) claimMachine(p *Player, response ExecutionResult, fType fea
 			return
 
 		case solutionStrength == mac.Health:
-			p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to remove.\nKeep trying if you think you can do\nbetter or type 'remove' to proceed", solutionStrength, mac.MaxHealth))
+			p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to reset this machine.\nKeep trying if you think you can do\nbetter or type 'reset' to proceed", solutionStrength, mac.MaxHealth))
 			return
 		}
 
@@ -373,16 +375,19 @@ func (gm *GameModel) claimMachine(p *Player, response ExecutionResult, fType fea
 	}
 }
 
-func (gm *GameModel) resetMachine(p *Player) {
+func (gm *GameModel) tryResetMachine(p *Player, r ExecutionResult) {
 	mac := p.currentMachine()
+	solutionStrength := r.passed()
 
-	if mac == nil {
-		log.Panic("Player is not attached to a machine")
+	if mac.isNeutral() {
+		p.Outgoing <- nwmessage.PsError(errors.New("Machine is already neutral"))
 		return
 	}
 
-	if mac.TeamName == "" {
-		log.Panic("Machine is already neutral")
+	if solutionStrength < mac.Health {
+		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
+			"Solution too weak: %d/%d, need %d/%d to remove",
+			r.passed(), len(r.Grades), mac.Health, mac.MaxHealth))
 		return
 	}
 
@@ -392,11 +397,8 @@ func (gm *GameModel) resetMachine(p *Player) {
 	// track whether node allowed routing for active player before refactor
 	allowed := p.Route.Endpoint.hasMachineFor(oldTeam)
 
-	// remove the module
-	err := p.Route.Endpoint.resetMachine(p.slotNum)
-	if err != nil {
-		log.Panic(err)
-	}
+	// reset the machine
+	mac.reset()
 
 	// evaluate routing of player trffic through node
 	gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
@@ -409,8 +411,19 @@ func (gm *GameModel) resetMachine(p *Player) {
 	// recalculate teams processsing power
 	gm.updateCoinPerTick(oldTeam)
 
+	// if machine was poe, remove team poe pointer
+	if mac.Type == feature.POE {
+		oldTeam.poe = nil
+	}
+
 	// kick out other players working at this slot
-	gm.detachOtherPlayers(p, fmt.Sprintf("%s removed the module you were working on", p.name))
+	// gm.detachOtherPlayers(p, fmt.Sprintf("%s removed the module you were working on", p.name))
+	gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
+	gm.broadcastState()
+
+	// terminal messaging
+	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, p.Route.Endpoint.ID)))
+	p.Outgoing <- nwmessage.PsSuccess("Machine reset")
 }
 
 func (gm *GameModel) tickScheduler() {
@@ -712,11 +725,13 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 	// log.Printf("assignPlayerToTeam, player: %v", p)
 	if team, ok := gm.Teams[tn]; !ok {
-		return errors.New("The team '" + tn + "' does not exist")
+		return errors.New("'" + tn + "' team does not exist")
 	} else if p.TeamName != "" {
-		return errors.New("Already on the " + p.TeamName + " team")
+		return errors.New("You're already on the " + p.TeamName + " team")
 	} else if team.isFull() {
-		return errors.New("team: " + tn + " is full")
+		return errors.New("The " + tn + " team is full")
+	} else if team.poe == nil {
+		return errors.New("The " + tn + " team is dead (poe was eliminated)")
 	}
 
 	t := gm.Teams[tn]
@@ -800,9 +815,10 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 				}
 			}
 		}
+
 		// if this is a POE, announce that teams elimination
 		if t.poe == n {
-			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("(%s) has been ELIMINATED!", t.Name)))
+			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("%s team has been ELIMINATED!", t.Name)))
 
 		}
 

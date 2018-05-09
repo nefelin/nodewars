@@ -87,6 +87,10 @@ func (m *machine) reset() {
 	m.language = ""
 	m.Powered = true
 
+	// if m.Type != nil { // reset feature type?
+	// 	m.Type = feature.None
+	// }
+
 	m.Health = 0
 	m.resetChallenge()
 }

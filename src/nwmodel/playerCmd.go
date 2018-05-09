@@ -48,8 +48,8 @@ var gameCmdList = map[string]playerCommand{
 
 	"test": cmdTestCode,
 
-	"rm":     cmdRemoveModule,
-	"remove": cmdRemoveModule,
+	"res":   cmdResetMachine,
+	"reset": cmdResetMachine,
 
 	"at":     cmdAttach,
 	"att":    cmdAttach,
@@ -490,9 +490,8 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	mac := p.currentMachine()
 
-	var feaType feature.Type
-
 	// Abstract this TODO
+	var feaType feature.Type
 	if mac.isFeature() {
 		if mac.Type == feature.None {
 			if len(args) < 1 {
@@ -513,10 +512,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// passed error checks
-
 	go func() {
-		defer p.SendPrompt()
-
 		response, err := p.submitCode()
 
 		if err != nil {
@@ -525,130 +521,40 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		}
 
 		mac.Lock()
-		gm.claimMachine(p, response, feaType)
+		gm.tryClaimMachine(p, response, feaType)
 		mac.Unlock()
+
+		p.SendPrompt()
 	}()
 
-	// p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Compiling...")
 }
 
-func cmdRemoveModule(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	c := p.EditorState
-
-	mac := p.currentMachine()
-
-	if mac == nil {
-		return nwmessage.PsError(errors.New("Not attached to mac"))
-	}
-
-	if mac.isNeutral() {
-		return nwmessage.PsError(errors.New("Machine is neutral"))
-	}
-
-	// if we're removing a friendly module, just do it:
-	if mac.belongsTo(p.TeamName) {
-		// TODO hacky, refactor
-		if len(args) == 0 {
-			args = append(args, "")
-		}
-
-		flag := args[0]
-
-		log.Printf("cmdRemoveModule flag: %v", flag)
-		switch {
-		case flag == "":
-			beginRemoveModuleConf(p, gm)
-			return nwmessage.Message{}
-
-		case flag == "-y" || flag == "-ye" || flag == "-yes":
-			// err := p.Route.Endpoint.removeModule(p.slotNum)
-			// if err != nil {
-			// 	return nwmessage.PsError(err)
-			// }
-
-			// gm.evalTrafficForTeam(p.Route.Endpoint, gm.Teams[p.TeamName])
-			gm.resetMachine(p)
-			gm.broadcastState()
-			return nwmessage.PsSuccess("Machine reset")
-
-		case flag == "-no":
-			return nwmessage.PsError(errors.New("Reset aborted"))
-
-		default:
-			return nwmessage.PsError(errors.New("Unknown flag, use -y for automatic confirmation"))
-		}
-	}
-
-	if c == "" {
-		return nwmessage.PsError(errors.New("No code submitted"))
+func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	err := p.canSubmit()
+	if err != nil {
+		return nwmessage.PsError(err)
 	}
 
 	// All checks passed:
 	// passed error checks on args
-
-	go func(p *Player, gm *GameModel, c string) {
-		defer p.SendPrompt()
+	go func() {
 		mac := p.currentMachine()
+		response, err := p.submitCode()
 
-		response := submitTest(mac.challenge.ID, p.language, c)
-
-		// p.compiling = false
-		p.Outgoing <- nwmessage.TerminalUnpause()
-
-		if response.Message.Type == "error" {
-			p.Outgoing <- nwmessage.PsCompileFail()
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s\nErrors:\n%s", response.gradeMsg(), response.Message.Data))
+		if err != nil {
+			p.Outgoing <- nwmessage.PsError(err)
 			return
 		}
 
-		newModHealth := response.passed()
-
-		if newModHealth == 0 {
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution failed all tests"))
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
-			return
-		}
-
-		// if there's no error, show graded results, regardless of what happens with the module:
-		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%s", response.gradeMsg()))
-
-		// LOCK mac
 		mac.Lock()
-		defer mac.Unlock()
+		gm.tryResetMachine(p, response)
+		mac.Unlock()
 
-		if newModHealth >= mac.Health {
-			oldTeamName := mac.TeamName
+		p.SendPrompt()
+	}()
 
-			// err := p.Route.Endpoint.removeModule(p.slotNum)
-			// if err != nil {
-			// 	p.Outgoing <- nwmessage.PsError(err)
-			// 	return
-			// }
-			// gm.evalTrafficForTeam(p.Route.Endpoint, oldTeam)
-			gm.resetMachine(p)
-
-			gm.pushActionAlert(p.TeamName, p.Route.Endpoint.ID)
-			gm.broadcastState()
-
-			gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeamName, p.Route.Endpoint.ID)))
-			p.Outgoing <- nwmessage.PsSuccess("Machine reset")
-			return
-
-		}
-
-		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
-			"Solution too weak: %d/%d, need %d/%d to remove",
-			response.passed(), len(response.Grades), mac.Health, mac.MaxHealth,
-		))
-
-		return
-	}(p, gm, c)
-
-	// p.compiling = true
-	p.Outgoing <- nwmessage.TerminalPause()
 	return nwmessage.PsBegin("Resetting machine...")
-
 }
 
 // Async Confirmation Dialogues
@@ -664,7 +570,7 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 
 			p.dialogue = nil
 
-			return cmdRemoveModule(p, gm, []string{d.GetProp("flag")})
+			return cmdResetMachine(p, gm, []string{d.GetProp("flag")})
 		},
 	})
 }
