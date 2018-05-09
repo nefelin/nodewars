@@ -130,8 +130,8 @@ function alertBlip(parent, loc, startR, endR, duration, startColor, endColor) {
 
 function poeBlip(targ) { // if target's feature is powered, then we loop.
 	const parent = d3.select(targ.node().parentNode)
-
-	if (targ && targ.datum().powered) {
+	// console.log(targ.datum())
+	if (targ && targ.datum().owner != "") {
 		// console.log('making blip')
 		
 		const signal = parent.append('circle')
@@ -962,7 +962,7 @@ class NWGraph {
 		const location = this.gameState.player_location
 		console.log('Player location!', location)
 		let node
-		
+
 		if (this.focusBox) {
 				this.focusBox.transition().duration(250).style('opacity',0).remove()
 			}
