@@ -82,23 +82,23 @@ class STRMLGrid extends React.Component {
             break
 
           case 188: // ','
-            // console.log('switch focus')
             this.toggleFocus('terminal')
             break
 
           case 190: // '.'
-            // console.log('switch focus')
             this.toggleFocus('editor')
             break
 
           case 13: // 'enter'
-            // console.log('make')
             this.outgoing.parseCmd('make')
             break
 
           case 220: // '\'
-            // console.log('test')
             this.outgoing.parseCmd('test')
+            break
+          
+           case 82: // 'r'
+            this.outgoing.parseCmd('reset')
             break
 
           default:
@@ -177,11 +177,14 @@ class STRMLGrid extends React.Component {
         switch (menu) {
           case 'Build':
             switch (item){
-              case 'Make, (crtl-enter)':
+              case 'Make, (ctrl-enter)':
                 this.outgoing.parseCmd('make')
                 break
-              case 'Test, (crtl-\\)':
+              case 'Test, (ctrl-\\)':
                 this.outgoing.parseCmd('test')
+                break
+              case 'Reset, (ctrl-r)':
+                this.outgoing.parseCmd('reset')
                 break
             }
             break
@@ -263,7 +266,7 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="codepad">
-            <STRMLWindow menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (crtl-enter)', 'Test, (crtl-\\)']}]} onSelect={this.handleSelect}>
+            <STRMLWindow menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}]} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}
