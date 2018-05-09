@@ -42,11 +42,11 @@ func (s CodeSubmission) String() string {
 	return fmt.Sprintf("( <CodeSubmission> {ChallengeID: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeID, s.Language, s.Stdins)
 }
 
-type grade struct {
-	Case   TestCase `json:"case"`
-	Actual string   `json:"actual"`
-	Grade  string   `json:"grade"`
-}
+// type grade struct {
+// 	Case   TestCase `json:"case"`
+// 	Actual string   `json:"actual"`
+// 	Grade  string   `json:"grade"`
+// }
 
 type tbAPIResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
@@ -54,25 +54,26 @@ type tbAPIResponse struct {
 	Result       string `json:"result,omitempty"`
 }
 
-func (g grade) String() string {
-	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
-}
+// func (g grade) String() string {
+// 	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
+// }
 
 // ExecutionResult hold the response from testbox, if no challenge id was provided in submission, Graded will be empty
 type ExecutionResult struct {
 	Stdouts []string          `json:"stdouts"`
-	Graded  []grade           `json:"graded,omitempty"`
+	Grades  []string          `json:"grades,omitempty"`
+	Hints   []string          `json:"hints"`
 	Message nwmessage.Message `json:"message"`
 }
 
 func (r ExecutionResult) gradeMsg() string {
 	var res string
-	for i, g := range r.Graded {
+	for i, g := range r.Grades {
 		res += fmt.Sprintf("Test #%d: ", i)
-		if g.Grade == "Pass" {
+		if g == "Pass" {
 			res += fmt.Sprintf("PASS\n")
 		} else {
-			res += fmt.Sprintf("FAIL - Expected: '%s', Got: '%s'\n", g.Case.Expect, g.Actual)
+			res += fmt.Sprintf("FAIL\n")
 		}
 	}
 	return res
@@ -80,8 +81,8 @@ func (r ExecutionResult) gradeMsg() string {
 
 func (r ExecutionResult) passed() int {
 	var passed int
-	for _, res := range r.Graded {
-		if res.Grade == "Pass" {
+	for _, grade := range r.Grades {
+		if grade == "Pass" {
 			passed++
 		}
 	}
@@ -89,7 +90,7 @@ func (r ExecutionResult) passed() int {
 }
 
 func (r ExecutionResult) String() string {
-	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Message: %s} )", r.Stdouts, r.Graded, r.Message)
+	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Hints: %s, Message: %s} )", r.Stdouts, r.Grades, r.Hints, r.Message)
 }
 
 // Language describes the language details nodewars server needs to hold

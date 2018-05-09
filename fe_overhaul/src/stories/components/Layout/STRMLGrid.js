@@ -44,7 +44,8 @@ class STRMLGrid extends React.Component {
 
       // tinyTermIn: "",
 
-      compilerOutput: "Execution completed in 0.323 seconds...",
+      compilerOutput: null,
+      testResults: {stdouts:[], grades:[], hints:[]},
 
       layout: this.readLocalLayout() || defaultLayout,
 
@@ -236,13 +237,6 @@ class STRMLGrid extends React.Component {
       boxSizing: 'border-box',
       resize: 'none'
     }
-  
-    const results = [
-      {grade:'Fail'},
-      {grade:'Fail'},
-      {grade:'Pass'},
-      {grade:'Fail', hint:'Handle whitespace'},
-    ]
 
     return (
       // <GridLayout style={strmlWindow} onLayoutChange={this.handleChange} className="layout" draggableCancel="input,textarea" layout={layout} cols={12} rowHeight={30} width={1260}>
@@ -291,13 +285,24 @@ class STRMLGrid extends React.Component {
 
           <div key="test_results">
             <STRMLWindow menuBar={[{ name: 'Test Results' }]} onSelect={this.handleSelect}>
-              <TestResults results={results}/>
+              <TestResults results={this.state.testResults}/>
             </STRMLWindow>
           </div>
 
           <div key="compiler_output">
             <STRMLWindow menuBar={[{ name: 'Compiler Output' }]} onSelect={this.handleSelect}>
-              <div style={{margin:10}}>{this.state.compilerOutput}</div>
+              <div style={{margin:10}}>
+                <p>
+                  {
+                    this.state.compilerOutput ?
+                      this.state.compilerOutput.message.split('\n').map((line, key) => {
+                        // console.log('key', key, 'length', pageLines.length)
+                        return <span key={key}>{line}<br/></span>      
+                      })
+                      : null
+                  }
+                </p>
+              </div>
             </STRMLWindow>
           </div>
 

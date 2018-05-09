@@ -324,8 +324,8 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		names := make([]string, 0, len(pHere)-1)
 		for _, pID := range pHere {
 			player := gm.Players[pID]
-			if player.name != p.GetName() {
-				names = append(names, fmt.Sprintf("%s (%s)", player.name, player.TeamName))
+			if player.GetName() != p.GetName() {
+				names = append(names, fmt.Sprintf("%s (%s)", player.GetName(), player.TeamName))
 			}
 		}
 
@@ -379,27 +379,17 @@ func cmdSetPOE(p *Player, gm *GameModel, args []string) nwmessage.Message {
 }
 
 func cmdTestCode(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	c := p.EditorState
 
-	// TODO handle compiler error
-	if c == "" {
+	if p.EditorState == "" {
 		return nwmessage.PsError(errors.New("No code submitted"))
 	}
-
-	// passed error checks on args
 
 	go func() {
 		defer p.SendPrompt()
 
-		response := getOutput(p.language, c, p.StdinState)
+		response := getOutput(p.language, p.EditorState, p.StdinState)
 		p.Outgoing <- nwmessage.PsSuccess("Finished running (check output box)")
-
-		if response.Message.Type == "error" {
-			p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("Error: %s", response.Message.Data))
-			return
-		}
-
-		p.Outgoing <- nwmessage.ResultState(fmt.Sprintf("%v", response.Stdouts[0]))
+		p.Outgoing <- nwmessage.ResultState(response)
 
 	}()
 
@@ -649,7 +639,7 @@ func cmdRemoveModule(p *Player, gm *GameModel, args []string) nwmessage.Message 
 
 		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
 			"Solution too weak: %d/%d, need %d/%d to remove",
-			response.passed(), len(response.Graded), mac.Health, mac.MaxHealth,
+			response.passed(), len(response.Grades), mac.Health, mac.MaxHealth,
 		))
 
 		return

@@ -1,6 +1,7 @@
 package nwmessage
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 )
@@ -166,11 +167,12 @@ func GraphReset() Message {
 	}
 }
 
-func ResultState(msg string) Message {
+func ResultState(e interface{}) Message {
+	msg, _ := json.Marshal(e)
 	return Message{
 		Type:   resultStateStr,
 		Sender: serverStr,
-		Data:   msg,
+		Data:   string(msg),
 	}
 }
 

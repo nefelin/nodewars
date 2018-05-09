@@ -30,8 +30,10 @@ class Incoming {
 	      			if (this.context.graph.current!=null)
 		      			this.context.graph.current.reset()
 	      			break
+	      		case 'resultState':
+	      			this.parseResultState(data.data)
+	      			break
 	      		case 'editorState':
-	      			// if (this.debug) console.log('setting aceContent state', data.data)
 	      			this.context.setState({ aceContent: data.data })
 	      			break
 	      		case 'stdinState':
@@ -39,6 +41,17 @@ class Incoming {
 	      			break
 	      	}
 	    }
+	}
+
+	parseResultState(data) {
+		console.log("RESULT", data)
+		data = JSON.parse(data)
+		
+
+		this.context.setState({
+			testResults: data,
+			compilerOutput: {type: data.message.type, message:data.message.data},
+		})
 	}
 }
 
