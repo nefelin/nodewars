@@ -60,7 +60,9 @@ class TinyTerm extends React.Component {
 
 	focus() {
 		this.input.current.focus()
-		this.setState({focused: true})
+		this.setState({focused: true}, () => {
+			this.props.onFocus()
+		})
 	}
 
 	handleLoseFocus() {
@@ -131,8 +133,8 @@ class TinyTerm extends React.Component {
 		return (
 			<div className="TinyTerm" onClick={this.focus} ref={this.container} style={style}>
 					{pageContent} {this.state.command}
+					{this.state.focused ? <span className="TinyTerm-cursor">{this.state.cursor}</span> : null}
 					
-					<span className={"TinyTerm-cursor" + (this.state.focused ? " focused" : "")}>{this.state.cursor}</span>
 								
 				<input style={inputStyle} ref={this.input} value={this.state.command} onKeyDown={this.handleKeyPress} onChange={this.handleChange} onBlur={this.handleLoseFocus}></input>
 			</div>
@@ -140,5 +142,5 @@ class TinyTerm extends React.Component {
 		)
 	}
 }
-
+// <span className={"TinyTerm-cursor" + (this.state.focused ? " focused" : "")}>{this.state.cursor}</span>
 export default TinyTerm

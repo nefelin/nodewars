@@ -13,12 +13,12 @@
   color: #2ba035;
   background-color: black;
 }
-
+/*
 .TinyTerm-cursor {
   opacity: 0;
-}
+}*/
 
-.TinyTerm-cursor.focused {
+.TinyTerm-cursor {
   animation-name: blink;
   animation-duration: 1s;
   animation-iteration-count: infinite;

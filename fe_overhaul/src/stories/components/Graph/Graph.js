@@ -86,7 +86,7 @@ class Graph extends Component {
       );
     } else {
       return (
-          <div style={{boxSizing: 'border-box'}} id='graph'/>
+          <div onMouseDown={this.props.onMouseDown} style={{boxSizing: 'border-box'}} id='graph'/>
       )
     }
   }

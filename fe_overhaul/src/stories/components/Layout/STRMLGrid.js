@@ -34,9 +34,8 @@ class STRMLGrid extends React.Component {
     super(props)
 
     this.graph = React.createRef()
-
     this.state = {
-      mapSize: {x:5*105, y:12*30},
+      mapSize: {x:5*105, y:12*30} ,
       map: Maps.SimpleMap,
       
       stdin: 'Put your own stdin here',
@@ -79,14 +78,17 @@ class STRMLGrid extends React.Component {
           case 192: // '`'
             // console.log('switch focus')
             this.toggleFocus()
+            this.gatherFocus()
             break
 
           case 188: // ','
             this.toggleFocus('terminal')
+            this.gatherFocus()
             break
 
           case 190: // '.'
             this.toggleFocus('editor')
+            this.gatherFocus()
             break
 
           case 13: // 'enter'
@@ -108,6 +110,7 @@ class STRMLGrid extends React.Component {
   }
 
   toggleFocus = (target) => {
+    // console.log('termhasfocus', this.termHasFocus)
     switch (target) {
       case 'terminal':
         this.termHasFocus = true
@@ -118,17 +121,17 @@ class STRMLGrid extends React.Component {
       default:
         this.termHasFocus = !this.termHasFocus
     }
-    
+  }
 
-    if (this.termHasFocus){
-      // console.log('focusing on term')
-      this.terminal.current.focus()
-    }
-    else {
-      // console.log('focusing on editor')
-      // console.log('editor', this.editor.current.editor)
-      this.editor.current.editor.focus()
-    }
+  gatherFocus = () => {
+    setTimeout(()=>{
+      if (this.termHasFocus){
+        this.terminal.current.focus()
+      }
+      else {
+        this.editor.current.editor.focus()
+      }
+    }, 0)
   }
 
   handleTermSend = (cmd) => {
@@ -243,20 +246,20 @@ class STRMLGrid extends React.Component {
 
     return (
       // <GridLayout style={strmlWindow} onLayoutChange={this.handleChange} className="layout" draggableCancel="input,textarea" layout={layout} cols={12} rowHeight={30} width={1260}>
-      <div style={{height: 1500}}>
+      <div  style={{height: 1500}}>
 
       <STRMLWindow bgOverride={this.state.team ? this.state.team : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
         <GridLayout {...layoutProps}>
 
-          <div key="terminal">
+          <div key="terminal" >
             <STRMLWindow menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
-              <TinyTerm ref={this.terminal} grabFocus={true} onSend={this.handleTermSend}/>
+              <TinyTerm ref={this.terminal}  onFocus={() => this.toggleFocus('terminal')}  grabFocus={true} onSend={this.handleTermSend}/>
             </STRMLWindow>
           </div>
 
           <div key="map">
             <STRMLWindow menuBar={[{ name: 'Map' }, { name: 'Theme', items: ['Light', 'Dark'] }]} onSelect={this.handleSelect}>
-              <Graph ref={this.graph} dataset={ this.state.graph }/>
+              <Graph onMouseDown={() => this.gatherFocus()} ref={this.graph} dataset={ this.state.graph }/>
             </STRMLWindow>
           </div>
           
@@ -272,6 +275,7 @@ class STRMLGrid extends React.Component {
                   style={fill}
                   mode="golang"
                   theme="monokai"
+                  onFocus={() => this.toggleFocus('editor')}
                   onChange={this.handleAceChange}
                   name="UNIQUE_ID_OF_DIV"
                   editorProps={{$blockScrolling: true}}

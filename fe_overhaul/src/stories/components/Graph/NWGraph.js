@@ -231,13 +231,9 @@ class NWGraph {
 			// .scaleExtent([1/4, 4])
 			.on('zoom', () => this.root.attr('transform', d3.event.transform))
 		
-		// this.svg.call(this.zoom)
-		// this.svg.on("mousewheel.zoom", this.zoom)
 		const self = this
-		this.background.on('click', () => this.resetZoom())
+		this.background.on('click', () => this.resetZoom() )
 
-		// this.svg.on('dblclick.zoom', null)
-		// this.svg.on('click.zoom', null)
 		// Flags and Animations
         this.FLAGS = {
         	Power: true,
@@ -394,7 +390,7 @@ class NWGraph {
 
 	      const self = this
 	      iconHolder.attr('transform','translate(' + x + ',' + y + ')')
-	      			.on('mousedown', function() { d3.event.stopPropagation(); })
+	      			// .on('mousedown', function() { console.log('event.target', event.target,'this',this) })//; d3.event.stopPropagation(); })
 	                .on('click', () => { 
 						this.FLAGS[thisUI.label] = !this.FLAGS[thisUI.label]
 						backing.style('fill', this.FLAGS[thisUI.label] ? 'lightpink' : 'white')
@@ -831,7 +827,10 @@ class NWGraph {
 				self.drawMachinePie(this, radius)
 
 	        })
-	        .on('mousedown', function() { d3.event.stopPropagation(); })
+	        .on('mousedown', function(e) {
+	        	var event = new Event('mousedown', { bubbles: true });
+				self.graphDiv.dispatchEvent(event);
+	        })
 	        .on('click', this.setFocus.bind(this))
             .call(d3.drag()
 			    .on("start", this.dragstarted.bind(this))
@@ -1290,6 +1289,8 @@ class NWGraph {
     }
     
     dragended(d) {
+    	// console.log('dragended this',  this, 'event target', event.target, 'graphDiv', this.graphDiv)
+    	// this.graphDiv.onclick()
         if (!d3.event.active)
         	this.simulation.alphaTarget(0);
         d.fx = null;
