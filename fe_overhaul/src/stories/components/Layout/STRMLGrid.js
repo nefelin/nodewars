@@ -55,9 +55,10 @@ class STRMLGrid extends React.Component {
 
     this.terminal = React.createRef()
     this.editor = React.createRef()
+    this.stdin = React.createRef()
     this.graph = React.createRef()
 
-    this.termHasFocus = true
+    this.focusedField = "TERM"
   }
   
 
@@ -115,23 +116,41 @@ class STRMLGrid extends React.Component {
     // console.log('termhasfocus', this.termHasFocus)
     switch (target) {
       case 'terminal':
-        this.termHasFocus = true
+        this.focusedField = "TERM"
         break
       case 'editor':
-        this.termHasFocus = false
+        this.focusedField = "EDIT"
         break
-      default:
-        this.termHasFocus = !this.termHasFocus
+      case 'stdin':
+        this.focusedField = "STDIN"
+        break
+      default: // toggles between term and edit
+        if (this.focusedField == "TERM")
+          this.focusedField = "EDIT"
+        else
+          this.focusedField = "TERM"
     }
   }
 
-  gatherFocus = () => {
+  gatherFocus = (e) => {
+    // console.log(e)
+    // if (e){
+    //   // e.preventDefault()
+    //   e.stopPropagation()
+    // }
     setTimeout(()=>{
-      if (this.termHasFocus){
+      switch (this.focusedField){
+        case "TERM":
         this.terminal.current.focus()
-      }
-      else {
+        break
+
+        case "EDIT":
         this.editor.current.editor.focus()
+        break
+
+        case "STDIN":
+        this.stdin.current.focus()
+        break
       }
     }, 0)
   }
@@ -240,6 +259,7 @@ class STRMLGrid extends React.Component {
     }
     
     const fill = {
+      outline: 'none',
       width: '100%',
       height: '100%',
       boxSizing: 'border-box',
@@ -317,7 +337,7 @@ class STRMLGrid extends React.Component {
 
           <div key="stdin">
             <STRMLWindow menuBar={[{ name: 'Stdin' }]} onSelect={this.handleSelect}>
-              <textarea style={fill} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
+              <textarea style={fill} ref={this.stdin} onMouseDown={() => {this.toggleFocus("stdin");this.gatherFocus()}} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
             </STRMLWindow>
           </div>
 
@@ -329,60 +349,3 @@ class STRMLGrid extends React.Component {
   }
 }
 export { STRMLGrid }
-
-
-
-        /*<div style={strmlWindow} key="terminal">
-          <div className="grid-item-header" style={header}>Termnal</div>
-            <div style={content}>
-              <TinyTerm/>
-            </div>
-        </div>
-        <div style={strmlWindow} key="map">
-          <div className="grid-item-header" style={header}>Map</div>
-          <div style={content}>
-          <Graph ref={this.graph} graphOffset={[0, -header.height]} dataset={ Maps.SimpleMap }/>
-          </div>
-        </div>
-        <div style={strmlWindow} key="score">
-          <div className="grid-item-header" style={header}>Score</div>
-        </div>
-        <div style={strmlWindow} key="codepad">
-          <div className="grid-item-header" style={header}>Ace</div>
-            <div style={content}>
-              <AceEditor
-                mode="golang"
-                theme="monokai"
-                onChange={this.handleAceChange}
-                name="UNIQUE_ID_OF_DIV"
-                editorProps={{$blockScrolling: true}}
-                value={this.state.aceContent}
-              />
-            </div>
-        </div>
-        <div style={strmlWindow} key="challenge_details">
-          <div className="grid-item-header" style={header}>Challenge Details</div>
-            <div style={{margin:10}}>
-              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia officia, illo magni. Consequatur sapiente adipisci eos, fugit maxime velit necessitatibus corporis illo ut molestiae et temporibus ipsum quas voluptatum deleniti.</p>
-            </div>
-        </div>
-        <div style={strmlWindow} key="test_results">
-          <div className="grid-item-header" style={header}>Test Results</div>
-            <div style={content}>
-              <TestResults results={results}/>
-            </div>
-        </div>
-        <div style={strmlWindow} key="compiler_output">
-          <div className="grid-item-header" style={header}>Compiler Output</div>
-          <div style={{margin:10}}>{this.state.compilerOutput}</div>
-        </div>
-        <div style={strmlWindow} key="stdin">
-          <div className="grid-item-header" style={header}>Stdin</div>
-          <textarea style={stdin} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
-        </div>
-
-
-
-      
-
-*/
