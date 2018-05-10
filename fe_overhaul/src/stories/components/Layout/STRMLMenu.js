@@ -47,7 +47,7 @@ class STRMLMenu extends Component {
 	render() {
 		return (
 			<div className="strml-menu">
-				<div ref={this.menuTitle} className={"strml-menu-title" + (this.state.items.length > 0 ? " has-contents" : "") + (this.state.show ? " active" : "")}onClick={this.state.items.length > 0 ? this.showMenu : null}>
+				<div ref={this.menuTitle} className={"strml-menu-title" + (this.state.items.length > 0 ? " has-contents" : "") + (this.state.show ? " active" : "")} onMouseDown={this.state.items.length > 0 ? this.showMenu : null}>
 					{this.props.name}
 				</div>
 					<div ref={this.menuBody} className={"strml-menu-body" + (this.state.show ? "" : " hidden")}>

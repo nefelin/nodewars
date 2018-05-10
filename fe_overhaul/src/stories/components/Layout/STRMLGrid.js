@@ -50,7 +50,9 @@ class STRMLGrid extends React.Component {
 
       // graph: null
     }
-    
+
+    window.onfocus = () => this.gatherFocus()
+
     this.terminal = React.createRef()
     this.editor = React.createRef()
     this.graph = React.createRef()
@@ -248,28 +250,28 @@ class STRMLGrid extends React.Component {
       // <GridLayout style={strmlWindow} onLayoutChange={this.handleChange} className="layout" draggableCancel="input,textarea" layout={layout} cols={12} rowHeight={30} width={1260}>
       <div  style={{height: 1500}}>
 
-      <STRMLWindow bgOverride={this.state.team ? this.state.team : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
+      <STRMLWindow onMouseDown={this.gatherFocus}  bgOverride={this.state.team ? this.state.team : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
         <GridLayout {...layoutProps}>
 
           <div key="terminal" >
-            <STRMLWindow menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
               <TinyTerm ref={this.terminal}  onFocus={() => this.toggleFocus('terminal')}  grabFocus={true} onSend={this.handleTermSend}/>
             </STRMLWindow>
           </div>
 
           <div key="map">
-            <STRMLWindow menuBar={[{ name: 'Map' }, { name: 'Theme', items: ['Light', 'Dark'] }]} onSelect={this.handleSelect}>
-              <Graph onMouseDown={() => this.gatherFocus()} ref={this.graph} dataset={ this.state.graph }/>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Map' }, { name: 'Theme', items: ['Light', 'Dark'] }]} onSelect={this.handleSelect}>
+              <Graph ref={this.graph} dataset={ this.state.graph }/>
             </STRMLWindow>
           </div>
           
           <div key="score">
-            <STRMLWindow menuBar={[{ name: 'Score' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Score' }]} onSelect={this.handleSelect}>
             </STRMLWindow>
           </div>
 
           <div key="codepad">
-            <STRMLWindow menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}]} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}
@@ -285,19 +287,19 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="challenge_details">
-            <STRMLWindow menuBar={[{ name: 'Challenge Details' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus}  menuBar={[{ name: 'Challenge Details' }]} onSelect={this.handleSelect}>
               <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia officia, illo magni. Consequatur sapiente adipisci eos, fugit maxime velit necessitatibus corporis illo ut molestiae et temporibus ipsum quas voluptatum deleniti.</p>
             </STRMLWindow>
           </div>
 
           <div key="test_results">
-            <STRMLWindow menuBar={[{ name: 'Test Results' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Test Results' }]} onSelect={this.handleSelect}>
               <TestResults results={this.state.testResults}/>
             </STRMLWindow>
           </div>
 
           <div key="compiler_output">
-            <STRMLWindow menuBar={[{ name: 'Compiler Output' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Compiler Output' }]} onSelect={this.handleSelect}>
               <div style={{margin:10}}>
                 <p>
                   {

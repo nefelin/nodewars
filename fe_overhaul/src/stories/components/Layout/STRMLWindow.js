@@ -6,7 +6,7 @@ const STRMLWindow = (props) => {
 	// console.log('STRMLWindow Rendering', props)
 	const bgColor = props.bgOverride || 'white'
 	return (
-		<div onFocus={props.onFocus}className="strml-window">
+		<div onMouseDown={props.onMouseDown} className="strml-window">
 			<div className="strml-window-header noselect">
 				<STRMLMenuBar menus={props.menuBar} onSelect={(menu, selection) => props.onSelect(props.menuBar[0].name, menu, selection)}/>
 				

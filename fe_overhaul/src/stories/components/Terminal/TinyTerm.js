@@ -131,7 +131,7 @@ class TinyTerm extends React.Component {
 		// console.log(pageContent)
 
 		return (
-			<div className="TinyTerm" onClick={this.focus} ref={this.container} style={style}>
+			<div className="TinyTerm" onMouseDown={this.focus} ref={this.container} style={style}>
 					{pageContent} {this.state.command}
 					{this.state.focused ? <span className="TinyTerm-cursor">{this.state.cursor}</span> : null}
 					
