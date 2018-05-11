@@ -25,7 +25,6 @@ type Player struct {
 	Outgoing chan nwmessage.Message `json:"-"`
 	language string                 // current working language
 
-	slotNum    int    // currently attached to slotNum of current node
 	macAddress string // address of the machine player is current attached to
 
 	dialogue  *nwmessage.Dialogue // this holds any dialogue the players in the middle of
@@ -42,12 +41,10 @@ type Player struct {
 // TODO this is in the wrong place
 func NewPlayer(ws *websocket.Conn) *Player {
 	ret := &Player{
-		ID:       playerIDCount,
-		name:     "",
-		Socket:   ws,
-		Outgoing: make(chan nwmessage.Message),
-		slotNum:  -1,
-
+		ID:          playerIDCount,
+		name:        "",
+		Socket:      ws,
+		Outgoing:    make(chan nwmessage.Message),
 		EditorState: "",
 		StdinState:  "",
 	}
@@ -88,8 +85,8 @@ func (p *Player) Prompt() string {
 			prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
 		}
 
-		if p.slotNum != -1 {
-			prompt += fmt.Sprintf(":s%d", p.slotNum)
+		if p.macAddress != "" {
+			prompt += fmt.Sprintf(":%s", p.macAddress)
 		}
 		prompt += fmt.Sprintf("[%s]", p.language)
 	} else {
@@ -137,9 +134,8 @@ func (p *Player) breakConnection(forced bool) {
 		return
 	}
 
+	p.macAddress = ""
 	p.Route.Endpoint.removePlayer(p)
-	p.slotNum = -1
-	p.Route = nil
 
 	if forced {
 		p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))

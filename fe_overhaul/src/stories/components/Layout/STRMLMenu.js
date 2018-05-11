@@ -25,13 +25,10 @@ class STRMLMenu extends Component {
 
 	}
 
-	// componentDidMount() {
-		// console.log('head', window.getComputedStyle(this.menuTitle.current).left)
-		// console.log('body', this.menuBody.current.style.left)
-	// }
-
 	showMenu = (e) => {	
 		// console.log('show', e.type)
+		if (this.state.show)
+			this.closeMenu(e)
 
 		if (e.type == 'click'){
 			this.clickedOpen = true

@@ -70,17 +70,27 @@ func (n *node) initMachines() {
 }
 
 func (n *node) initAddressMap() {
-	n.addressMap[newMacAddress(2)] = n.Feature
+	featureAddress := newMacAddress(2)
+	n.setMacAddress(featureAddress, n.Feature)
 
 	for _, m := range n.Machines {
+
 		newAddress := newMacAddress(2)
 		_, ok := n.addressMap[newAddress]
 		for ok {
 			newAddress = newMacAddress(2)
 			_, ok = n.addressMap[newAddress]
 		}
-		n.addressMap[newAddress] = m
+
+		n.setMacAddress(newAddress, m)
 	}
+
+}
+
+func (n *node) setMacAddress(address string, mac *machine) {
+	// TODO error check name collisions
+	mac.address = address
+	n.addressMap[address] = mac
 
 }
 

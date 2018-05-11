@@ -5,7 +5,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import './STRMLGrid.css'
 
 import AceEditor from 'react-ace'
-import { modeMap, themeMap } from './brace-modes-themes.js'
+import { modeMap, themeMap, modeLookup } from './brace-modes-themes.js'
 
 // const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -40,8 +40,8 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
-      language: 'python',
-      aceTheme: 'monokai',
+      aceMode: 'Python',
+      aceTheme: 'chrome',
 
       compilerOutput: null,
       testResults: {stdouts:[], grades:[], hints:[]},
@@ -215,6 +215,13 @@ class STRMLGrid extends React.Component {
           case 'Theme':
             this.setState({ aceTheme: themeMap[item] })
             break
+          case 'Language: ' + this.state.aceMode:
+            this.setState({ aceMode: item }, () => {
+              this.outgoing.parseCmd('lang ' + this.state.aceMode.toLowerCase())
+              // console.log('acemode', this.state.aceMode.toLowerCase())
+            })
+            // this.outgoing.parseCmd('lang ' + this.state.aceMode)
+            break
         }
         break
       default:
@@ -294,11 +301,11 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="codepad">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}, { name: 'Theme', items: Object.keys(themeMap) }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}, { name: 'Theme', items: Object.keys(themeMap) }, { name: 'Language: ' + this.state.aceMode, items: Object.keys(modeMap) }]} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}
-                  mode={this.state.aceMode}
+                  mode={modeMap[this.state.aceMode]}
                   theme={this.state.aceTheme}
                   onFocus={() => this.toggleFocus('editor')}
                   onChange={this.handleAceChange}

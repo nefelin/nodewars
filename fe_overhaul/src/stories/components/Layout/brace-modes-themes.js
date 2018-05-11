@@ -45,4 +45,12 @@ const themeMap = {
 	'Monokai    (dark)': 'monokai',
 }
 
-export {modeMap, themeMap}
+function modeLookup(aceMode) {
+	for (let langName of Object.keys(modeMap)){
+		if (modeMap[langName] == aceMode)
+			return langName
+	}
+	return 'error'
+}
+
+export {modeMap, themeMap, modeLookup}

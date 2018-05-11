@@ -29,6 +29,7 @@
 
 .strml-menu-body {
 	position:absolute;
+	z-index: 10;
 
 	left: 0;
 	background-color: inherit;

@@ -15,6 +15,8 @@ type machine struct {
 	builder  string // `json:"creator"`
 	TeamName string `json:"owner"`
 
+	address string // mac address in node where machine resides
+
 	// solution  string // store solution used to pass. could be useful for later mechanics
 	Type feature.Type `json:"type"` // NA for non-features, none or other feature.Type for features
 

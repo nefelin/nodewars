@@ -57,7 +57,12 @@ var gameCmdList = map[string]playerCommand{
 
 	"who": cmdWho,
 
-	"ls": cmdLs, // list modules/mac. out of spec but for expediency
+	"ls": cmdLs,
+	// "ls": cmdDetail{
+	// 		usage: "an n target",
+	// 		description: "Adds n new nodes linked to target node",
+	// 		argsReq: []argType{Int, Int}
+	// 	},
 
 	// "sp": cmdSetPOE,
 }
@@ -234,7 +239,7 @@ func cmdLang(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// if the player's attached somewhere, update the buffer
-	if p.slotNum != -1 {
+	if p.currentMachine() != nil {
 		if !p.currentMachine().isNeutral() && !p.currentMachine().belongsTo(p.TeamName) {
 			return nwmessage.PsError(errors.New("Can't change language on enemy module"))
 		}

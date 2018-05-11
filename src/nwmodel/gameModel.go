@@ -205,9 +205,11 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 
 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from machine %d", player.slotNum))
+			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address))
 			player.Outgoing <- nwmessage.EditState(editMsg)
-			player.slotNum = -1
+
+			player.breakConnection(true)
+
 		}
 	}
 }
@@ -718,8 +720,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	// remove game infor from player object
 
 	p.TeamName = ""
-	p.Route = nil
-	p.slotNum = -1
+	p.breakConnection(false)
 	p.inGame = false
 
 	p.Outgoing <- nwmessage.GraphReset()
