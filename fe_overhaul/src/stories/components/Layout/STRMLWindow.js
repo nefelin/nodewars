@@ -7,7 +7,7 @@ const STRMLWindow = (props) => {
 	const bgColor = props.bgOverride || 'white'
 	return (
 		<div onMouseDown={props.onMouseDown} className="strml-window">
-			<div className="strml-window-header noselect">
+			<div onMouseUp={props.onMouseDown} className="strml-window-header noselect">
 				<STRMLMenuBar menus={props.menuBar} onSelect={(menu, selection) => props.onSelect(props.menuBar[0].name, menu, selection)}/>
 				
 			</div>

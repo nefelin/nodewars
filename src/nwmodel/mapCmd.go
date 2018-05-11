@@ -58,7 +58,7 @@ func cmdAddNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		node.addConnection(gm.Map.Nodes[linkTo])
 	}
 
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Nodes added to map"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
@@ -97,7 +97,7 @@ func cmdAddString(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// 	}
 	// }
 
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("%d new nodes created", nodeCount))
@@ -121,7 +121,7 @@ func cmdAddPoes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	gm.Map.addPoes(targs...)
 
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("Added poes to nodes %v", targs))
@@ -130,7 +130,7 @@ func cmdAddPoes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 func cmdBakeMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	gm.Map.initAllNodes()
 	gm.addTeams(makeDummyTeams())
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was baked and is ready to play"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("Map baked and ready to play"))
@@ -157,7 +157,7 @@ func cmdRemoveNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	gm.Map.removeNodes(toRemove)
 
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess(fmt.Sprintf("Removed nodes, ", toRemove))
@@ -206,7 +206,7 @@ func cmdLinkNodes(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// 		node.addConnection(gm.Map.Nodes[otherNode])
 	// 	}
 	// }
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess("")
@@ -226,7 +226,7 @@ func cmdNewBlankMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	newBlankMap := newNodeMap()
 	gm.Map = &newBlankMap
 	_ = gm.Map.addNodes(1)
-	gm.broadcastGraphReset()
+	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
 	return nwmessage.PsSuccess("Generating new blank map...")

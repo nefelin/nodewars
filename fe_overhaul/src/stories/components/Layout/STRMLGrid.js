@@ -5,8 +5,7 @@ import { Responsive, WidthProvider } from 'react-grid-layout';
 import './STRMLGrid.css'
 
 import AceEditor from 'react-ace'
-import 'brace/mode/golang';
-import 'brace/theme/monokai';
+import { modeMap, themeMap } from './brace-modes-themes.js'
 
 // const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -41,7 +40,8 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
-      // tinyTermIn: "",
+      language: 'python',
+      aceTheme: 'monokai',
 
       compilerOutput: null,
       testResults: {stdouts:[], grades:[], hints:[]},
@@ -212,6 +212,9 @@ class STRMLGrid extends React.Component {
                 break
             }
             break
+          case 'Theme':
+            this.setState({ aceTheme: themeMap[item] })
+            break
         }
         break
       default:
@@ -280,7 +283,7 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="map">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Map' }, { name: 'Theme', items: ['Light', 'Dark'] }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Map' }]} onSelect={this.handleSelect}>
               <Graph ref={this.graph} dataset={ this.state.graph }/>
             </STRMLWindow>
           </div>
@@ -291,12 +294,12 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="codepad">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}, { name: 'Theme', items: Object.keys(themeMap) }]} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}
-                  mode="golang"
-                  theme="monokai"
+                  mode={this.state.aceMode}
+                  theme={this.state.aceTheme}
                   onFocus={() => this.toggleFocus('editor')}
                   onChange={this.handleAceChange}
                   name="UNIQUE_ID_OF_DIV"

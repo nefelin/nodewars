@@ -318,8 +318,12 @@ func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType 
 
 	if hostile {
 		switch {
+		case mac.Health == mac.MaxHealth:
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Current solution of %d/%d is the best possible so you cannot steal this machine,\nuse 'reset' instead of 'make' to remove opponent's solution.", mac.Health, mac.MaxHealth))
+			return
+
 		case solutionStrength < mac.Health:
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution too weak to install: %d/%d, need at least %d/%d", response.passed(), len(response.Grades), mac.Health, mac.MaxHealth))
+			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.passed(), len(response.Grades), mac.Health+1, mac.MaxHealth))
 			return
 
 		case solutionStrength == mac.Health:

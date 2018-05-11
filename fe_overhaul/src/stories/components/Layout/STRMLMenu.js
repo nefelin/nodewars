@@ -21,6 +21,8 @@ class STRMLMenu extends Component {
 		this.menuTitle = React.createRef()
 		this.menuBody = React.createRef()
 
+		this.clickedOpen = false
+
 	}
 
 	// componentDidMount() {
@@ -28,31 +30,51 @@ class STRMLMenu extends Component {
 		// console.log('body', this.menuBody.current.style.left)
 	// }
 
-	showMenu = (event) => {	    
-		this.setState({ show: true }, () => {
-			document.addEventListener('click', this.closeMenu);
-		});
+	showMenu = (e) => {	
+		// console.log('show', e.type)
+
+		if (e.type == 'click'){
+			this.clickedOpen = true
+			// return
+		} else this.clickedOpen = false
+
+
+		if (this.state.items.length > 0) {
+			this.setState({ show: true }, () => {
+				document.addEventListener('mouseup', this.closeMenu);
+				document.addEventListener('click', this.closeMenu);
+			});
+		}
 	}
 
-	closeMenu = () => {
-		this.setState({ show: false }, () => {
-			document.removeEventListener('click', this.closeMenu);
-		});
+	closeMenu = (e) => {
+		// console.log('close', e.type)
+
+		if (this.clickedOpen == false || (this.clickedOpen == true && e.type == 'click')) {
+			this.setState({ show: false }, () => {
+				document.removeEventListener('mouseup', this.closeMenu);
+				document.removeEventListener('click', this.closeMenu);
+			});
+		}
 	}
 
 	handleSelect = (item) => {
 		console.log(item)
 	}
 
+	// handleClickOpen = () => {
+	// 	this.state.items.length > 0 ? this.showMenu() : null
+	// }
+
 	render() {
 		return (
 			<div className="strml-menu">
-				<div ref={this.menuTitle} className={"strml-menu-title" + (this.state.items.length > 0 ? " has-contents" : "") + (this.state.show ? " active" : "")} onMouseDown={this.state.items.length > 0 ? this.showMenu : null}>
+				<div ref={this.menuTitle} className={"strml-menu-title" + (this.state.items.length > 0 ? " has-contents" : "") + (this.state.show ? " active" : "")} onClick={this.showMenu} onMouseDown={this.showMenu}>
 					{this.props.name}
 				</div>
 					<div ref={this.menuBody} className={"strml-menu-body" + (this.state.show ? "" : " hidden")}>
 						{this.state.items.map((item) => (
-							<div key={item} className="strml-menu-item" onClick={() => this.props.onSelect(this.props.name, item)}>
+							<div key={item} className="strml-menu-item" onClick={() => this.props.onSelect(this.props.name, item)} onMouseUp={() => this.props.onSelect(this.props.name, item)}>
 								{item}
 							</div>
 						))}
