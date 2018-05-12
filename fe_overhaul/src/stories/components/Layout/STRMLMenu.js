@@ -38,19 +38,21 @@ class STRMLMenu extends Component {
 
 		if (this.state.items.length > 0) {
 			this.setState({ show: true }, () => {
+				document.addEventListener('mousedown', this.closeMenu);
 				document.addEventListener('mouseup', this.closeMenu);
-				document.addEventListener('click', this.closeMenu);
+				// document.addEventListener('click', this.closeMenu);
 			});
 		}
 	}
 
 	closeMenu = (e) => {
-		// console.log('close', e.type)
+		console.log('close', e.type)
 
-		if (this.clickedOpen == false || (this.clickedOpen == true && e.type == 'click')) {
+		if (this.clickedOpen == false || (this.clickedOpen == true && e.type == 'mousedown')) {
 			this.setState({ show: false }, () => {
+				document.removeEventListener('mousedown', this.closeMenu);
 				document.removeEventListener('mouseup', this.closeMenu);
-				document.removeEventListener('click', this.closeMenu);
+				// document.removeEventListener('click', this.closeMenu);
 			});
 		}
 	}

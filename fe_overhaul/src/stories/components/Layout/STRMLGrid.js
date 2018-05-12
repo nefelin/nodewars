@@ -7,6 +7,8 @@ import './STRMLGrid.css'
 import AceEditor from 'react-ace'
 import { modeMap, themeMap, modeLookup } from './brace-modes-themes.js'
 
+import { Menus, buildEditorMenu } from './menus'
+console.log(Menus)
 // const ResponsiveGridLayout = WidthProvider(Responsive);
 
 
@@ -284,24 +286,24 @@ class STRMLGrid extends React.Component {
         <GridLayout {...layoutProps}>
 
           <div key="terminal" >
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Terminal' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.Terminal} onSelect={this.handleSelect}>
               <TinyTerm ref={this.terminal}  onFocus={() => this.toggleFocus('terminal')}  grabFocus={true} onSend={this.handleTermSend}/>
             </STRMLWindow>
           </div>
 
           <div key="map">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Map' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.MapMenu} onSelect={this.handleSelect}>
               <Graph ref={this.graph} dataset={ this.state.graph }/>
             </STRMLWindow>
           </div>
           
           <div key="score">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Score' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.Score} onSelect={this.handleSelect}>
             </STRMLWindow>
           </div>
 
           <div key="codepad">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Ace Editor' }, { name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']}, { name: 'Theme', items: Object.keys(themeMap) }, { name: 'Language: ' + this.state.aceMode, items: Object.keys(modeMap) }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={buildEditorMenu(modeMap, themeMap, this.state)} onSelect={this.handleSelect}>
               <AceEditor
                   ref={this.editor}
                   style={fill}
@@ -317,19 +319,19 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="challenge_details">
-            <STRMLWindow onMouseDown={this.gatherFocus}  menuBar={[{ name: 'Challenge Details' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus}  menuBar={Menus.Challenge} onSelect={this.handleSelect}>
               <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia officia, illo magni. Consequatur sapiente adipisci eos, fugit maxime velit necessitatibus corporis illo ut molestiae et temporibus ipsum quas voluptatum deleniti.</p>
             </STRMLWindow>
           </div>
 
           <div key="test_results">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Test Results' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.Results} onSelect={this.handleSelect}>
               <TestResults results={this.state.testResults}/>
             </STRMLWindow>
           </div>
 
           <div key="compiler_output">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={[{ name: 'Compiler Output' }]} onSelect={this.handleSelect}>
+            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.CompilerOutput} onSelect={this.handleSelect}>
               <div style={{margin:10}}>
                 <p>
                   {
@@ -346,7 +348,7 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="stdin">
-            <STRMLWindow menuBar={[{ name: 'Stdin' }]} onSelect={this.handleSelect}>
+            <STRMLWindow menuBar={Menus.Stdin} onSelect={this.handleSelect}>
               <textarea style={fill} ref={this.stdin} onMouseDown={() => {this.toggleFocus("stdin");this.gatherFocus()}} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
             </STRMLWindow>
           </div>
