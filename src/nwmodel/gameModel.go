@@ -572,6 +572,7 @@ func (gm *GameModel) psBroadcast(msg nwmessage.Message) {
 
 	for _, player := range gm.Players {
 		player.Outgoing <- msg
+		player.Outgoing <- nwmessage.PsPrompt(player.Prompt())
 	}
 }
 
