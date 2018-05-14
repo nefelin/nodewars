@@ -435,9 +435,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// passed checks, set player mac to target
 
 	// remove old attachments
-	if p.currentMachine() != nil {
-		p.currentMachine().remPlayer(p)
-	}
+	p.macDetach()
 
 	// add this attachment
 	p.macAddress = macAddress
@@ -460,40 +458,39 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 		p.Outgoing <- nwmessage.LangSupportState(supportedLangs)
 	}
-	// log.Printf("Playyer attached to mac: %d, challengeID: %s\n", p.slotNum, mac.challenge.ID)
-
-	// Send mac info to edit buffer
-	msgPostfix := "\nchallenge details loaded to codebox"
 
 	// get language details
 	langDetails := gm.languages[p.language]
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
-	sampleIO := mac.challenge.SampleIO
-	description := mac.challenge.ShortDesc
 
-	p.stdinState(sampleIO[0].Input)
+	p.challengeState(mac.challenge)
+	p.stdinState(mac.challenge.SampleIO[0].Input)
 
 	// resp := nwmessage.PsPrompt(p.Outgoing, p.Socket, "Overwriting edit buffer with challenge details,\nhit any key to continue, (n) to leave buffer in place: ")
-	resp := ""
-	if resp != "n" && resp != "no" {
-		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
+	var resp string
+	if len(args) > 1 {
+		resp = args[1]
+	}
 
-		if langLock {
-			editText += fmt.Sprintf("\n\n%sENEMY MODULE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.currentMachine().language))
-		}
+	var lockStr string
+	if langLock {
+		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.currentMachine().language))
+	}
 
-		p.editorState(editText)
-	} else {
-		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
+	// machineStr := "machine"
+	// if mac.isFeature() {
+	// 	machineStr = "feature"
+	// }
+
+	if resp != "-n" && resp != "-no" {
+		editText := boilerplate + lockStr
+		p.editState(editText)
 	}
 
 	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.StringFor(p))
-	retText += msgPostfix
-	if langLock {
-		// TODO add this message to codebox
-		retText += fmt.Sprintf("\nalert: SOLUTION MUST BE IN %v", mac.language)
-	}
+	retText += lockStr
+
 	return nwmessage.PsSuccess(retText)
 }
 

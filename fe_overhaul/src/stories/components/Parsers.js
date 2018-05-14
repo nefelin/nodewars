@@ -30,15 +30,19 @@ class Incoming {
 	      			if (this.context.graph.current!=null)
 		      			this.context.graph.current.reset()
 	      			break
+	      		case 'challengeState':
+	      			const challenge = JSON.parse(data.data)
+	      			this.context.setState({ challenge })
+	      			break
 	      		case 'resultState':
 	      			this.parseResultState(data.data)
-	      			break
-	      		case 'editorState':
-	      			this.context.setState({ aceContent: data.data })
 	      			break
 	      		case 'stdinState':
 	      			this.context.setState({ stdin: data.data })
 	      			break
+	      		case 'editorState':
+					this.context.setState({ aceContent: data.data })
+					break
 	      		case 'editorLangState':
 	      			// console.log('editorLangState')
 	      			const lang = data.data.charAt(0).toUpperCase() + data.data.substr(1)

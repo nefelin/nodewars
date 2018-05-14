@@ -59,9 +59,13 @@ func (p *Player) stdinState(s string) {
 	p.Outgoing <- nwmessage.StdinState(p.StdinState)
 }
 
-func (p *Player) editorState(s string) {
+func (p *Player) editState(s string) {
 	p.EditorState = s
 	p.Outgoing <- nwmessage.EditState(s)
+}
+
+func (p *Player) challengeState(c Challenge) {
+	p.Outgoing <- nwmessage.ChallengeState(c.redacted())
 }
 
 func (p *Player) SendPrompt() {
@@ -128,18 +132,21 @@ func (p *Player) submitCode() (GradedResult, error) {
 	return response, nil
 }
 
+func (p *Player) macDetach() {
+	mac := p.currentMachine()
+
+	if mac != nil {
+		mac.remPlayer(p)
+		p.macAddress = ""
+	}
+}
+
 func (p *Player) breakConnection(forced bool) {
 	if p.Route == nil {
 		return
 	}
 
-	mac := p.currentMachine()
-
-	if mac != nil {
-		mac.remPlayer(p)
-	}
-
-	p.macAddress = ""
+	p.macDetach()
 	p.Route.Endpoint.removePlayer(p)
 	p.Route = nil
 

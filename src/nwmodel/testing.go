@@ -20,6 +20,24 @@ type Challenge struct {
 	SampleIO  caseList `json:"sampleIO"`
 }
 
+type safeChallenge struct {
+	Name      string   `json:"name"`
+	ShortDesc string   `json:"shortDesc"`
+	LongDesc  string   `json:"longDesc"`
+	Tags      tagList  `json:"tags"`
+	SampleIO  caseList `json:"sampleIO"`
+}
+
+func (c *Challenge) redacted() safeChallenge {
+	return safeChallenge{
+		Name:      c.Name,
+		ShortDesc: c.ShortDesc,
+		LongDesc:  c.LongDesc,
+		Tags:      c.Tags,
+		SampleIO:  c.SampleIO,
+	}
+}
+
 // TestCase describes an individual test case, of which a challenge may have one->many
 type TestCase struct {
 	Input  string `json:"input"`
@@ -142,6 +160,8 @@ func submitTest(id int64, language, code string) GradedResult {
 
 	var e GradedResult
 	decodeAPIResponse(r, &e)
+
+	fmt.Printf("RESULT::::::: %s\n", e)
 
 	return e
 }

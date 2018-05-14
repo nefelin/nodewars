@@ -22,6 +22,7 @@ import '../../../../node_modules/react-resizable/css/styles.css'
 import TinyTerm from '../Terminal/TinyTerm'
 
 import TestResults from '../TestResults'
+import ChallengeDetails from '../ChallengeDetails'
 
 import { defaultLayout } from './Layouts'
 
@@ -41,13 +42,16 @@ class STRMLGrid extends React.Component {
     this.state = {
       mapSize: {x:5*105, y:12*30} ,
       map: Maps.SimpleMap,
-      
-      stdin: 'Put your own stdin here',
-      aceContent: "Code Here",
+  
+      challenge: null,
 
+      stdin: 'Put your own stdin here',
+
+      aceContent: "Code Here",
       aceMode: 'python',
       aceTheme: 'chrome',
       aceMenu: [ { name: 'Ace Editor' }, { name: 'Theme', items: Object.keys(themeMap) }],
+
       supportedLanguages: [],
 
       compilerOutput: null,
@@ -367,7 +371,7 @@ class STRMLGrid extends React.Component {
 
           <div key="challenge_details">
             <STRMLWindow onMouseDown={this.gatherFocus}  menuBar={Menus.Challenge} onSelect={this.handleSelect}>
-              <p>Lorem ipsum dolor sit amet, consectetur adipisicing elit. Mollitia officia, illo magni. Consequatur sapiente adipisci eos, fugit maxime velit necessitatibus corporis illo ut molestiae et temporibus ipsum quas voluptatum deleniti.</p>
+            <ChallengeDetails challenge={this.state.challenge}/>
             </STRMLWindow>
           </div>
 

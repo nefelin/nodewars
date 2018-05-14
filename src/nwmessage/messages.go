@@ -129,11 +129,12 @@ func PsNoConnection() Message {
 }
 
 // messages with server as Sender trigger action in the front end but are not show in the pseudoterminal
-func ChallengeState(msg string) Message {
+func ChallengeState(c interface{}) Message {
+	msg, _ := json.Marshal(c)
 	return Message{
 		Type:   challengeStateStr,
 		Sender: serverStr,
-		Data:   msg,
+		Data:   string(msg),
 	}
 }
 
@@ -189,8 +190,8 @@ func GraphReset() Message {
 	}
 }
 
-func ResultState(e interface{}) Message {
-	msg, _ := json.Marshal(e)
+func ResultState(r interface{}) Message {
+	msg, _ := json.Marshal(r)
 	return Message{
 		Type:   resultStateStr,
 		Sender: serverStr,

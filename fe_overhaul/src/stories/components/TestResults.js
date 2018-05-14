@@ -4,10 +4,11 @@ const style = {
 	height: '100%',
 	overflowY: 'scroll',
 	overflowX: 'hidden',
-	boxSizing: "border-box"
+	boxSizing: "border-box",
 }
-const TestResults = ({results}) => {
 
+const TestResults = ({results}) => {
+	console.log('TestResults comp', results)
 	let tableHead, tableBody
 
 	if (results.stdouts != undefined) {
