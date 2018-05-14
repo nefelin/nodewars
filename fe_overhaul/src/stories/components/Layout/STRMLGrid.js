@@ -106,7 +106,7 @@ class STRMLGrid extends React.Component {
 
     // console.log('menu before setState', aceMenu)
 
-    this.setState({ aceMenu }, () => console.log('aceMenu set to ->', this.state.aceMenu))
+    this.setState({ aceMenu }/*, () => console.log('aceMenu set to ->', this.state.aceMenu)*/)
   }
 
   handleKeyPress = (e) => {

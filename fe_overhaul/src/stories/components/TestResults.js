@@ -7,7 +7,6 @@ const style = {
 	boxSizing: "border-box"
 }
 const TestResults = ({results}) => {
-	console.log(results)
 
 	let tableHead, tableBody
 
@@ -23,8 +22,8 @@ const TestResults = ({results}) => {
 		tableBody = results.grades.map((k,i) => (
 							<tr key={i}>
 								<td>{i}</td>
-								<td><strong>{results.grades ? results.grades[i] : 'None'}</strong></td>
-								<td>{results.hints? results.hints[i] : 'None'}</td>	
+								<td><strong>{results.grades[i]}</strong></td>
+								<td>{results.hints[i] != "" ? results.hints[i] : 'None'}</td>	
 							</tr>
 						))
 	}

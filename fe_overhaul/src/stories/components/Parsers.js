@@ -40,12 +40,12 @@ class Incoming {
 	      			this.context.setState({ stdin: data.data })
 	      			break
 	      		case 'editorLangState':
-	      			console.log('editorLangState')
+	      			// console.log('editorLangState')
 	      			const lang = data.data.charAt(0).toUpperCase() + data.data.substr(1)
 	      			this.context.setState({ aceMode: lang }, this.context.buildAceMenu)
 					break
 				case 'langSupportState':
-					console.log('calling buildAceMenu')
+					// console.log('calling buildAceMenu')
 					const supportedLanguages = JSON.parse(data.data)
 					this.context.setState({ supportedLanguages }, this.context.buildAceMenu)
 					break
@@ -54,10 +54,7 @@ class Incoming {
 	}
 
 	parseResultState(data) {
-		console.log("RESULT", data)
 		data = JSON.parse(data)
-		
-
 		this.context.setState({
 			testResults: data,
 			compilerOutput: {type: data.message.type, message:data.message.data},

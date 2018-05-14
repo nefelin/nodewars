@@ -959,7 +959,7 @@ class NWGraph {
 
 	drawPlayerLocation() {
 		const location = this.gameState.player_location
-		console.log('Player location!', location)
+		// console.log('Player location!', location)
 		let node
 
 		if (this.focusBox) {
