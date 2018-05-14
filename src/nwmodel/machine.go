@@ -2,33 +2,33 @@ package nwmodel
 
 import (
 	"feature"
+	"fmt"
 	"math/rand"
 	"sync"
+
+	"nwmessage"
 )
 
 type machine struct {
 	sync.Mutex
 	// accepts   challengeCriteria // store what challenges can fill this machine
 	challenge Challenge
-	// Type      string `json:"type"`
+
 	Powered  bool   `json:"powered"`
 	builder  string // `json:"creator"`
 	TeamName string `json:"owner"`
 
+	attachedPlayers map[*Player]bool
+
 	address string // mac address in node where machine resides
 
-	// solution  string // store solution used to pass. could be useful for later mechanics
+	// solution string // store solution used to pass. could be useful for later mechanics
 	Type feature.Type `json:"type"` // NA for non-features, none or other feature.Type for features
 
 	language  string // `json:"languageId"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
 }
-
-// type feature struct {
-// 	Type featureType `json:"type"` // type of feature
-// 	machine
-// }
 
 type challengeCriteria struct {
 	IDs        []int64  // list of acceptable challenge ids
@@ -40,18 +40,35 @@ type challengeCriteria struct {
 
 func newMachine() *machine {
 	return &machine{
-		Powered: true,
+		Powered:         true,
+		attachedPlayers: make(map[*Player]bool),
 	}
 }
 
 func newFeature() *machine {
-	return &machine{
-		Type:    feature.None,
-		Powered: true,
-	}
+	m := newMachine()
+	m.Type = feature.None
+	return m
 }
 
 // machine methods -------------------------------------------------------------------------
+
+func (m *machine) addPlayer(p *Player) {
+	m.attachedPlayers[p] = true
+}
+
+func (m *machine) remPlayer(p *Player) {
+	delete(m.attachedPlayers, p)
+}
+
+func (m *machine) detachAll(msg string) {
+	for p := range m.attachedPlayers {
+		m.remPlayer(p)
+		if msg != "" {
+			p.Outgoing <- nwmessage.PsAlert(msg)
+		}
+	}
+}
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *machine) resetChallenge() {
@@ -88,6 +105,8 @@ func (m *machine) reset() {
 	m.TeamName = ""
 	m.language = ""
 	m.Powered = true
+
+	m.detachAll(fmt.Sprintf("mac:%s is resetting, you have been detached", m.address))
 
 	// if m.Type != nil { // reset feature type?
 	// 	m.Type = feature.None

@@ -433,8 +433,16 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// passed checks, set player mac to target
+
+	// remove old attachments
+	if p.currentMachine() != nil {
+		p.currentMachine().remPlayer(p)
+	}
+
+	// add this attachment
 	p.macAddress = macAddress
 	mac := p.currentMachine()
+	mac.addPlayer(p)
 
 	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false

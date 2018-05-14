@@ -210,7 +210,7 @@ class STRMLGrid extends React.Component {
   }
 
   handleSelect = (win, menu, item) => {
-    console.log('handleSelect', win, '->', menu, '->', item)
+    // console.log('handleSelect', win, '->', menu, '->', item)
     switch (win) {
       case 'NodeWars':
         switch (menu){

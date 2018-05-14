@@ -6,9 +6,9 @@ export const STRMLMenuBar = ({menus, onSelect}) => {
 	for (let menu of menus) {
 		bar.push(<STRMLMenu key={menu.name} name={menu.name} items={menu.items ? menu.items : []} onSelect={onSelect}/>)
 	}
-	if (menus[0].name == 'Ace Editor'){
-		console.log('EDITOR rendering', menus)
-	}
+	// if (menus[0].name == 'Ace Editor'){
+	// 	console.log('EDITOR rendering', menus)
+	// }
 
 	return <div>{bar}</div>
 }
