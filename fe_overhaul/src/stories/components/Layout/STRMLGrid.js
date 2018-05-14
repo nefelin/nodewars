@@ -7,7 +7,7 @@ import './STRMLGrid.css'
 import AceEditor from 'react-ace'
 import { modeMap, themeMap, modeLookup } from './brace-modes-themes.js'
 
-import { Menus, buildEditorMenu } from './menus'
+import { Menus } from './menus'
 console.log(Menus)
 // const ResponsiveGridLayout = WidthProvider(Responsive);
 
@@ -42,8 +42,10 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
-      aceMode: 'Python',
+      aceMode: '',
       aceTheme: 'chrome',
+      aceMenu: [ { name: 'Ace Editor' }, { name: 'Theme', items: Object.keys(themeMap) }],
+      supportedLanguages: [],
 
       compilerOutput: null,
       testResults: {stdouts:[], grades:[], hints:[]},
@@ -52,6 +54,8 @@ class STRMLGrid extends React.Component {
 
       // graph: null
     }
+
+    // this.buildAceMenu = aceMenu
 
     window.onfocus = () => this.gatherFocus()
 
@@ -73,6 +77,33 @@ class STRMLGrid extends React.Component {
     // Set up keyboard shortcuts
     
     document.onkeydown = this.handleKeyPress;
+  }
+
+  buildAceMenu = () => {
+    // console.log('BUILDACEMENU', langList)
+    const aceMenu = [ { name: 'Ace Editor' }, { name: 'Theme', items: Object.keys(themeMap) }]
+
+    const languages = []
+    for (let lang of this.state.supportedLanguages) {
+      for (let langLabel of Object.keys(modeMap)){
+        // console.log('comparing',lang,'to',langLabel)
+        if (lang == langLabel.toLowerCase()){
+          languages.push(lang.charAt(0).toUpperCase() + lang.substr(1))
+          // console.log('Add language', langLabel)
+        }
+      }
+    }
+
+    // console.log(langList)
+    if (languages.length > 0) {
+      aceMenu.push({ name: 'Build', items: ['Make, (ctrl-enter)', 'Test, (ctrl-\\)', 'Reset, (ctrl-r)']})
+      aceMenu.push({ name: 'Language: ' + this.state.aceMode })
+      // aceMenu.push({ name: 'Language: ' + this.state.aceMode, items: languages })
+    }
+
+    // console.log('menu before setState', aceMenu)
+
+    this.setState({ aceMenu }, () => console.log('aceMenu set to ->', this.state.aceMenu))
   }
 
   handleKeyPress = (e) => {
@@ -179,6 +210,7 @@ class STRMLGrid extends React.Component {
   }
 
   handleSelect = (win, menu, item) => {
+    console.log('handleSelect', win, '->', menu, '->', item)
     switch (win) {
       case 'NodeWars':
         switch (menu){
@@ -303,7 +335,11 @@ class STRMLGrid extends React.Component {
           </div>
 
           <div key="codepad">
-            <STRMLWindow onMouseDown={this.gatherFocus} menuBar={buildEditorMenu(modeMap, themeMap, this.state)} onSelect={this.handleSelect}>
+            <STRMLWindow 
+                onMouseDown={this.gatherFocus} 
+                menuBar={this.state.aceMenu}
+                onSelect={this.handleSelect}>
+
               <AceEditor
                   ref={this.editor}
                   style={fill}

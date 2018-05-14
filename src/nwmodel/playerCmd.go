@@ -239,18 +239,14 @@ func cmdLang(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// if the player's attached somewhere, update the buffer
-	if p.currentMachine() != nil {
-		if !p.currentMachine().isNeutral() && !p.currentMachine().belongsTo(p.TeamName) {
-			return nwmessage.PsError(errors.New("Can't change language on enemy module"))
-		}
-		pSlot := p.currentMachine()
-
+	mac := p.currentMachine()
+	if mac != nil {
 		// TODO syntax
 		langDetails := gm.languages[p.language]
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
-		sampleIO := pSlot.challenge.SampleIO
-		description := pSlot.challenge.ShortDesc
+		sampleIO := mac.challenge.SampleIO
+		description := mac.challenge.ShortDesc
 
 		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
 		p.Outgoing <- nwmessage.EditState(editText)
@@ -325,7 +321,7 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		return nwmessage.PsNoConnection()
 	}
 
-	retMsg := p.Route.Endpoint.forMsg()
+	retMsg := p.Route.Endpoint.StringFor(p)
 	pHere := p.Route.Endpoint.playersHere
 
 	if len(pHere) > 1 {
@@ -445,6 +441,16 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) {
 		langLock = true
 		gm.setLanguage(p, mac.language)
+		p.Outgoing <- nwmessage.LangSupportState([]string{mac.language})
+	} else {
+		supportedLangs := make([]string, len(gm.languages))
+		var i int
+		for lang := range gm.languages {
+			supportedLangs[i] = lang
+			i++
+		}
+
+		p.Outgoing <- nwmessage.LangSupportState(supportedLangs)
 	}
 	// log.Printf("Playyer attached to mac: %d, challengeID: %s\n", p.slotNum, mac.challenge.ID)
 
@@ -474,7 +480,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		msgPostfix = "\n" + fmt.Sprintf("%s %s\n%s Sample IO: %s", comment, description, comment, sampleIO)
 	}
 
-	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.forMsg())
+	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.StringFor(p))
 	retText += msgPostfix
 	if langLock {
 		// TODO add this message to codebox

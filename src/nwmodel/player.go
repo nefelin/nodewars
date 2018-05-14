@@ -130,12 +130,12 @@ func (p *Player) submitCode() (ExecutionResult, error) {
 
 func (p *Player) breakConnection(forced bool) {
 	if p.Route == nil {
-		// log.Panic("No route for player")
 		return
 	}
 
 	p.macAddress = ""
 	p.Route.Endpoint.removePlayer(p)
+	p.Route = nil
 
 	if forced {
 		p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
@@ -144,7 +144,7 @@ func (p *Player) breakConnection(forced bool) {
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
 func (p *Player) currentMachine() *machine {
-	if p.Route == nil {
+	if p.Route == nil || p.macAddress == "" {
 		return nil
 	}
 

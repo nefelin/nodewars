@@ -21,17 +21,19 @@ const (
 	beginStr       = "begin"
 	dialogueMsgStr = "dialogue"
 
-	challengeStateStr  = "challengeState"
-	compOutStateStr    = "compOutState"
-	editStateStr       = "editorState"
-	graphStateStr      = "graphState"
-	scoreStateStr      = "scoreState"
-	StdinStateStr      = "stdinState"
-	teamStateStr       = "teamState"
-	graphResetStr      = "graphReset"
-	resultStateStr     = "resultState"
-	terminalPauseStr   = "pauseTerm"
-	terminalUnpauseStr = "unpauseTerm"
+	challengeStateStr   = "challengeState"
+	compOutStateStr     = "compOutState"
+	editLangStateStr    = "editorLangState"
+	langSupportStateStr = "langSupportState"
+	editStateStr        = "editorState"
+	graphStateStr       = "graphState"
+	scoreStateStr       = "scoreState"
+	StdinStateStr       = "stdinState"
+	teamStateStr        = "teamState"
+	graphResetStr       = "graphReset"
+	resultStateStr      = "resultState"
+	terminalPauseStr    = "pauseTerm"
+	terminalUnpauseStr  = "unpauseTerm"
 
 	pseudoStr = "pseudoServer"
 	serverStr = "server"
@@ -140,6 +142,26 @@ func EditState(msg string) Message {
 		Type:   editStateStr,
 		Sender: serverStr,
 		Data:   msg,
+	}
+}
+
+func EditLangState(msg string) Message {
+	return Message{
+		Type:   editLangStateStr,
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
+func LangSupportState(msg []string) Message {
+	bytes, err := json.Marshal(msg)
+	if err != nil {
+		panic(err)
+	}
+	return Message{
+		Type:   langSupportStateStr,
+		Sender: serverStr,
+		Data:   string(bytes),
 	}
 }
 

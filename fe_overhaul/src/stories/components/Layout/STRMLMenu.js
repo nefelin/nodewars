@@ -6,6 +6,9 @@ export const STRMLMenuBar = ({menus, onSelect}) => {
 	for (let menu of menus) {
 		bar.push(<STRMLMenu key={menu.name} name={menu.name} items={menu.items ? menu.items : []} onSelect={onSelect}/>)
 	}
+	if (menus[0].name == 'Ace Editor'){
+		console.log('EDITOR rendering', menus)
+	}
 
 	return <div>{bar}</div>
 }
@@ -46,7 +49,7 @@ class STRMLMenu extends Component {
 	}
 
 	closeMenu = (e) => {
-		console.log('close', e.type)
+		// console.log('close', e.type)
 
 		if (this.clickedOpen == false || (this.clickedOpen == true && e.type == 'mousedown')) {
 			this.setState({ show: false }, () => {
@@ -57,13 +60,6 @@ class STRMLMenu extends Component {
 		}
 	}
 
-	handleSelect = (item) => {
-		console.log(item)
-	}
-
-	// handleClickOpen = () => {
-	// 	this.state.items.length > 0 ? this.showMenu() : null
-	// }
 
 	render() {
 		return (
@@ -73,7 +69,7 @@ class STRMLMenu extends Component {
 				</div>
 					<div ref={this.menuBody} className={"strml-menu-body" + (this.state.show ? "" : " hidden")}>
 						{this.state.items.map((item) => (
-							<div key={item} className="strml-menu-item" onClick={() => this.props.onSelect(this.props.name, item)} onMouseUp={() => this.props.onSelect(this.props.name, item)}>
+							<div key={item} className="strml-menu-item" onMouseDown={() => this.props.onSelect(this.props.name, item)} onMouseUp={() => this.props.onSelect(this.props.name, item)}>
 								{item}
 							</div>
 						))}

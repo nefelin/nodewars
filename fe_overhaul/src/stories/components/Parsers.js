@@ -3,13 +3,13 @@ class Incoming {
 		// this.ws = ws
 		this.debug = debug || false
 		this.context = context
-		console.log('<Parsers.Incoming> context,', context)
+		// console.log('<Parsers.Incoming> context,', context)
 	}
 
 	handle = (m) => {
 		const data = JSON.parse(m.data)
-	    if (this.debug)
-	    	if (data.type != "scoreState") console.log('<Parsers.Incoming> received message,', data)
+	    // if (this.debug)
+	    // 	if (data.type != "scoreState") console.log('<Parsers.Incoming> received message,', data)
 
 	    switch (data.sender) {
 	      case 'pseudoServer':
@@ -39,6 +39,16 @@ class Incoming {
 	      		case 'stdinState':
 	      			this.context.setState({ stdin: data.data })
 	      			break
+	      		case 'editorLangState':
+	      			console.log('editorLangState')
+	      			const lang = data.data.charAt(0).toUpperCase() + data.data.substr(1)
+	      			this.context.setState({ aceMode: lang }, this.context.buildAceMenu)
+					break
+				case 'langSupportState':
+					console.log('calling buildAceMenu')
+					const supportedLanguages = JSON.parse(data.data)
+					this.context.setState({ supportedLanguages }, this.context.buildAceMenu)
+					break
 	      	}
 	    }
 	}

@@ -48,7 +48,7 @@ func (r route) String() string {
 	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint.ID, strings.Join(nodeList, ", "))
 }
 
-func (n node) forMsg() string {
+func (n node) StringFor(p *Player) string {
 
 	// sort keys for consistent presentation
 	addList := make([]string, 0)
@@ -60,8 +60,12 @@ func (n node) forMsg() string {
 	// compose list of all machines
 	macList := ""
 	for _, add := range addList {
+		atIndicator := ""
+		if p.macAddress == add {
+			atIndicator = "*"
+		}
 		mac := n.addressMap[add]
-		macList += "\n" + add + ":" + mac.forMsg()
+		macList += "\n" + add + ":" + mac.StringFor(p) + atIndicator
 	}
 
 	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
@@ -69,8 +73,9 @@ func (n node) forMsg() string {
 	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
 }
 
-func (m machine) forMsg() string {
+func (m machine) StringFor(p *Player) string {
 	var feature string
+
 	if m.isFeature() {
 		feature = " (feature)"
 	}
@@ -86,19 +91,6 @@ func (m machine) forMsg() string {
 func (m machine) details() string {
 	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
 }
-
-// func (m machine) forProbe() string {
-// 	var header string
-// 	switch {
-// 	case m.Module != nil:
-// 		header = "( " + m.Module.forMsg() + " )\n"
-// 	default:
-// 		header = "( -empty- )\n"
-// 	}
-// 	// task := "Task:\n" + m.challenge.Description
-// 	return header //+ task
-
-// }
 
 func (r route) forMsg() string {
 	nodeCount := len(r.Nodes)

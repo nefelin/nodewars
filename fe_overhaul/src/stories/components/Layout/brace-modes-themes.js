@@ -35,7 +35,7 @@ const modeMap = {
 	"Ruby": 'ruby',
 	"Rust": 'rust',
 	"Scala": 'scala',
-	"Sh": 'sh',
+	"Bash": 'sh', // this is actually sh mode but BE supports Bash and Names are used for lookup
 }
 
 const themeMap = {

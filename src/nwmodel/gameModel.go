@@ -27,6 +27,14 @@ type GameModel struct {
 	// timelimit should be able to set a timelimit and count points at the end
 }
 
+// tries to set initial language to one of these defaults before picking first available
+var langDefaults = []string{
+	"python",
+	"javascript",
+	"golang",
+	"c++",
+}
+
 // init methods:
 
 // NewDefaultModel Generic game model
@@ -48,6 +56,11 @@ func NewDefaultModel() *GameModel {
 		PointGoal:     1000,
 		pendingAlerts: make(map[playerID][]alert),
 	}
+
+	// fmt.Println("Supported Languages:")
+	// for key := range gm.languages {
+	// 	fmt.Println(key)
+	// }
 
 	err := gm.addTeams(makeDummyTeams())
 	if err != nil {
@@ -686,7 +699,32 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 	gm.Players[p.ID] = p
 	gm.pendingAlerts[p.ID] = make([]alert, 0) // make alerts slot for new player
 
-	gm.setLanguage(p, "python")
+	supportedLangs := make([]string, len(gm.languages))
+	var i int
+	for lang := range gm.languages {
+		supportedLangs[i] = lang
+		i++
+	}
+
+	p.Outgoing <- nwmessage.LangSupportState(supportedLangs)
+
+	var defaultLanguage string
+	for _, lang1 := range langDefaults {
+		if defaultLanguage != "" {
+			break
+		}
+		for _, lang2 := range supportedLangs {
+			// fmt.Printf("comparing %s to %s\n", lang1, lang2)
+			if lang1 == lang2 {
+				defaultLanguage = lang1
+			}
+		}
+	}
+	if defaultLanguage == "" {
+		defaultLanguage = supportedLangs[0]
+	}
+
+	gm.setLanguage(p, defaultLanguage)
 
 	// send initiall map state
 
@@ -829,12 +867,13 @@ func (gm *GameModel) setLanguage(p *Player, l string) error {
 		return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")
 	}
 
+	mac := p.currentMachine()
+	if mac != nil && !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != l {
+		return errors.New("Can't change language while attached to a hostile machine")
+	}
+
 	p.language = l
 
-	p.Outgoing <- nwmessage.Message{
-		Type:   "languageState",
-		Sender: "server",
-		Data:   p.language,
-	}
+	p.Outgoing <- nwmessage.EditLangState(p.language)
 	return nil
 }
