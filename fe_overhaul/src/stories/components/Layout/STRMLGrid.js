@@ -6,6 +6,9 @@ import './STRMLGrid.css'
 
 import AceEditor from 'react-ace'
 import { modeMap, themeMap, modeLookup } from './brace-modes-themes.js'
+// const modeMap = {},
+//       themeMap = {},
+//       modeLookup = {}
 
 import { Menus } from './menus'
 console.log(Menus)
@@ -42,7 +45,7 @@ class STRMLGrid extends React.Component {
       stdin: 'Put your own stdin here',
       aceContent: "Code Here",
 
-      aceMode: '',
+      aceMode: 'python',
       aceTheme: 'chrome',
       aceMenu: [ { name: 'Ace Editor' }, { name: 'Theme', items: Object.keys(themeMap) }],
       supportedLanguages: [],
@@ -351,6 +354,7 @@ class STRMLGrid extends React.Component {
                   editorProps={{$blockScrolling: true}}
                   value={this.state.aceContent}
                 />
+                
             </STRMLWindow>
           </div>
 

@@ -674,6 +674,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	p.breakConnection(false)
 	p.inGame = false
 
+	p.Outgoing <- nwmessage.LangSupportState([]string{})
 	p.Outgoing <- nwmessage.GraphReset()
 
 	return nil

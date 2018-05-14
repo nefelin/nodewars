@@ -95,7 +95,7 @@ func (d *Dispatcher) queuePlayerRegistration(ws *websocket.Conn, retChan chan *n
 
 func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
 	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
-	log.Printf("Scrubbing player: %v", p.ID)
+	log.Printf("Scrubbing player: %v\n", p.ID)
 	// d.removePlayer(p)
 	// TODO REMOVE THE PLAYER
 
