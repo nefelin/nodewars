@@ -73,16 +73,43 @@ class TinyTerm extends React.Component {
 	handleKeyPress(e) {
 		// console.log(e.keyCode)
 		switch (e.keyCode){
-			case 13:
+			case 13: // 'enter'
 				this.sendCommand(e.target.value)
 				break
-		}
+			case 38: // 'up'
+				if (this.state.historyIndex > 0) {
+					console.log(this.state.commandHistory)
+					this.setState({
+						historyIndex: this.state.historyIndex-1,
+						command: this.state.commandHistory[this.state.historyIndex-1]
+					})
+				}
+				break
+			case 40: // 'down'
+				if (this.state.historyIndex < this.state.commandHistory.length-1) {
+					console.log(this.state.commandHistory)
+					this.setState({
+						historyIndex: this.state.historyIndex+1,
+						command: this.state.commandHistory[this.state.historyIndex+1]
+					})
+				} else {
+					this.setState({ command: "" })
+				}
+				break
+		}		
 	}
 	
 	sendCommand(cmd) {
 		// console.log((this.state.page + cmd + '\n').split('\n'))
+		const commandHistory = this.state.commandHistory.slice()
+		commandHistory.push(cmd)
+
 		this.recv(cmd + '\n')
-		this.setState({ command: "" })
+		this.setState({
+			commandHistory,
+			command: "" ,
+			historyIndex: commandHistory.length,
+			})
 		this.props.onSend(cmd)
 	}
 
