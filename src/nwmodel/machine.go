@@ -116,7 +116,7 @@ func (m *machine) reset() {
 	m.resetChallenge()
 }
 
-func (m *machine) claim(p *Player, r ExecutionResult) {
+func (m *machine) claim(p *Player, r GradedResult) {
 	m.builder = p.name
 	m.TeamName = p.TeamName
 	m.language = p.language

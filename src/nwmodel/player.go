@@ -112,7 +112,7 @@ func (p *Player) canSubmit() error {
 
 }
 
-func (p *Player) submitCode() (ExecutionResult, error) {
+func (p *Player) submitCode() (GradedResult, error) {
 	response := submitTest(p.currentMachine().challenge.ID, p.language, p.EditorState)
 
 	p.Outgoing <- nwmessage.ResultState(response)
@@ -131,6 +131,12 @@ func (p *Player) submitCode() (ExecutionResult, error) {
 func (p *Player) breakConnection(forced bool) {
 	if p.Route == nil {
 		return
+	}
+
+	mac := p.currentMachine()
+
+	if mac != nil {
+		mac.remPlayer(p)
 	}
 
 	p.macAddress = ""

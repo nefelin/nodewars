@@ -306,6 +306,13 @@ class STRMLGrid extends React.Component {
     }
     
     const fill = {
+      width: '100%',
+      height: '100%',
+      boxSizing: 'border-box',
+      resize: 'none'
+    }
+
+    const stdinStyle = {
       outline: 'none',
       width: '100%',
       height: '100%',
@@ -389,7 +396,7 @@ class STRMLGrid extends React.Component {
 
           <div key="stdin">
             <STRMLWindow menuBar={Menus.Stdin} onSelect={this.handleSelect}>
-              <textarea style={fill} ref={this.stdin} onMouseDown={() => {this.toggleFocus("stdin");this.gatherFocus()}} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
+              <textarea style={stdinStyle} ref={this.stdin} onMouseDown={() => {this.toggleFocus("stdin");this.gatherFocus()}} onChange={this.handleStdinChange} value={this.state.stdin}></textarea>
             </STRMLWindow>
           </div>
 

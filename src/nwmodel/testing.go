@@ -58,15 +58,21 @@ type tbAPIResponse struct {
 // 	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
 // }
 
-// ExecutionResult hold the response from testbox, if no challenge id was provided in submission, Graded will be empty
-type ExecutionResult struct {
+// GradedResult hold the graded response from testbox
+type GradedResult struct {
 	Stdouts []string          `json:"stdouts"`
 	Grades  []string          `json:"grades,omitempty"`
 	Hints   []string          `json:"hints"`
 	Message nwmessage.Message `json:"message"`
 }
 
-func (r ExecutionResult) gradeMsg() string {
+// SimpleResult holds an unopinionated output from execution
+// type SimpleResult struct {
+// 	Stdout  string            `json:"stdout"`
+// 	Message nwmessage.Message `json:"message"`
+// }
+
+func (r GradedResult) gradeMsg() string {
 	var res string
 	for i, g := range r.Grades {
 		res += fmt.Sprintf("Test #%d: ", i)
@@ -79,7 +85,7 @@ func (r ExecutionResult) gradeMsg() string {
 	return res
 }
 
-func (r ExecutionResult) passed() int {
+func (r GradedResult) passed() int {
 	var passed int
 	for _, grade := range r.Grades {
 		if grade == "Pass" {
@@ -89,8 +95,8 @@ func (r ExecutionResult) passed() int {
 	return passed
 }
 
-func (r ExecutionResult) String() string {
-	return fmt.Sprintf("( <ExecutionResult> {Stdouts: %s, Graded: %s, Hints: %s, Message: %s} )", r.Stdouts, r.Grades, r.Hints, r.Message)
+func (r GradedResult) String() string {
+	return fmt.Sprintf("( <GradedResult> {Stdouts: %s, Graded: %s, Hints: %s, Message: %s} )", r.Stdouts, r.Grades, r.Hints, r.Message)
 }
 
 // Language describes the language details nodewars server needs to hold
@@ -120,7 +126,7 @@ func getRandomChallenge() Challenge {
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id int64, language, code string) ExecutionResult {
+func submitTest(id int64, language, code string) GradedResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -134,13 +140,13 @@ func submitTest(id int64, language, code string) ExecutionResult {
 		panic(err)
 	}
 
-	var e ExecutionResult
+	var e GradedResult
 	decodeAPIResponse(r, &e)
 
 	return e
 }
 
-func getOutput(language, code, stdin string) ExecutionResult {
+func getOutput(language, code, stdin string) GradedResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -153,7 +159,7 @@ func getOutput(language, code, stdin string) ExecutionResult {
 		panic(err)
 	}
 
-	var e ExecutionResult
+	var e GradedResult
 	decodeAPIResponse(r, &e)
 
 	return e

@@ -227,7 +227,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 	}
 }
 
-func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType feature.Type) {
+func (gm *GameModel) tryClaimMachine(p *Player, response GradedResult, fType feature.Type) {
 	mac := p.currentMachine()
 	node := p.Route.Endpoint
 	solutionStrength := response.passed()
@@ -339,7 +339,7 @@ func (gm *GameModel) tryClaimMachine(p *Player, response ExecutionResult, fType 
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *Player, r ExecutionResult) {
+func (gm *GameModel) tryResetMachine(p *Player, r GradedResult) {
 	mac := p.currentMachine()
 	node := p.Route.Endpoint
 	solutionStrength := r.passed()
