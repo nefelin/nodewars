@@ -47,7 +47,7 @@ func newMachine() *machine {
 
 func newFeature() *machine {
 	m := newMachine()
-	m.Type = feature.None
+	m.setType(feature.None)
 	return m
 }
 

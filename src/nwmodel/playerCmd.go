@@ -506,7 +506,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	// Abstract this TODO
 	var feaType feature.Type
 	if mac.isFeature() {
-		if mac.Type == feature.None {
+		if mac.getType() == feature.None {
 			if len(args) < 1 {
 				return nwmessage.PsError(errors.New("Make requires one argument when attached to an untyped feature"))
 			}

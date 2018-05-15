@@ -87,7 +87,7 @@ func (m *nodeMap) addPoes(ns ...nodeID) {
 			continue
 		}
 		// make an available POE for each nodeID passed
-		node.Feature.Type = feature.POE
+		node.Feature.setType(feature.POE)
 		// m.POEs[id] = true
 	}
 }

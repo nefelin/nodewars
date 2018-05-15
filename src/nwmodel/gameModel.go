@@ -121,7 +121,7 @@ func (gm *GameModel) addTeams(teams []*team) error {
 	// remove any leftovers
 	if len(nodes) > 0 {
 		for _, node := range nodes {
-			node.Feature.Type = feature.None
+			node.Feature.setType(feature.None)
 		}
 	}
 
@@ -282,9 +282,9 @@ func (gm *GameModel) tryClaimMachine(p *Player, response GradedResult, fType fea
 	mac.language = p.language
 	mac.Health = solutionStrength
 
-	if mac.Type == feature.None {
-		mac.Type = fType
-	} else if mac.Type == feature.POE {
+	if mac.getType() == feature.None {
+		mac.setType(fType)
+	} else if mac.getType() == feature.POE {
 		err := newTeam.addPoe(node)
 		if err != nil {
 			panic(err)
@@ -377,7 +377,7 @@ func (gm *GameModel) tryResetMachine(p *Player, r GradedResult) {
 	gm.updateCoinPerTick(oldTeam)
 
 	// if machine was poe, remove team poe pointer
-	if mac.Type == feature.POE {
+	if mac.getType() == feature.POE {
 		err := oldTeam.remPoe(node)
 		if err != nil {
 			panic(err)
