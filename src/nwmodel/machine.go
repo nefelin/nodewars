@@ -96,18 +96,23 @@ func (m *machine) belongsTo(teamName string) bool {
 
 func (m *machine) addPlayer(p *Player) {
 	m.Lock()
+	defer m.Unlock()
+
 	m.attachedPlayers[p] = true
-	m.Unlock()
 }
 
 func (m *machine) remPlayer(p *Player) {
 	m.Lock()
+	defer m.Unlock()
+
 	delete(m.attachedPlayers, p)
-	m.Unlock()
+
 }
 
 func (m *machine) reset() {
 	m.Lock()
+	defer m.Unlock()
+
 	m.builder = ""
 	m.TeamName = ""
 	m.language = ""
@@ -121,31 +126,36 @@ func (m *machine) reset() {
 
 	m.Health = 0
 	m.resetChallenge()
-	m.Unlock()
 }
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *machine) resetChallenge() {
 	m.Lock()
+	defer m.Unlock()
+
 	m.challenge = getRandomChallenge()
 	m.MaxHealth = len(m.challenge.Cases)
-	m.Unlock()
+
 }
 
 func (m *machine) claim(p *Player, r GradedResult) {
 	m.Lock()
+	defer m.Unlock()
+
 	m.builder = p.name
 	m.TeamName = p.TeamName
 	m.language = p.language
 	// m.Powered = true
 
 	m.Health = r.passed()
-	m.Unlock()
+
 }
 
 // dummyClaim is used to claim a machine for a player without an execution result
 func (m *machine) dummyClaim(teamName string, str string) {
 	m.Lock()
+	defer m.Unlock()
+
 	// m.builder = p.name
 	m.TeamName = teamName
 	m.language = "python" // TODO find ore elegent solution for this
@@ -159,5 +169,4 @@ func (m *machine) dummyClaim(teamName string, str string) {
 	case "MIN":
 		m.Health = 1
 	}
-	m.Unlock()
 }
