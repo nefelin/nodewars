@@ -134,7 +134,6 @@ func (p *Player) submitCode() (GradedResult, error) {
 
 func (p *Player) macDetach() {
 	mac := p.currentMachine()
-
 	if mac != nil {
 		mac.remPlayer(p)
 		p.macAddress = ""
