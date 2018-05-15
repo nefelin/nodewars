@@ -2,16 +2,22 @@ package nwmodel
 
 import (
 	"strconv"
+	"sync"
 )
 
 type route struct {
+	sync.RWMutex
 	Endpoint *node   `json:"endpoint"`
 	Nodes    []*node `json:"nodes"`
 }
 
 // route methods --------------------------------------------
 
+// Getters (RLock)
 func (r route) containsNode(n *node) (int, bool) {
+	p.Route.RLock()
+	defer p.Route.RUnlock()
+
 	for i, node := range r.Nodes {
 		if n == node {
 			return i, true
@@ -21,11 +27,17 @@ func (r route) containsNode(n *node) (int, bool) {
 }
 
 func (r route) length() int {
+	p.Route.RLock()
+	defer p.Route.RUnlock()
+
 	return len(r.Nodes)
 }
 
 // asIds reverses the order of the nodes and stores ids only
 func (r route) asIds() []nodeID {
+	p.Route.RLock()
+	defer p.Route.RUnlock()
+
 	nodeCount := len(r.Nodes)
 	list := make([]nodeID, nodeCount+1)
 
@@ -57,6 +69,7 @@ func newTrafficMap() *trafficMap {
 func (t *trafficMap) addRoute(r *route, color string) {
 	// fmt.Printf("asIds test: %v", r.asIds())
 	nodeIDs := r.asIds()
+
 	for i := 0; i < len(nodeIDs)-1; i++ {
 		n1 := nodeIDs[i]
 		n2 := nodeIDs[i+1]
