@@ -164,8 +164,9 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string) nwmessage.Message {
 }
 
 func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	node := p.location()
 
-	if p.Route == nil {
+	if node == nil {
 		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))
 	}
 
@@ -177,7 +178,7 @@ func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	msg := nwmessage.PsChat(p.GetName(), "node", chatMsg)
 
-	for _, player := range gm.playersAtNode(p.Route.Endpoint) {
+	for _, player := range gm.playersAtNode(node) {
 		player.Outgoing <- msg
 	}
 
@@ -201,13 +202,13 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	if err != nil {
 		return nwmessage.PsError(err)
 	}
-
 	retStr := fmt.Sprintf("You're on the " + args[0] + " team")
 
 	if len(gm.Teams[p.TeamName].poes) < 1 {
 		retStr += "\nYour team doesn't have a point of entry yet.\nUse 'sp node_id' to set one and begin playing"
 	}
 
+	// grab (pseudo) random team poe
 	var tp *node
 	for n := range gm.Teams[p.TeamName].poes {
 		tp = n
@@ -222,9 +223,11 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			log.Println(err)
 		}
 		gm.broadcastState()
+
 	}
 
 	p.Outgoing <- nwmessage.TeamState(p.TeamName)
+
 	return nwmessage.PsSuccess(retStr)
 }
 
@@ -321,8 +324,8 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		return nwmessage.PsNoConnection()
 	}
 
-	retMsg := p.Route.Endpoint.StringFor(p)
-	pHere := gm.playersAtNode(p.Route.Endpoint)
+	retMsg := p.location().StringFor(p)
+	pHere := gm.playersAtNode(p.location())
 
 	if len(pHere) > 1 {
 		//make slice of names (excluding this player)
@@ -425,7 +428,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	macAddress := args[0]
-	_, addOk := p.Route.Endpoint.addressMap[macAddress]
+	_, addOk := p.location().addressMap[macAddress]
 
 	if !addOk {
 		return nwmessage.PsError(fmt.Errorf("Invalid address, '%s'", macAddress))
@@ -531,10 +534,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 			p.Outgoing <- nwmessage.PsError(err)
 			return
 		}
-
-		mac.Lock()
 		gm.tryClaimMachine(p, response, feaType)
-		mac.Unlock()
 
 		p.SendPrompt()
 	}()
@@ -549,7 +549,6 @@ func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message 
 	}
 
 	go func() {
-		mac := p.currentMachine()
 		response, err := p.submitCode()
 
 		if err != nil {
@@ -557,9 +556,7 @@ func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message 
 			return
 		}
 
-		mac.Lock()
 		gm.tryResetMachine(p, response)
-		mac.Unlock()
 
 		p.SendPrompt()
 	}()

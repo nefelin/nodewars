@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"nwmessage"
+	"sync"
 	"time"
 
 	"feature"
@@ -14,14 +15,21 @@ import (
 
 // GameModel holds all state information
 type GameModel struct {
-	Map     *nodeMap             `json:"map"`
+	// concurrency safe
+	Map       *nodeMap `json:"map"`
+	PointGoal float32  `json:"pointGoal"`
+	languages map[string]Language
+	aChan     chan nwmessage.Message
+
+	// maybe unsafe
+	running bool //running should replace mapLocked
+
+	// definitely unsafe
+	roster  sync.RWMutex         // lock any time we make changes to teams or players
 	Teams   map[teamName]*team   `json:"teams"`
 	Players map[playerID]*Player `json:"players"`
-	// POEs          map[playerID]*node   `json:"poes"`
-	PointGoal     float32 `json:"pointGoal"`
-	languages     map[string]Language
-	aChan         chan nwmessage.Message
-	running       bool //running should replace mapLocked
+
+	// turn this into a per/player channel
 	pendingAlerts map[playerID][]alert
 
 	// timelimit should be able to set a timelimit and count points at the end
@@ -81,6 +89,8 @@ func makeDummyTeams() []*team {
 
 // fulfill Room interface
 func (gm *GameModel) GetPlayers() map[playerID]*Player {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
 	return gm.Players
 }
 
@@ -90,6 +100,9 @@ func (gm *GameModel) Recv(msg nwmessage.Message) {
 
 // Addteams can only be called once. After addteams is called unused poes are removed
 func (gm *GameModel) addTeams(teams []*team) error {
+	gm.roster.Lock()
+	defer gm.roster.Unlock()
+
 	nodes := gm.Map.collectEmptyPoes()
 
 	// add each team to gm.Teams
@@ -128,6 +141,9 @@ func (gm *GameModel) addTeams(teams []*team) error {
 
 // trailingTeam should hand back either smallest team or currently losing team, depending on game settings TODO
 func (gm *GameModel) trailingTeam() string {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	var tt *team
 
 	// convert map to list
@@ -200,7 +216,7 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 func (gm *GameModel) playersAtNode(n *node) []*Player {
 	players := make([]*Player, 0)
 	for _, p := range gm.Players {
-		if p.Route.Endpoint == n {
+		if p.location() == n {
 			players = append(players, p)
 		}
 	}
@@ -212,7 +228,7 @@ func (gm *GameModel) playersAtNode(n *node) []*Player {
 // 		log.Panic("Player is not attached to a machine")
 // 	}
 
-// 	for _, player := range p.Route.Endpoint.connectedPlayers() {
+// 	for _, player := range p.location().connectedPlayers() {
 // 		if player != p {
 // 			comment := gm.languages[player.language].CommentPrefix
 
@@ -228,8 +244,14 @@ func (gm *GameModel) playersAtNode(n *node) []*Player {
 // }
 
 func (gm *GameModel) tryClaimMachine(p *Player, response GradedResult, fType feature.Type) {
+	fmt.Println("BEFORE roster LOCK")
+
+	gm.roster.RLock()
+	fmt.Println("INSIDE roster LOCK")
+	defer gm.roster.RUnlock()
+
 	mac := p.currentMachine()
-	node := p.Route.Endpoint
+	node := p.location()
 	solutionStrength := response.passed()
 
 	var hostile bool
@@ -340,8 +362,11 @@ func (gm *GameModel) tryClaimMachine(p *Player, response GradedResult, fType fea
 }
 
 func (gm *GameModel) tryResetMachine(p *Player, r GradedResult) {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	mac := p.currentMachine()
-	node := p.Route.Endpoint
+	node := p.location()
 	solutionStrength := r.passed()
 
 	if mac.isNeutral() {
@@ -410,6 +435,9 @@ func (gm *GameModel) tickScheduler() {
 // TODO approach should be that on any module gain or loss that teams procPow is recalculated
 // this entails making a pool of all nodes connected to POE and running the below logic
 func (gm *GameModel) tick() {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	// reset each teams ProcPow
 	// for _, team := range gm.Teams {
 	// 	team.ProcPow = 0
@@ -467,6 +495,9 @@ func (gm *GameModel) stopGame() {
 }
 
 func (gm *GameModel) resetMap(m *nodeMap) {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	gm.Map = m
 
 	// Tell everyone to clear their maps
@@ -503,6 +534,7 @@ func (gm *GameModel) makeRouteMap() *trafficMap {
 }
 
 func (gm *GameModel) broadcastState() {
+
 	routeMap := gm.makeRouteMap()
 
 	for _, p := range gm.Players {
@@ -519,6 +551,9 @@ func (gm *GameModel) broadcastGraphReset() {
 }
 
 func (gm *GameModel) packScores() string {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	scoreMsg, err := json.Marshal(gm.Teams)
 	if err != nil {
 		log.Println(err)
@@ -530,11 +565,9 @@ func (gm *GameModel) packScores() string {
 func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 
 	// calculate player location
-	var playerLoc nodeID
-	if p.Route == nil {
-		playerLoc = -1
-	} else {
-		playerLoc = p.Route.Endpoint.ID
+	playerLoc := -1
+	if p.location() != nil {
+		playerLoc = p.location().ID
 	}
 
 	// compose state message
@@ -652,6 +685,9 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 
 // RemovePlayer ...
 func (gm *GameModel) RemovePlayer(p *Player) error {
+	gm.roster.Lock()
+	defer gm.roster.Unlock()
+
 	fmt.Printf("<gm.RemovePlayer> Removing player, %s\n", p.name)
 	if _, ok := gm.Players[p.ID]; !ok {
 		return errors.New("player '" + p.GetName() + "' is not registered")
@@ -681,6 +717,10 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 }
 
 func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
+
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
+
 	// log.Printf("assignPlayerToTeam, player: %v", p)
 	if team, ok := gm.Teams[tn]; !ok {
 		return errors.New("'" + tn + "' team does not exist")
@@ -702,6 +742,8 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 }
 
 func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
+	gm.roster.RLock()
+	defer gm.roster.RUnlock()
 
 	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
 	team := gm.Teams[p.TeamName]
@@ -748,7 +790,7 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 // 		return
 // 	}
 
-// 	p.Route.Endpoint.removePlayer(p)
+// 	p.location().removePlayer(p)
 // 	p.slotNum = -1
 // 	p.Route = nil
 

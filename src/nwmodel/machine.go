@@ -10,7 +10,8 @@ import (
 )
 
 type machine struct {
-	sync.RWMutex
+	mu sync.RWMutex
+
 	// accepts   challengeCriteria // store what challenges can fill this machine
 	challenge Challenge
 
@@ -63,17 +64,35 @@ func (m *machine) detachAll(msg string) {
 	}
 }
 
-// Getters (need RLock)
+// mutex wrapper for easier debugging
+func (m *machine) lock() {
+	// fmt.Println("lock machine")
+	m.mu.Lock()
+}
+func (m *machine) unlock() {
+	// fmt.Println("unlock machine")
+	m.mu.Unlock()
+}
+func (m *machine) rlock() {
+	// fmt.Println("rlock machine")
+	m.mu.RLock()
+}
+func (m *machine) runlock() {
+	// fmt.Println("runlock machine")
+	m.mu.RUnlock()
+}
+
+// Getters (need rlock)
 
 func (m *machine) getType() feature.Type {
-	m.RLock()
-	defer m.RUnlock()
+	m.rlock()
+	defer m.runlock()
 	return m.Type
 }
 
 func (m *machine) isNeutral() bool {
-	m.RLock()
-	defer m.RUnlock()
+	m.rlock()
+	defer m.runlock()
 
 	if m.TeamName == "" {
 		return true
@@ -82,8 +101,8 @@ func (m *machine) isNeutral() bool {
 }
 
 func (m *machine) isFeature() bool {
-	m.RLock()
-	defer m.RUnlock()
+	m.rlock()
+	defer m.runlock()
 
 	if m.Type == nil {
 		return false
@@ -92,8 +111,8 @@ func (m *machine) isFeature() bool {
 }
 
 func (m *machine) belongsTo(teamName string) bool {
-	m.RLock()
-	defer m.RUnlock()
+	m.rlock()
+	defer m.runlock()
 
 	if m.TeamName == teamName {
 		return true
@@ -104,29 +123,29 @@ func (m *machine) belongsTo(teamName string) bool {
 // Setters (require Locks) -----------------------------------------------
 
 func (m *machine) setType(t feature.Type) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 	m.Type = t
 }
 
 func (m *machine) addPlayer(p *Player) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	m.attachedPlayers[p] = true
 }
 
 func (m *machine) remPlayer(p *Player) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	delete(m.attachedPlayers, p)
 
 }
 
 func (m *machine) reset() {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	m.builder = ""
 	m.TeamName = ""
@@ -145,8 +164,8 @@ func (m *machine) reset() {
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *machine) resetChallenge() {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	m.challenge = getRandomChallenge()
 	m.MaxHealth = len(m.challenge.Cases)
@@ -154,8 +173,8 @@ func (m *machine) resetChallenge() {
 }
 
 func (m *machine) claim(p *Player, r GradedResult) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	m.builder = p.name
 	m.TeamName = p.TeamName
@@ -168,8 +187,8 @@ func (m *machine) claim(p *Player, r GradedResult) {
 
 // dummyClaim is used to claim a machine for a player without an execution result
 func (m *machine) dummyClaim(teamName string, str string) {
-	m.Lock()
-	defer m.Unlock()
+	m.lock()
+	defer m.unlock()
 
 	// m.builder = p.name
 	m.TeamName = teamName

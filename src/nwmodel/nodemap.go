@@ -9,8 +9,7 @@ import (
 )
 
 type nodeMap struct {
-	Nodes []*node `json:"nodes"`
-	// POEs        map[nodeID]bool `json:"poes"`
+	Nodes       []*node `json:"nodes"`
 	diameter    float64
 	radius      float64
 	nodeIDCount nodeID
@@ -19,8 +18,7 @@ type nodeMap struct {
 // initializer:
 func newNodeMap() nodeMap {
 	return nodeMap{
-		Nodes: make([]*node, 0),
-		// POEs:     make(map[nodeID]bool),
+		Nodes:    make([]*node, 0),
 		diameter: 0,
 		radius:   1000,
 	}

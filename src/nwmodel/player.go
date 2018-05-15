@@ -38,6 +38,14 @@ type Player struct {
 }
 
 // player methods -------------------------------------------------------------------------------
+
+func (p *Player) location() *node {
+	if p.Route == nil {
+		return nil
+	}
+	return p.Route.Endpoint
+}
+
 // TODO this is in the wrong place
 func NewPlayer(ws *websocket.Conn) *Player {
 	ret := &Player{
@@ -86,7 +94,7 @@ func (p *Player) Prompt() string {
 		// 	prompt += fmt.Sprintf(":%s:", p.TeamName)
 		// }
 		if p.Route != nil {
-			prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
+			prompt += fmt.Sprintf("@n%d", p.location().ID)
 		}
 
 		if p.macAddress != "" {
@@ -161,7 +169,7 @@ func (p *Player) currentMachine() *machine {
 		return nil
 	}
 
-	return p.Route.Endpoint.addressMap[p.macAddress]
+	return p.location().addressMap[p.macAddress]
 }
 
 // GetName returns the players name if they have one, assigns one if they don't
