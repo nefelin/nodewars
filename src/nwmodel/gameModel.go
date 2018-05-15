@@ -46,11 +46,9 @@ func NewDefaultModel() *GameModel {
 	aChan := make(chan nwmessage.Message, 100)
 
 	gm := &GameModel{
-		Map:     m,
-		Teams:   make(map[string]*team),
-		Players: p,
-		// Routes:  r,
-		// POEs:          poes,
+		Map:           m,
+		Teams:         make(map[string]*team),
+		Players:       p,
 		languages:     getLanguages(),
 		aChan:         aChan,
 		PointGoal:     1000,
@@ -199,33 +197,35 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 	}
 }
 
-func (gm *GameModel) playersAt(n *node) []*Player {
-	players := make([]*Player, len(n.playersHere))
-	for i, pID := range n.playersHere {
-		players[i] = gm.Players[pID]
+func (gm *GameModel) playersAtNode(n *node) []*Player {
+	players := make([]*Player, 0)
+	for _, p := range gm.Players {
+		if p.Route.Endpoint == n {
+			players = append(players, p)
+		}
 	}
 	return players
 }
 
-func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
-	if p.currentMachine() == nil {
-		log.Panic("Player is not attached to a machine")
-	}
+// func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
+// 	if p.currentMachine() == nil {
+// 		log.Panic("Player is not attached to a machine")
+// 	}
 
-	for _, player := range gm.playersAt(p.Route.Endpoint) {
-		if player != p {
-			comment := gm.languages[player.language].CommentPrefix
+// 	for _, player := range p.Route.Endpoint.connectedPlayers() {
+// 		if player != p {
+// 			comment := gm.languages[player.language].CommentPrefix
 
-			editMsg := fmt.Sprintf("%s %s", comment, msg)
+// 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address))
-			player.Outgoing <- nwmessage.EditState(editMsg)
+// 			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address))
+// 			player.Outgoing <- nwmessage.EditState(editMsg)
 
-			player.breakConnection(true)
+// 			player.breakConnection(true)
 
-		}
-	}
-}
+// 		}
+// 	}
+// }
 
 func (gm *GameModel) tryClaimMachine(p *Player, response GradedResult, fType feature.Type) {
 	mac := p.currentMachine()
@@ -736,7 +736,6 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node)
 	// set's players route to the route generated via routeToNode
 	// gm.Routes[p.ID] = &route{Endpoint: n, Nodes: routeNodes}
 	p.Route = &route{Endpoint: n, Nodes: routeNodes}
-	n.addPlayer(p)
 	return p.Route
 	// return gm.Routes[p.ID]
 }
