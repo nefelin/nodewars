@@ -15,8 +15,8 @@ type route struct {
 
 // Getters (RLock)
 func (r route) containsNode(n *node) (int, bool) {
-	p.Route.RLock()
-	defer p.Route.RUnlock()
+	r.RLock()
+	defer r.RUnlock()
 
 	for i, node := range r.Nodes {
 		if n == node {
@@ -27,16 +27,16 @@ func (r route) containsNode(n *node) (int, bool) {
 }
 
 func (r route) length() int {
-	p.Route.RLock()
-	defer p.Route.RUnlock()
+	r.RLock()
+	defer r.RUnlock()
 
 	return len(r.Nodes)
 }
 
 // asIds reverses the order of the nodes and stores ids only
 func (r route) asIds() []nodeID {
-	p.Route.RLock()
-	defer p.Route.RUnlock()
+	r.RLock()
+	defer r.RUnlock()
 
 	nodeCount := len(r.Nodes)
 	list := make([]nodeID, nodeCount+1)
