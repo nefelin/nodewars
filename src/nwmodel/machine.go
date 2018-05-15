@@ -65,34 +65,49 @@ func (m *machine) detachAll(msg string) {
 
 // Getters (need RLock)
 
+func (m *machine) getType() feature.Type {
+	m.RLock()
+	defer m.RUnlock()
+	return m.Type
+}
+
 func (m *machine) isNeutral() bool {
 	m.RLock()
+	defer m.RUnlock()
+
 	if m.TeamName == "" {
 		return true
 	}
-	m.RUnlock()
 	return false
 }
 
 func (m *machine) isFeature() bool {
 	m.RLock()
+	defer m.RUnlock()
+
 	if m.Type == nil {
 		return false
 	}
-	m.RUnlock()
 	return true
 }
 
 func (m *machine) belongsTo(teamName string) bool {
 	m.RLock()
+	defer m.RUnlock()
+
 	if m.TeamName == teamName {
 		return true
 	}
-	m.RUnlock()
 	return false
 }
 
 // Setters (require Locks) -----------------------------------------------
+
+func (m *machine) setType(t feature.Type) {
+	m.Lock()
+	defer m.Unlock()
+	m.Type = t
+}
 
 func (m *machine) addPlayer(p *Player) {
 	m.Lock()
