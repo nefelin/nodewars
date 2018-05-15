@@ -10,7 +10,7 @@ import (
 )
 
 type machine struct {
-	sync.Mutex
+	sync.RWMutex
 	// accepts   challengeCriteria // store what challenges can fill this machine
 	challenge Challenge
 
@@ -53,54 +53,61 @@ func newFeature() *machine {
 
 // machine methods -------------------------------------------------------------------------
 
-func (m *machine) addPlayer(p *Player) {
-	m.attachedPlayers[p] = true
-}
-
-func (m *machine) remPlayer(p *Player) {
-	delete(m.attachedPlayers, p)
-}
-
+// QUESTION: is technically reading state but an awkward place to employ a read lock
 func (m *machine) detachAll(msg string) {
 	for p := range m.attachedPlayers {
-		m.remPlayer(p)
+		p.macDetach()
 		if msg != "" {
 			p.Outgoing <- nwmessage.PsAlert(msg)
 		}
 	}
 }
 
-// resetChallenge should use m.accepts to get a challenge matching criteria TODO
-func (m *machine) resetChallenge() {
-	m.challenge = getRandomChallenge()
-	m.MaxHealth = len(m.challenge.Cases)
-}
+// Getters (need RLock)
 
 func (m *machine) isNeutral() bool {
+	m.RLock()
 	if m.TeamName == "" {
 		return true
 	}
+	m.RUnlock()
 	return false
 }
 
 func (m *machine) isFeature() bool {
-	// fmt.Printf("machine Type: %v", m.Type)
-	// fmt.Printf("Feature NA: %v", feature.NA)
-	// fmt.Printf("Equal: %v", m.Type == feature.NA)
+	m.RLock()
 	if m.Type == nil {
 		return false
 	}
+	m.RUnlock()
 	return true
 }
 
 func (m *machine) belongsTo(teamName string) bool {
+	m.RLock()
 	if m.TeamName == teamName {
 		return true
 	}
+	m.RUnlock()
 	return false
 }
 
+// Setters (require Locks) -----------------------------------------------
+
+func (m *machine) addPlayer(p *Player) {
+	m.Lock()
+	m.attachedPlayers[p] = true
+	m.Unlock()
+}
+
+func (m *machine) remPlayer(p *Player) {
+	m.Lock()
+	delete(m.attachedPlayers, p)
+	m.Unlock()
+}
+
 func (m *machine) reset() {
+	m.Lock()
 	m.builder = ""
 	m.TeamName = ""
 	m.language = ""
@@ -114,20 +121,31 @@ func (m *machine) reset() {
 
 	m.Health = 0
 	m.resetChallenge()
+	m.Unlock()
+}
+
+// resetChallenge should use m.accepts to get a challenge matching criteria TODO
+func (m *machine) resetChallenge() {
+	m.Lock()
+	m.challenge = getRandomChallenge()
+	m.MaxHealth = len(m.challenge.Cases)
+	m.Unlock()
 }
 
 func (m *machine) claim(p *Player, r GradedResult) {
+	m.Lock()
 	m.builder = p.name
 	m.TeamName = p.TeamName
 	m.language = p.language
 	// m.Powered = true
 
 	m.Health = r.passed()
-	// m.MaxHealth = len(r.Graded)
+	m.Unlock()
 }
 
 // dummyClaim is used to claim a machine for a player without an execution result
 func (m *machine) dummyClaim(teamName string, str string) {
+	m.Lock()
 	// m.builder = p.name
 	m.TeamName = teamName
 	m.language = "python" // TODO find ore elegent solution for this
@@ -141,10 +159,5 @@ func (m *machine) dummyClaim(teamName string, str string) {
 	case "MIN":
 		m.Health = 1
 	}
+	m.Unlock()
 }
-
-// func (m *machine) loadChallenge() {
-// 	m.challenge = getRandomChallenge()
-
-// 	fmt.Printf("Loaded challenge, %v\n", m.challenge)
-// }
