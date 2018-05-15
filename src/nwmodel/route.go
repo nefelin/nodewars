@@ -2,11 +2,11 @@ package nwmodel
 
 import (
 	"strconv"
-	"sync"
 )
 
+// since routes are unmodified, not sure I need any mutexes here actually TODO
 type route struct {
-	sync.RWMutex
+	// sync.RWMutex
 	Endpoint *node   `json:"endpoint"`
 	Nodes    []*node `json:"nodes"`
 }
@@ -15,8 +15,8 @@ type route struct {
 
 // Getters (RLock)
 func (r route) containsNode(n *node) (int, bool) {
-	r.RLock()
-	defer r.RUnlock()
+	// r.RLock()
+	// defer r.RUnlock()
 
 	for i, node := range r.Nodes {
 		if n == node {
@@ -27,16 +27,16 @@ func (r route) containsNode(n *node) (int, bool) {
 }
 
 func (r route) length() int {
-	r.RLock()
-	defer r.RUnlock()
+	// r.RLock()
+	// defer r.RUnlock()
 
 	return len(r.Nodes)
 }
 
 // asIds reverses the order of the nodes and stores ids only
 func (r route) asIds() []nodeID {
-	r.RLock()
-	defer r.RUnlock()
+	// r.RLock()
+	// defer r.RUnlock()
 
 	nodeCount := len(r.Nodes)
 	list := make([]nodeID, nodeCount+1)
