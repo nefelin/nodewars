@@ -8,13 +8,15 @@ import (
 type nodeID = int
 
 type node struct {
-	ID          nodeID     `json:"id"` // keys and ids is redundant? TODO
+	ID          nodeID     `json:"id"`
 	Connections []nodeID   `json:"connections"`
-	Machines    []*machine `json:"machines"` // TODO why is this a list of pointerS?
+	Machines    []*machine `json:"machines"`
 	Feature     *machine   `json:"feature"`
 	Remoteness  float64    //`json:"remoteness"`
-	playersHere []playerID
 	addressMap  map[string]*machine
+
+	// sync.RWMutex
+	// routes map[*Route]bool // tracks traffic we're routing.
 }
 
 // node methods -------------------------------------------------------------------------------
@@ -181,13 +183,23 @@ func (n *node) powerMachines(t teamName, onOff bool) {
 // 	return nil
 // }
 
-func (n *node) addPlayer(p *Player) {
-	n.playersHere = append(n.playersHere, p.ID)
-}
+// func (n *node) addPlayer(p *Player) {
+// 	n.Lock()
+// 	defer n.Unlock()
+// 	n.playersHere = append(n.playersHere, p.ID)
+// }
 
-func (n *node) removePlayer(p *Player) {
-	n.playersHere = cutIntFromSlice(p.ID, n.playersHere)
-}
+// func (n *node) removePlayer(p *Player) {
+// 	n.Lock()
+// 	defer n.Unlock()
+// 	n.playersHere = cutIntFromSlice(p.ID, n.playersHere)
+// }
+
+// func (n *node) players() []playerID {
+// 	n.RLock()
+// 	defer n.RUnlock()
+// 	return n.playersHere
+// }
 
 // helper to generate macAddresses
 const charBytes = "abcdefghijklmnopqrstuvwxyz0123456789"
