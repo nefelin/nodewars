@@ -4,6 +4,7 @@ import (
 	"log"
 	"nwmessage"
 	"nwmodel"
+	"regrequest"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,18 +16,13 @@ type gameID = string
 type Dispatcher struct {
 	locations         map[playerID]gameID
 	games             map[gameID]Room
-	registrationQueue chan PlayerRegReq
+	registrationQueue chan regrequest.Request
 	Lobby
 }
 
 type Lobby struct {
 	players map[playerID]*nwmodel.Player
 	aChan   chan nwmessage.Message
-}
-
-type PlayerRegReq struct {
-	ws      *websocket.Conn
-	retChan chan *nwmodel.Player
 }
 
 // Room ...
