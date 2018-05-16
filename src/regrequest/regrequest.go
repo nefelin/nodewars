@@ -7,9 +7,17 @@ import (
 )
 
 type Request struct {
-	action  Action
-	ws      *websocket.Conn
-	retChan chan *nwmodel.Player
+	Action  Action
+	Ws      *websocket.Conn
+	ResChan chan *nwmodel.Player
+}
+
+func Reg(ws *websocket.Conn, c chan *nwmodel.Player) Request {
+	return Request{Register, ws, c}
+}
+
+func Dereg(ws *websocket.Conn, c chan *nwmodel.Player) Request {
+	return Request{Deregister, ws, c}
 }
 
 // Type ...
@@ -20,8 +28,6 @@ type Action interface {
 type regAction int
 
 func (f regAction) implementsType() {}
-
-type regAction string
 
 const (
 	Register regAction = iota

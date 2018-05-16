@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	"log"
+	"fmt"
 	"nwmessage"
 	"nwmodel"
 	"regrequest"
@@ -14,6 +14,7 @@ type gameID = string
 
 // Dispatcher ...
 type Dispatcher struct {
+	players           map[*websocket.Conn]*nwmodel.Player
 	locations         map[playerID]gameID
 	games             map[gameID]Room
 	registrationQueue chan regrequest.Request
@@ -35,9 +36,10 @@ type Room interface {
 
 func NewDispatcher() *Dispatcher {
 	d := &Dispatcher{
+		players:           make(map[*websocket.Conn]*nwmodel.Player),
 		locations:         make(map[playerID]gameID),
 		games:             make(map[gameID]Room),
-		registrationQueue: make(chan PlayerRegReq),
+		registrationQueue: make(chan regrequest.Request),
 		Lobby:             NewLobby(),
 	}
 
@@ -76,26 +78,33 @@ func (d *Dispatcher) Recv(m nwmessage.Message) {
 	d.Lobby.Recv(m)
 }
 
+func (d *Dispatcher) handleRegRequest(r regrequest.Request) {
+	fmt.Printf("Handling RegRequest: %v\n", r.Action)
+	switch r.Action {
+	case regrequest.Register:
+		r.ResChan <- d.registerPlayer(r.Ws)
+	case regrequest.Deregister:
+		d.deregisterPlayer(r.Ws)
+	}
+	if r.ResChan != nil {
+		close(r.ResChan)
+	}
+}
+
 func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
+
 	p := nwmodel.NewPlayer(ws)
 	d.Lobby.AddPlayer(p)
+	d.players[ws] = p
 
 	return p
 }
 
-func (d *Dispatcher) queuePlayerRegistration(ws *websocket.Conn, retChan chan *nwmodel.Player) {
+func (d *Dispatcher) deregisterPlayer(ws *websocket.Conn) {
+	p := d.players[ws]
 
-}
+	// fmt.Printf("Removing player id:%d\n", p.ID)
 
-// func (d *Dispatcher) removePlayer() {}
-
-func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
-	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
-	log.Printf("Scrubbing player: %v\n", p.ID)
-	// d.removePlayer(p)
-	// TODO REMOVE THE PLAYER
-
-	// if the player is in a game, take him out of the game
 	if gameID, ok := d.locations[p.ID]; ok {
 		d.games[gameID].RemovePlayer(p)
 		delete(d.locations, p.ID)
@@ -106,6 +115,24 @@ func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
 
 	p.Socket.Close()
 }
+
+// func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
+// 	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
+// 	log.Printf("Scrubbing player: %v\n", p.ID)
+// 	// d.removePlayer(p)
+// 	// TODO REMOVE THE PLAYER
+
+// 	// if the player is in a game, take him out of the game
+// 	if gameID, ok := d.locations[p.ID]; ok {
+// 		d.games[gameID].RemovePlayer(p)
+// 		delete(d.locations, p.ID)
+// 	} else {
+// 		// delete(d.Lobby.players, p.ID)
+// 		d.Lobby.RemovePlayer(p)
+// 	}
+
+// 	p.Socket.Close()
+// }
 
 func (d *Dispatcher) makeGame() {}
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"nwmessage"
 	"nwmodel"
+	"regrequest"
 	"strconv"
 
 	"github.com/gorilla/websocket"
@@ -75,16 +76,18 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Assuming we're all good, register client
 
 	// create a single use channel to receive a registered player on
-	thisChan := make(chan *nwmodel.Player)
+	tempChan := make(chan *nwmodel.Player)
 
-	// add player registration to dispatcher jobs,
-	d.registrationQueue <- PlayerRegReq{ws, thisChan}
+	d.registrationQueue <- regrequest.Reg(ws, tempChan) // add player registration to dispatcher jobs,
+
+	defer func() {
+
+		d.registrationQueue <- regrequest.Dereg(ws, nil)
+
+	}() // clean up player when we're done
 
 	// wait for registered player object to be passed back,
-	thisPlayer := <-thisChan
-
-	// clean up player when we're done
-	defer d.scrubPlayerSocket(thisPlayer)
+	thisPlayer := <-tempChan
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")

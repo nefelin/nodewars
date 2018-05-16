@@ -51,7 +51,8 @@ func actionConsumer(d *Dispatcher) {
 		// if we get a new player, register and pass back
 		// to the connection handler
 		case regReq := <-d.registrationQueue:
-			regReq.retChan <- d.registerPlayer(regReq.ws)
+			// fmt.Println("Lobby relaying reg")
+			d.handleRegRequest(regReq)
 
 		// if we get a player command, handle that
 		case m := <-d.Lobby.aChan:
