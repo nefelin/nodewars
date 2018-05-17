@@ -102,6 +102,13 @@ func (p *Player) Prompt() string {
 	return prompt
 }
 
+func (p *Player) location() *node {
+	if p.Route == nil {
+		return nil
+	}
+	return p.Route.Endpoint
+}
+
 func (p *Player) canSubmit() error {
 	mac := p.currentMachine()
 	switch {

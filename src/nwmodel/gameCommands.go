@@ -200,8 +200,8 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string) nwmessage.Message {
 }
 
 func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
-
-	if p.Route == nil {
+	node := p.location()
+	if node == nil {
 		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))
 	}
 
@@ -213,8 +213,8 @@ func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 	msg := nwmessage.PsChat(p.GetName(), "node", chatMsg)
 
-	for _, pID := range p.Route.Endpoint.playersHere {
-		gm.Players[pID].Outgoing <- msg
+	for _, p := range gm.playersAt(node) {
+		p.Outgoing <- msg
 	}
 
 	return nwmessage.Message{}
@@ -358,13 +358,12 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	retMsg := p.Route.Endpoint.StringFor(p)
-	pHere := p.Route.Endpoint.playersHere
+	pHere := gm.playersAt(p.Route.Endpoint)
 
 	if len(pHere) > 1 {
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
-		for _, pID := range pHere {
-			player := gm.Players[pID]
+		for _, player := range pHere {
 			if player.GetName() != p.GetName() {
 				names = append(names, fmt.Sprintf("%s (%s)", player.GetName(), player.TeamName))
 			}

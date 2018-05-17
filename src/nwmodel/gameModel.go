@@ -219,9 +219,11 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 }
 
 func (gm *GameModel) playersAt(n *node) []*Player {
-	players := make([]*Player, len(n.playersHere))
-	for i, pID := range n.playersHere {
-		players[i] = gm.Players[pID]
+	players := make([]*Player, 0)
+	for _, p := range gm.Players {
+		if p.location() == n {
+			players = append(players, p)
+		}
 	}
 	return players
 }
