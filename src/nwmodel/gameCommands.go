@@ -324,7 +324,8 @@ func cmdConnect(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	gm.broadcastState()
-	return nwmessage.PsSuccess(fmt.Sprintf("Connected to established : %s", route.forMsg()))
+	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Connected to established:"))
+	return cmdLs(p, gm, args)
 }
 
 func cmdWho(p *Player, gm *GameModel, args []string) nwmessage.Message {

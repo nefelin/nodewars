@@ -40,8 +40,8 @@ const (
 
 	noConnectStr = "No connection"
 
-	terminatorStr = "\n\n"
-	preStr        = "\n"
+	terminatorStr = "\n"
+	preStr        = ""
 )
 
 func PsDialogue(msg string) Message {
@@ -55,7 +55,7 @@ func PsDialogue(msg string) Message {
 func PsPrompt(msg string) Message {
 	return Message{
 		Sender: pseudoStr,
-		Data:   msg + " ",
+		Data:   "\n" + msg + " ",
 	}
 }
 
