@@ -570,7 +570,7 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		}
 
 		mac.Lock()
-		gm.tryClaimMachine(p, response, feaType)
+		gm.tryClaimMachine(p, mac, response, feaType)
 		mac.Unlock()
 
 		p.SendPrompt()
@@ -595,7 +595,7 @@ func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message 
 		}
 
 		mac.Lock()
-		gm.tryResetMachine(p, response)
+		gm.tryResetMachine(p, mac, response)
 		mac.Unlock()
 
 		p.SendPrompt()
