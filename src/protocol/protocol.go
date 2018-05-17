@@ -56,7 +56,7 @@ func doHandshake(ws *websocket.Conn) error {
 
 // HandleConnections is the point of entry for all websocket connections
 func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
-	log.Println("New player connected...")
+	fmt.Println("New player connected...")
 	// Upgrade GET to a websocket
 	ws, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -108,9 +108,11 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 
 func outgoingRelay(p *nwmodel.Player) {
 	for {
-		msg := <-p.Outgoing
-		if err := p.Socket.WriteJSON(msg); err != nil {
-			log.Printf("error dispatching message to %v", p.GetName())
+		if msg, ok := <-p.Outgoing; ok { // if channel is open...
+			if err := p.Socket.WriteJSON(msg); err != nil { // try writing message to player, complain if we have problems
+				// fmt.Printf("error dispatching message: '%v',\n to player '%s'\n", msg, p.GetName())
+			}
+		} else { // if channel is closed, player is gone.
 			return
 		}
 	}

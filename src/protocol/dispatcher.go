@@ -86,7 +86,6 @@ func (d *Dispatcher) AddPlayer(p *nwmodel.Player) error {
 }
 
 func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
-	p.Socket.Close()
 
 	if game, ok := d.locations[p]; ok {
 		game.RemovePlayer(p)
@@ -94,6 +93,10 @@ func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
 	}
 
 	delete(d.players, p.Socket)
+
+	p.Socket.Close()
+	close(p.Outgoing)
+
 	return nil
 }
 

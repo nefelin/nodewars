@@ -318,7 +318,7 @@ func cmdConnect(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	// break any pre-existing connection before connecting elsewhere
-	route, err := gm.tryConnectPlayerToNode(p, targetNode)
+	_, err = gm.tryConnectPlayerToNode(p, targetNode)
 	if err != nil {
 		return nwmessage.PsError(err)
 	}
