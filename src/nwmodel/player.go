@@ -141,6 +141,7 @@ func (p *Player) submitCode() (GradedResult, error) {
 
 func (p *Player) macDetach() {
 	mac := p.currentMachine()
+	p.challengeState(Challenge{})
 
 	if mac != nil {
 		mac.remPlayer(p)

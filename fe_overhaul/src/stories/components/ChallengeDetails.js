@@ -9,7 +9,7 @@ const ChallengeDetails = ( { challenge } ) => {
 		boxSizing: "border-box",
 	}
 
-	if (!challenge)
+	if (!challenge || challenge.name == "")
 		return <div style={style}>No Challenge</div>
 
 	console.log('ChallengeDetails', challenge)
