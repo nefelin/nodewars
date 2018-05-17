@@ -1,8 +1,6 @@
 package main
 
 import (
-	"commands"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -16,11 +14,11 @@ var host string
 var port string
 
 func main() {
-	err := commands.MapCommands.Validate()
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(commands.MapCommands)
+	// err := commands.MapCommands.Validate()
+	// if err != nil {
+	// 	panic(err)
+	// }
+	// // fmt.Println(commands.MapCommands)
 	// cg := commands.NewCommandGroup()
 	// cg.AddCommand([]string{"ls", "list"})
 	// cg.AddCommand([]string{"connect", "con"})
