@@ -2,22 +2,20 @@ package regrequest
 
 import (
 	"nwmodel"
-
-	"github.com/gorilla/websocket"
 )
 
 type Request struct {
 	Action  Action
-	Ws      *websocket.Conn
-	ResChan chan *nwmodel.Player
+	Player  *nwmodel.Player
+	ResChan chan bool
 }
 
-func Reg(ws *websocket.Conn, c chan *nwmodel.Player) Request {
-	return Request{Register, ws, c}
+func Reg(p *nwmodel.Player, c chan bool) Request {
+	return Request{Register, p, c}
 }
 
-func Dereg(ws *websocket.Conn, c chan *nwmodel.Player) Request {
-	return Request{Deregister, ws, c}
+func Dereg(p *nwmodel.Player) Request {
+	return Request{Deregister, p, nil}
 }
 
 // Type ...

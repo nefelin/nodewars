@@ -67,50 +67,86 @@ var gameCmdList = map[string]playerCommand{
 	// "sp": cmdSetPOE,
 }
 
-func actionConsumer(gm *GameModel) {
-	for {
-		m := <-gm.aChan
-		senderID, err := strconv.Atoi(m.Sender)
+func (gm *GameModel) parseCommand(m ClientMessage) {
+	p := m.Sender
 
-		if err != nil {
-			log.Println(err)
+	msg := strings.Split(m.Data, " ")
+
+	// TODO clean nightmare below
+	if p.compiling != false {
+		// Would be more elegant to freeze prompt while this happens....
+		p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
+	} else if p.dialogue != nil {
+		p.Outgoing <- p.dialogue.Run(msg[0])
+	} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
+		if gm.running {
+			// make this message more situation agnostic TODO
+			p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
+			return
 		}
-
-		p := gm.Players[senderID]
-
-		msg := strings.Split(m.Data, " ")
-
-		// TODO clean nightmare below
-		if p.compiling != false {
-			// Would be more elegant to freeze prompt while this happens....
-			p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
-		} else if p.dialogue != nil {
-			p.Outgoing <- p.dialogue.Run(msg[0])
-		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
-			if gm.running {
-				// make this message more situation agnostic TODO
-				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
-				continue
-			}
-			// if the games not locked, allow map to me modified.
-			res := handlerFunc(p, gm, msg[1:])
-			if res.Data != "" {
-				p.Outgoing <- res
-			}
-		} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
-			res := handlerFunc(p, gm, msg[1:])
-			if res.Data != "" {
-				p.Outgoing <- res
-			}
-		} else {
-			p.Outgoing <- nwmessage.PsUnknown(msg[0])
+		// if the games not locked, allow map to me modified.
+		res := handlerFunc(p, gm, msg[1:])
+		if res.Data != "" {
+			p.Outgoing <- res
 		}
-
-		if p.dialogue == nil {
-			p.SendPrompt()
+	} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
+		res := handlerFunc(p, gm, msg[1:])
+		if res.Data != "" {
+			p.Outgoing <- res
 		}
+	} else {
+		p.Outgoing <- nwmessage.PsUnknown(msg[0])
+	}
+
+	if p.dialogue == nil {
+		p.SendPrompt()
 	}
 }
+
+// func actionConsumer(gm *GameModel) {
+// 	for {
+// 		m := <-gm.aChan
+// 		senderID, err := strconv.Atoi(m.Sender)
+
+// 		if err != nil {
+// 			log.Println(err)
+// 		}
+
+// 		p := gm.Players[senderID]
+
+// 		msg := strings.Split(m.Data, " ")
+
+// 		// TODO clean nightmare below
+// 		if p.compiling != false {
+// 			// Would be more elegant to freeze prompt while this happens....
+// 			p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
+// 		} else if p.dialogue != nil {
+// 			p.Outgoing <- p.dialogue.Run(msg[0])
+// 		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
+// 			if gm.running {
+// 				// make this message more situation agnostic TODO
+// 				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
+// 				continue
+// 			}
+// 			// if the games not locked, allow map to me modified.
+// 			res := handlerFunc(p, gm, msg[1:])
+// 			if res.Data != "" {
+// 				p.Outgoing <- res
+// 			}
+// 		} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
+// 			res := handlerFunc(p, gm, msg[1:])
+// 			if res.Data != "" {
+// 				p.Outgoing <- res
+// 			}
+// 		} else {
+// 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
+// 		}
+
+// 		if p.dialogue == nil {
+// 			p.SendPrompt()
+// 		}
+// 	}
+// }
 
 func cmdYell(p *Player, gm *GameModel, args []string) nwmessage.Message {
 

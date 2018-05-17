@@ -1,8 +1,8 @@
 package protocol
 
 import (
+	"errors"
 	"fmt"
-	"nwmessage"
 	"nwmodel"
 	"regrequest"
 
@@ -10,134 +10,123 @@ import (
 )
 
 type playerID = int
-type gameID = string
+type roomID = string
 
 // Dispatcher ...
 type Dispatcher struct {
 	players           map[*websocket.Conn]*nwmodel.Player
-	locations         map[playerID]gameID
-	games             map[gameID]Room
+	locations         map[*nwmodel.Player]Room
+	games             map[roomID]Room
 	registrationQueue chan regrequest.Request
-	Lobby
-}
-
-type Lobby struct {
-	players map[playerID]*nwmodel.Player
-	aChan   chan nwmessage.Message
-}
-
-// Room ...
-type Room interface {
-	Recv(msg nwmessage.Message)
-	AddPlayer(p *nwmodel.Player) error
-	RemovePlayer(p *nwmodel.Player) error
-	GetPlayers() map[int]*nwmodel.Player
+	clientMessages    chan nwmodel.ClientMessage
 }
 
 func NewDispatcher() *Dispatcher {
 	d := &Dispatcher{
 		players:           make(map[*websocket.Conn]*nwmodel.Player),
-		locations:         make(map[playerID]gameID),
-		games:             make(map[gameID]Room),
+		locations:         make(map[*nwmodel.Player]Room),
+		games:             make(map[roomID]Room),
 		registrationQueue: make(chan regrequest.Request),
-		Lobby:             NewLobby(),
+		clientMessages:    make(chan nwmodel.ClientMessage),
 	}
 
 	go actionConsumer(d)
 	return d
 }
 
-func NewLobby() Lobby {
-	l := Lobby{
-		players: make(map[playerID]*nwmodel.Player),
-		aChan:   make(chan nwmessage.Message, 100),
+type Room interface {
+	Name() string
+	Type() string // TODO switch this to a roomtype definition
+	Recv(msg nwmodel.ClientMessage)
+	AddPlayer(p *nwmodel.Player) error
+	RemovePlayer(p *nwmodel.Player) error
+	GetPlayers() []*nwmodel.Player
+}
+
+func (d *Dispatcher) Name() string {
+	return "Main Lobby"
+}
+
+func (d *Dispatcher) Type() string {
+	return "Lobby"
+}
+
+func (d *Dispatcher) GetPlayers() []*nwmodel.Player {
+	list := make([]*nwmodel.Player, len(d.players))
+	var i int
+	for _, p := range d.players {
+		list[i] = p
+		i++
 	}
-	return l
+	return list
 }
 
-// TODO handle errors for add/remove player
-func (l *Lobby) AddPlayer(p *nwmodel.Player) error {
-	l.players[p.ID] = p
-	return nil
-}
-
-func (l *Lobby) RemovePlayer(p *nwmodel.Player) error {
-	delete(l.players, p.ID)
-	return nil
-}
-
-func (l *Lobby) GetPlayers() map[int]*nwmodel.Player {
-	return l.players
-}
-
-func (l *Lobby) Recv(m nwmessage.Message) {
-	l.aChan <- m
-}
-
-func (d *Dispatcher) Recv(m nwmessage.Message) {
-	d.Lobby.Recv(m)
+func (d *Dispatcher) Recv(m nwmodel.ClientMessage) {
+	d.clientMessages <- m
 }
 
 func (d *Dispatcher) handleRegRequest(r regrequest.Request) {
-	fmt.Printf("Handling RegRequest: %v\n", r.Action)
+	act := "Register"
+	if r.Action == regrequest.Deregister {
+		act = "Deregister"
+	}
+	fmt.Printf("Handling RegRequest: %s\n", act)
 	switch r.Action {
 	case regrequest.Register:
-		r.ResChan <- d.registerPlayer(r.Ws)
-	case regrequest.Deregister:
-		d.deregisterPlayer(r.Ws)
-	}
-	if r.ResChan != nil {
+		d.AddPlayer(r.Player)
 		close(r.ResChan)
+	case regrequest.Deregister:
+		d.RemovePlayer(r.Player)
 	}
 }
 
-func (d *Dispatcher) registerPlayer(ws *websocket.Conn) *nwmodel.Player {
-
-	p := nwmodel.NewPlayer(ws)
-	d.Lobby.AddPlayer(p)
-	d.players[ws] = p
-
-	return p
+func (d *Dispatcher) AddPlayer(p *nwmodel.Player) error {
+	d.players[p.Socket] = p
+	return nil
 }
 
-func (d *Dispatcher) deregisterPlayer(ws *websocket.Conn) {
-	p := d.players[ws]
-
-	// fmt.Printf("Removing player id:%d\n", p.ID)
-
-	if gameID, ok := d.locations[p.ID]; ok {
-		d.games[gameID].RemovePlayer(p)
-		delete(d.locations, p.ID)
-	} else {
-		// delete(d.Lobby.players, p.ID)
-		d.Lobby.RemovePlayer(p)
-	}
-
+func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
 	p.Socket.Close()
+
+	if game, ok := d.locations[p]; ok {
+		game.RemovePlayer(p)
+		delete(d.locations, p)
+	}
+
+	delete(d.players, p.Socket)
+	return nil
 }
 
-// func (d *Dispatcher) scrubPlayerSocket(p *nwmodel.Player) {
-// 	// p.outgoing <- Message{"error", "server", "!!Server Malfunction. Connection Terminated!!")}
-// 	log.Printf("Scrubbing player: %v\n", p.ID)
-// 	// d.removePlayer(p)
-// 	// TODO REMOVE THE PLAYER
+func (d *Dispatcher) createGame(r Room) error {
+	if _, ok := d.games[r.Name()]; ok {
+		return fmt.Errorf("A game named '%s' already exists", r.Name())
+	}
 
-// 	// if the player is in a game, take him out of the game
-// 	if gameID, ok := d.locations[p.ID]; ok {
-// 		d.games[gameID].RemovePlayer(p)
-// 		delete(d.locations, p.ID)
-// 	} else {
-// 		// delete(d.Lobby.players, p.ID)
-// 		d.Lobby.RemovePlayer(p)
-// 	}
-
-// 	p.Socket.Close()
-// }
-
-func (d *Dispatcher) makeGame() {}
+	d.games[r.Name()] = r
+	return nil
+}
 
 func (d *Dispatcher) destroyGame() {}
 
-func (d *Dispatcher) joinRoom() {}
+// manipulating/examining player objects
 
-func (d *Dispatcher) leaveRoom() {}
+func (d *Dispatcher) joinRoom(p *nwmodel.Player, r roomID) error {
+	if d.locations[p] != nil {
+		return errors.New("Can't join game, already in a game")
+	}
+
+	d.locations[p] = d.games[r]
+	d.games[r].AddPlayer(p)
+	return nil
+}
+
+func (d *Dispatcher) leaveRoom(p *nwmodel.Player) error {
+	game, ok := d.locations[p]
+	if !ok {
+		return errors.New("Your not in a game")
+	}
+
+	game.RemovePlayer(p)
+	delete(d.locations, p)
+	return nil
+}

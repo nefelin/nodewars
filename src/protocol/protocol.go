@@ -8,7 +8,6 @@ import (
 	"nwmessage"
 	"nwmodel"
 	"regrequest"
-	"strconv"
 
 	"github.com/gorilla/websocket"
 )
@@ -76,34 +75,34 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Assuming we're all good, register client
 
 	// create a single use channel to receive a registered player on
-	tempChan := make(chan *nwmodel.Player)
+	tempChan := make(chan bool)
 
-	d.registrationQueue <- regrequest.Reg(ws, tempChan) // add player registration to dispatcher jobs,
+	p := nwmodel.NewPlayer(ws)
+	d.registrationQueue <- regrequest.Reg(p, tempChan) // add player registration to dispatcher jobs,
 
 	defer func() {
 
-		d.registrationQueue <- regrequest.Dereg(ws, nil)
+		d.registrationQueue <- regrequest.Dereg(p)
 
 	}() // clean up player when we're done
 
-	// wait for registered player object to be passed back,
-	thisPlayer := <-tempChan
+	// block till player is registered...
+	_ = <-tempChan
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
-	go outgoingRelay(thisPlayer)
-	thisPlayer.Outgoing <- nwmessage.PsPrompt(thisPlayer.GetName() + "@lobby>")
+	go outgoingRelay(p)
+	p.Outgoing <- nwmessage.PsPrompt(p.GetName() + "@lobby>")
 	// Handle socket stream
 	for {
-		var msg nwmessage.Message
+		msg, err := nwmodel.MsgFromPlayer(p)
 
-		err := ws.ReadJSON(&msg)
 		if err != nil {
 			log.Printf("error: %v", err)
 			break
 		}
 		// log.Println("received player message")
-		incomingHandler(d, msg, thisPlayer)
+		incomingHandler(d, msg)
 	}
 }
 
@@ -119,25 +118,25 @@ func outgoingRelay(p *nwmodel.Player) {
 
 // Response are sometimes handled as imperatives, sometimes only effect state and
 // are visible after entire stateMessage update. Pick a paradigm TODO
-func incomingHandler(d *Dispatcher, msg nwmessage.Message, p *nwmodel.Player) {
+func incomingHandler(d *Dispatcher, msg nwmodel.ClientMessage) {
 	// Tie message with player name
-	msg.Sender = strconv.Itoa(p.ID)
 	switch msg.Type {
 
 	case "playerCmd":
 		d.Recv(msg)
 
+	// these state messages are safe only as long as nothing touches those vars asynchronously.
 	case "editorState":
 		// fmt.Println("Received editorState msg")
-		p.EditorState = msg.Data
+		msg.Sender.EditorState = msg.Data
 
 	case "stdinState":
-		p.StdinState = msg.Data
+		msg.Sender.StdinState = msg.Data
 
 	case "terminalState":
 		// this really requires diffing to avoid being unwieldy
 
 	default:
-		p.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
+		msg.Sender.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
 	}
 }

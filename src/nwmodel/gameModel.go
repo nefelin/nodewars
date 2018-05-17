@@ -14,6 +14,7 @@ import (
 
 // GameModel holds all state information
 type GameModel struct {
+	name    string
 	Map     *nodeMap             `json:"map"`
 	Teams   map[teamName]*team   `json:"teams"`
 	Players map[playerID]*Player `json:"players"`
@@ -38,7 +39,7 @@ var langDefaults = []string{
 // init methods:
 
 // NewDefaultModel Generic game model
-func NewDefaultModel() *GameModel {
+func NewDefaultModel(name string) *GameModel {
 	m := newRandMap(10)
 	p := make(map[playerID]*Player)
 	// poes := make(map[playerID]*node)
@@ -46,6 +47,7 @@ func NewDefaultModel() *GameModel {
 	aChan := make(chan nwmessage.Message, 100)
 
 	gm := &GameModel{
+		name:    name,
 		Map:     m,
 		Teams:   make(map[string]*team),
 		Players: p,
@@ -67,7 +69,7 @@ func NewDefaultModel() *GameModel {
 		fmt.Println(err)
 	}
 
-	go actionConsumer(gm)
+	// go actionConsumer(gm)
 
 	return gm
 }
@@ -82,12 +84,29 @@ func makeDummyTeams() []*team {
 // GameModel methods --------------------------------------------------------------------------
 
 // fulfill Room interface
-func (gm *GameModel) GetPlayers() map[playerID]*Player {
-	return gm.Players
+func (gm *GameModel) GetPlayers() []*Player {
+	list := make([]*Player, len(gm.Players))
+	var i int
+	for _, p := range gm.Players {
+		list[i] = p
+		i++
+	}
+	return list
 }
 
-func (gm *GameModel) Recv(msg nwmessage.Message) {
-	gm.aChan <- msg
+func (gm *GameModel) Recv(msg ClientMessage) {
+	// gm.aChan <- msg
+	gm.parseCommand(msg)
+}
+
+func (gm *GameModel) Name() string {
+	// gm.aChan <- msg
+	return gm.name
+}
+
+func (gm *GameModel) Type() string {
+	// gm.aChan <- msg
+	return ""
 }
 
 // Addteams can only be called once. After addteams is called unused poes are removed

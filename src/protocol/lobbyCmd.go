@@ -3,11 +3,9 @@ package protocol
 import (
 	"errors"
 	"fmt"
-	"log"
 	"nwmessage"
 	"nwmodel"
 	"sort"
-	"strconv"
 	"strings"
 )
 
@@ -55,33 +53,25 @@ func actionConsumer(d *Dispatcher) {
 			d.handleRegRequest(regReq)
 
 		// if we get a player command, handle that
-		case m := <-d.Lobby.aChan:
-
-			pID, err := strconv.Atoi(m.Sender)
-
-			if err != nil {
-				log.Println(err)
-			}
+		case m := <-d.clientMessages:
 
 			msg := strings.Split(m.Data, " ")
 
-			gameName, inGame := d.locations[pID]
+			p := m.Sender
+			game := d.locations[p]
 
 			// if players not in a game (i.e in lobby)
-			if !inGame {
+			if game == nil {
 				// PLAYER IN LOBBY
 
-				// get player object
-				p := d.Lobby.players[pID]
-
 				// are we in chatmode?
-
 				if p.ChatMode && msg[0] != "chat" {
-					chatMsg := strings.Join(msg, " ")
 
-					for _, player := range d.Lobby.GetPlayers() {
+					chatMsg := strings.Join(msg, " ")
+					for _, player := range d.GetPlayers() {
 						player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", chatMsg)
 					}
+
 				} else {
 					// if its a valid lobby command execute
 					if handlerFunc, ok := lobbyCmdList[msg[0]]; ok {
@@ -98,9 +88,6 @@ func actionConsumer(d *Dispatcher) {
 			} else {
 				// PLAYER IN GAME
 
-				// get a valid player object
-				p := d.games[gameName].GetPlayers()[pID]
-
 				// is the command entered a global command?
 				if _, ok := globalCmdList[msg[0]]; ok {
 					// get the handler function
@@ -111,7 +98,7 @@ func actionConsumer(d *Dispatcher) {
 					}
 				} else {
 					// it's not a global command, let the game handle it
-					d.games[gameName].Recv(m)
+					game.Recv(m)
 				}
 			}
 		}
@@ -123,7 +110,7 @@ func cmdChat(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message 
 		// broadcast args
 		msg := strings.Join(args, " ")
 
-		for _, player := range d.Lobby.GetPlayers() {
+		for _, player := range d.GetPlayers() {
 			player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
 		}
 		return nwmessage.Message{}
@@ -142,7 +129,7 @@ func cmdChat(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message 
 }
 
 func cmdSetName(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
-	if _, ok := d.Lobby.players[p.ID]; !ok {
+	if d.locations[p] != nil {
 		return nwmessage.PsError(errors.New("Can only change name while in Lobby"))
 	}
 
@@ -150,19 +137,10 @@ func cmdSetName(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 		return nwmessage.PsError(errors.New("Expected 1 argument, received none"))
 	}
 
-	// check lobby for name collision
-	for _, player := range d.Lobby.players {
+	// check for name collision
+	for _, player := range d.players {
 		if args[0] == player.GetName() {
 			return nwmessage.PsError(fmt.Errorf("The name '%s' is already taken", args[0]))
-		}
-	}
-
-	// check ongoing games for name collision
-	for _, gm := range d.games {
-		for _, player := range gm.GetPlayers() {
-			if args[0] == player.GetName() {
-				return nwmessage.PsError(fmt.Errorf("The name '%s' is already taken", args[0]))
-			}
 		}
 	}
 
@@ -177,26 +155,21 @@ func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Messa
 		return nwmessage.PsError(errors.New("Need a name for new game"))
 	}
 
-	if _, ok := d.games[args[0]]; ok {
-		return nwmessage.PsError(fmt.Errorf("A game named '%s' already exists", args[0]))
-	}
-
-	if gameName, ok := d.locations[p.ID]; ok {
-		return nwmessage.PsError(fmt.Errorf("You can't create a game. You're already playing in '%s'", gameName))
+	if _, ok := d.locations[p]; ok {
+		return nwmessage.PsError(fmt.Errorf("You can't create a game. You're already in a game"))
 	}
 
 	// create the game
-	newGame := nwmodel.NewDefaultModel()
+	err := d.createGame(nwmodel.NewDefaultModel(args[0]))
 
-	// register new game with dispatch
-	d.games[args[0]] = newGame
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
 
-	// tell dispatcher about change of locations
-	d.locations[p.ID] = args[0]
-	// take player out of lobby
-	d.Lobby.RemovePlayer(p)
-	// put player in the game
-	newGame.AddPlayer(p)
+	err = d.joinRoom(p, args[0])
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
 
 	// p.SendPrompt()
 	return nwmessage.PsSuccess(fmt.Sprintf("New game, '%s', created and joined", args[0]))
@@ -233,7 +206,10 @@ func cmdWho(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 	// if !ok {
 	// 	location = d.Lobby
 	// }
-	location := d.Lobby
+	location := d.locations[p]
+	if location == nil {
+		location = d
+	}
 
 	if len(location.GetPlayers()) == 0 {
 		return nwmessage.PsNeutral("There are no players here")
@@ -256,22 +232,15 @@ func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mess
 		return nwmessage.PsError(errors.New("Expected 1 argument, received none"))
 	}
 
-	gameName, ok := d.locations[p.ID]
-	if ok {
-		return nwmessage.PsError(fmt.Errorf("You're already playing in '%s'", gameName))
-	}
-
-	game, ok := d.games[args[0]]
+	_, ok := d.games[args[0]]
 	if !ok {
 		return nwmessage.PsError(fmt.Errorf("No game named '%s' exists", args[0]))
 	}
 
-	// tell dispatcher about change of locations
-	d.locations[p.ID] = args[0]
-	// take player out of lobby
-	d.Lobby.RemovePlayer(p)
-	// put player in the game
-	game.AddPlayer(p)
+	err := d.joinRoom(p, args[0])
+	if err != nil {
+		return nwmessage.PsError(err)
+	}
 
 	// p.SendPrompt()
 	return nwmessage.PsSuccess(fmt.Sprintf("Joined game, '%s'", args[0]))
@@ -279,19 +248,13 @@ func cmdJoinGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mess
 
 func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message {
 
-	gameName, ok := d.locations[p.ID]
-	if !ok {
-		return nwmessage.PsError(errors.New("Your not in a game"))
+	err := d.leaveRoom(p)
+
+	if err != nil {
+		return nwmessage.PsError(err)
 	}
 
-	// add the creator to the game
-	d.games[gameName].RemovePlayer(p)
-	// have the dispatcher assign the player to newGame
-	delete(d.locations, p.ID)
-	// put the player back in the lobby
-	d.Lobby.AddPlayer(p)
-
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Left game, '%s'", gameName))
+	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Left game, '%s'", d.locations[p].Name()))
 	p.SendPrompt()
 	return nwmessage.Message{}
 }
@@ -305,7 +268,7 @@ func cmdTell(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Message 
 	var recip *nwmodel.Player
 
 	// check lobby for recipient:
-	for _, player := range d.Lobby.players {
+	for _, player := range d.players {
 		if player.GetName() == args[0] {
 			recip = player
 		}
