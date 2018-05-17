@@ -86,7 +86,7 @@ func (p *Player) Prompt() string {
 		// 	prompt += fmt.Sprintf(":%s:", p.TeamName)
 		// }
 		if p.Route != nil {
-			prompt += fmt.Sprintf("@n%d", p.Route.Endpoint.ID)
+			prompt += fmt.Sprintf("@n%d", p.Route.Endpoint().ID)
 		}
 
 		if p.macAddress != "" {
@@ -106,7 +106,7 @@ func (p *Player) location() *node {
 	if p.Route == nil {
 		return nil
 	}
-	return p.Route.Endpoint
+	return p.Route.Endpoint()
 }
 
 func (p *Player) canSubmit() error {
@@ -154,7 +154,6 @@ func (p *Player) breakConnection(forced bool) {
 	}
 
 	p.macDetach()
-	p.Route.Endpoint.removePlayer(p)
 	p.Route = nil
 
 	if forced {
@@ -168,7 +167,7 @@ func (p *Player) currentMachine() *machine {
 		return nil
 	}
 
-	return p.Route.Endpoint.addressMap[p.macAddress]
+	return p.Route.Endpoint().addressMap[p.macAddress]
 }
 
 // GetName returns the players name if they have one, assigns one if they don't

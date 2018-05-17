@@ -67,7 +67,7 @@ func (m *nodeMap) findNodeEccentricity(n *node) int {
 
 		// don't check our starting point
 		if n != node {
-			nodePath := m.routeToNode(nil, n, node)
+			nodePath := m.routeToNode(&team{}, n, node)
 			if len(nodePath) > maxDist {
 				maxDist = len(nodePath)
 				// farthestNode = node.ID
@@ -301,7 +301,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 		tocheck = tocheck[1:]
 		// log.Printf("this: %v", thisNode)
 		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
-		if t == nil || thisNode.hasMachineFor(t) {
+		if t == nil || thisNode.supportsRouting(t.Name) {
 			retField.unchecked[thisNode] = true
 			retField.dist[thisNode] = 1000
 			seen[thisNode] = true
@@ -369,7 +369,8 @@ func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
 func constructRoute(prevMap map[*node]*node, t *node) []*node {
 	// log.Printf("constructRoute working from prev: %v", prevMap)
 
-	route := make([]*node, 0)
+	route := make([]*node, 1)
+	route[0] = t
 
 	for step, ok := prevMap[t]; ok; step, ok = prevMap[step] {
 		route = append(route, step)

@@ -254,7 +254,7 @@ func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []string) nwmessage.Mes
 		return nwmessage.PsError(err)
 	}
 
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Left game, '%s'", d.locations[p].Name()))
+	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You have left the game"))
 	p.SendPrompt()
 	return nwmessage.Message{}
 }

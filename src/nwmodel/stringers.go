@@ -45,7 +45,7 @@ func (r route) String() string {
 		nodeList[nodeCount-i-1] = strconv.Itoa(node.ID)
 	}
 
-	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint.ID, strings.Join(nodeList, ", "))
+	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint().ID, strings.Join(nodeList, ", "))
 }
 
 func (n node) StringFor(p *Player) string {
@@ -102,7 +102,7 @@ func (r route) forMsg() string {
 		// the list to read from source to target
 		nodeList[nodeCount-i-1] = strconv.Itoa(node.ID)
 	}
-	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint.ID, strings.Join(nodeList, ", "))
+	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint().ID, strings.Join(nodeList, ", "))
 }
 
 // func (c CompileResult) String() string {

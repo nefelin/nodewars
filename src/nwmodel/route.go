@@ -5,20 +5,39 @@ import (
 )
 
 type route struct {
-	Endpoint *node   `json:"endpoint"`
-	Nodes    []*node `json:"nodes"`
+	Nodes  []*node `json:"nodes"`
+	player *Player
 }
 
 // route methods --------------------------------------------
 
-func (r route) containsNode(n *node) (int, bool) {
-	for i, node := range r.Nodes {
+func (r route) Endpoint() *node {
+	if len(r.Nodes) < 1 {
+		return nil
+	}
+
+	return r.Nodes[0]
+}
+
+func (r route) runsThrough(n *node) bool { // runsThrough does not check the endpoint
+	for i := 0; i < len(r.Nodes)-1; i++ { // don't check last node
+		node := r.Nodes[i]
 		if n == node {
-			return i, true
+			return true
 		}
 	}
-	return 0, false
+	return false
 }
+
+// func (r route) containsNode(n *node) (int, bool) {
+// 	for i := 0; i < len(r.Nodes) - 1; i++ { // don't check last node
+// 		node := r.Nodes[i]
+// 		if n == node {
+// 			return i, true
+// 		}
+// 	}
+// 	return 0, false
+// }
 
 func (r route) length() int {
 	return len(r.Nodes)
@@ -27,13 +46,13 @@ func (r route) length() int {
 // asIds reverses the order of the nodes and stores ids only
 func (r route) asIds() []nodeID {
 	nodeCount := len(r.Nodes)
-	list := make([]nodeID, nodeCount+1)
+	list := make([]nodeID, nodeCount)
 
-	// fmt.Printf("Route: %v\n,Nodecount: %d\nList: %v\n", r, nodeCount, list)
-	list[nodeCount] = r.Endpoint.ID
 	for i := 0; i < nodeCount; i++ {
 		list[i] = r.Nodes[nodeCount-1-i].ID
 	}
+
+	// fmt.Printf("Route: %v\n,Nodecount: %d\nList: %v\n", r, nodeCount, list)
 	return list
 }
 

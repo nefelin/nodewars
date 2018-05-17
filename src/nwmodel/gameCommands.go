@@ -357,8 +357,9 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 		return nwmessage.PsNoConnection()
 	}
 
-	retMsg := p.Route.Endpoint.StringFor(p)
-	pHere := gm.playersAt(p.Route.Endpoint)
+	node := p.Route.Endpoint()
+	retMsg := node.StringFor(p)
+	pHere := gm.playersAt(node)
 
 	if len(pHere) > 1 {
 		//make slice of names (excluding this player)
@@ -461,7 +462,7 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	}
 
 	macAddress := args[0]
-	_, addOk := p.Route.Endpoint.addressMap[macAddress]
+	_, addOk := p.Route.Endpoint().addressMap[macAddress]
 
 	if !addOk {
 		return nwmessage.PsError(fmt.Errorf("Invalid address, '%s'", macAddress))

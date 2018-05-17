@@ -1,7 +1,6 @@
 package nwmodel
 
 import (
-	"feature"
 	"fmt"
 	"math/rand"
 )
@@ -15,7 +14,6 @@ type node struct {
 	Feature     *machine   `json:"feature"`
 	Remoteness  float64    //`json:"remoteness"`
 	addressMap  map[string]*machine
-	routes      map[*route]bool // tracking here instead of inferring because inferring meant moving so much node and nodemap functionality up into gamemodel
 }
 
 // node methods -------------------------------------------------------------------------------
@@ -156,35 +154,25 @@ func (n *node) hasMachineFor(t *team) bool {
 	return false
 }
 
-func (n *node) trafficFor(t *team) int {
-	var count int
-	for r := range n.routes {
-		if r.player.TeamName == t.Name {
-			count++
-		}
-	}
-	return count
-}
-
-func (n *node) machinesFor(t *team) int {
+func (n *node) machinesFor(t teamName) int {
 	var count int
 
 	for _, mac := range n.Machines {
-		if mac.TeamName == t.Name {
+		if mac.TeamName == t {
 			count++
 		}
 	}
 
-	if n.Feature.TeamName == t.Name {
+	if n.Feature.TeamName == t {
 		count++
 	}
 
 	return count
 }
 
-func (n *node) supportsRouting(t *team) bool {
+func (n *node) supportsRouting(t teamName) bool {
 	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
-	if t == nil {
+	if t == "" {
 		return true
 	}
 
@@ -196,12 +184,6 @@ func (n *node) supportsRouting(t *team) bool {
 
 	if n.machinesFor(t) < 1 {
 		return false
-	}
-
-	if n.Feature.Type == feature.Firewall {
-		if n.machinesFor(t) <= n.trafficFor(t) {
-			return false
-		}
 	}
 
 	return true

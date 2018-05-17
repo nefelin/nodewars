@@ -233,7 +233,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 		log.Panic("Player is not attached to a machine")
 	}
 
-	for _, player := range gm.playersAt(p.Route.Endpoint) {
+	for _, player := range gm.playersAt(p.Route.Endpoint()) {
 		if player != p {
 			comment := gm.languages[player.language].CommentPrefix
 
@@ -249,7 +249,7 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 }
 
 func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedResult, fType feature.Type) {
-	node := p.Route.Endpoint
+	node := p.Route.Endpoint()
 	solutionStrength := response.passed()
 
 	var hostile bool
@@ -360,7 +360,7 @@ func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedRes
 }
 
 func (gm *GameModel) tryResetMachine(p *Player, mac *machine, r GradedResult) {
-	node := p.Route.Endpoint
+	node := p.Route.Endpoint()
 	solutionStrength := r.passed()
 
 	if mac.isNeutral() {
@@ -553,7 +553,7 @@ func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 	if p.Route == nil {
 		playerLoc = -1
 	} else {
-		playerLoc = p.Route.Endpoint.ID
+		playerLoc = p.Route.Endpoint().ID
 	}
 
 	// compose state message
@@ -741,7 +741,12 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 			// log.Println("Successful Connect")
 			// log.Printf("Route to target: %v", routeNodes)
 			p.breakConnection(false)
-			route := gm.establishConnection(p, routeNodes, target)
+			route, err := gm.establishConnection(p, routeNodes)
+
+			if err != nil {
+				return nil, err
+			}
+
 			return route, nil
 		}
 
@@ -751,31 +756,37 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically
-func (gm *GameModel) establishConnection(p *Player, routeNodes []*node, n *node) *route {
+func (gm *GameModel) establishConnection(p *Player, routeNodes []*node) (*route, error) {
 	// set's players route to the route generated via routeToNode
 	// gm.Routes[p.ID] = &route{Endpoint: n, Nodes: routeNodes}
-	p.Route = &route{Endpoint: n, Nodes: routeNodes}
-	n.addPlayer(p)
-	return p.Route
+	r := &route{Nodes: routeNodes, player: p}
+
+	// make sure we're not blocked by any firewalls:
+	for _, n := range r.Nodes {
+		if n.Feature.Type == feature.Firewall {
+			if n.machinesFor(p.TeamName) <= gm.trafficCount(n, p.TeamName) {
+				return nil, fmt.Errorf("Connection refused (firewall at node %d)", n.ID)
+			}
+		}
+	}
+
+	p.Route = r
+	return p.Route, nil
 	// return gm.Routes[p.ID]
 }
 
-// MOVED TO PLAYER
-// func (gm *GameModel) breakConnection(p *Player, alert bool) {
-// 	// if _, exists := gm.Routes[p.ID]; exists {
-// 	if p.Route == nil {
-// 		// log.Panic("No route for player")
-// 		return
-// 	}
+func (gm *GameModel) trafficCount(n *node, t teamName) int {
+	var count int
 
-// 	p.Route.Endpoint.removePlayer(p)
-// 	p.slotNum = -1
-// 	p.Route = nil
-
-// 	if alert {
-// 		p.Outgoing <- nwmessage.PsError(errors.New("Connection interrupted!"))
-// 	}
-// }
+	for p := range gm.Teams[t].players {
+		if p.Route != nil {
+			if p.Route.runsThrough(n) || p.Route.Endpoint() == n {
+				count++
+			}
+		}
+	}
+	return count
+}
 
 func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 	// if the module no longer supports routing for this modules team
@@ -785,7 +796,7 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 			if player.TeamName == t.Name {
 				// and if it contained that node, break the players connection
 				if player.Route != nil {
-					if _, ok := player.Route.containsNode(n); ok {
+					if player.Route.runsThrough(n) {
 						player.breakConnection(true)
 					}
 				}
