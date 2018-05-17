@@ -2,6 +2,7 @@ package nwmodel
 
 import (
 	"errors"
+	"feature"
 	"fmt"
 	"nwmessage"
 	"strconv"
@@ -10,7 +11,8 @@ import (
 )
 
 var mapCmdList = map[string]playerCommand{
-	"nm": cmdNewBlankMap,
+	"nm":  cmdNewBlankMap,
+	"ntm": cmdNewTestMap,
 
 	"nrm": cmdNewRandMap,
 
@@ -226,6 +228,35 @@ func cmdNewBlankMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	newBlankMap := newNodeMap()
 	gm.Map = &newBlankMap
 	_ = gm.Map.addNodes(1)
+	// gm.broadcastGraphReset()
+	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
+	gm.broadcastState()
+	return nwmessage.PsSuccess("Generating new blank map...")
+}
+
+func cmdNewTestMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
+	if gm.running {
+		return nwmessage.PsError(errors.New("Cannot alter map while game is running"))
+	}
+
+	if len(args) != 0 {
+		return nwmessage.PsError(errors.New("Command does not accept arguments"))
+	}
+
+	// nodeIdcount should be irrelevant since its now tied to maps
+	// nodeIDCount = 0
+	newBlankMap := newNodeMap()
+	gm.Map = &newBlankMap
+	_ = gm.Map.addNodes(3)
+	_ = gm.Map.connectNodes(0, 1)
+	_ = gm.Map.connectNodes(1, 2)
+	gm.Map.addPoes(2, 0)
+	gm.Map.initAllNodes()
+	gm.addTeams(makeDummyTeams())
+	gm.Map.Nodes[1].Feature.TeamName = "red"
+	gm.Map.Nodes[1].Feature.Type = feature.Firewall
+	gm.Map.Nodes[1].Machines[0].TeamName = "blue"
+
 	// gm.broadcastGraphReset()
 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
 	gm.broadcastState()
