@@ -16,5 +16,6 @@ const (
 	Int argType = iota
 	Float
 	String
+	GreedyString
 	Bool
 )
