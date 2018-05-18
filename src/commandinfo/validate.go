@@ -19,14 +19,14 @@ func (i Info) ValidateArgs(args []string) ([]interface{}, error) {
 		return nil, errors.New("too few arguments")
 	}
 
-	if len(args) > len(i.ArgsReq)+len(i.ArgsOpt) {
-		return nil, errors.New("too many arguments")
-	}
-
 	converted := make([]interface{}, len(args))
 	combinedArgs := append(i.ArgsReq, i.ArgsOpt...)
 
 	for i, arg := range args {
+
+		if i > len(combinedArgs)-1 {
+			return nil, fmt.Errorf("too many arguments, can't use '%s'", arg)
+		}
 
 		wantArg := combinedArgs[i]
 		switch wantArg.Type {
@@ -60,6 +60,13 @@ func (i Info) ValidateArgs(args []string) ([]interface{}, error) {
 				return nil, typeMismatch(wantArg, arg)
 			}
 			converted[i] = arg
+
+		case argument.GreedyString:
+			if arg == "" {
+				return nil, typeMismatch(wantArg, arg)
+			}
+			converted[i] = strings.Join(args[i:], " ")
+			return converted, nil
 
 		default:
 			return nil, fmt.Errorf("validation of type, '%s', unsupported", wantArg.Type)
