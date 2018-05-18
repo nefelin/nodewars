@@ -1,4 +1,4 @@
-package argtype
+package argument
 
 //go:generate stringer -type=argType
 

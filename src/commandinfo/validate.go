@@ -1,15 +1,15 @@
 package commandinfo
 
 import (
-	"argtype"
+	"argument"
 	"errors"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-func typeMismatch(need argtype.Type, got string) error {
-	return fmt.Errorf("type mismatch, need %s, got '%s'", strings.ToLower(fmt.Sprint(need)), got) // TODO couldn't figure out how to better convert type...
+func typeMismatch(need argument.Arg, got string) error {
+	return fmt.Errorf("type mismatch, '%s' (%s), must be of type '%s'", got, need.Name, strings.ToLower(fmt.Sprint(need.Type))) // TODO couldn't figure out how to better convert type...
 }
 
 // ValidateArgs tarkes the command info and a slice of strings and checks to ensure that arguement requirements are not violated
@@ -24,42 +24,42 @@ func (i Info) ValidateArgs(args []string) ([]interface{}, error) {
 	}
 
 	converted := make([]interface{}, len(args))
-	combinedTypes := append(i.ArgsReq, i.ArgsOpt...)
+	combinedArgs := append(i.ArgsReq, i.ArgsOpt...)
 
 	for i, arg := range args {
 
-		kind := combinedTypes[i]
-		switch kind {
+		wantArg := combinedArgs[i]
+		switch wantArg.Type {
 
-		case argtype.Int:
+		case argument.Int:
 			num, err := strconv.Atoi(arg)
 			if err != nil {
-				return nil, typeMismatch(kind, arg)
+				return nil, typeMismatch(wantArg, arg)
 			}
 
 			converted[i] = num
 
-		case argtype.Float:
+		case argument.Float:
 			num, err := strconv.ParseFloat(arg, 64)
 			if err != nil {
-				return nil, typeMismatch(kind, arg)
+				return nil, typeMismatch(wantArg, arg)
 			}
 
 			converted[i] = num
 
-		case argtype.Bool:
+		case argument.Bool:
 			b, err := strconv.ParseBool(arg)
 			if err != nil {
-				return nil, typeMismatch(kind, arg)
+				return nil, typeMismatch(wantArg, arg)
 			}
 
 			converted[i] = b
 
-		case argtype.String:
+		case argument.String:
 			converted[i] = arg
 
 		default:
-			return nil, fmt.Errorf("validation of type, '%s', unsupported", kind)
+			return nil, fmt.Errorf("validation of type, '%s', unsupported", wantArg.Type)
 		}
 	}
 

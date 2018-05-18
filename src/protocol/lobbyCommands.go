@@ -1,10 +1,11 @@
 package protocol
 
 import (
-	"argtype"
 	"commandinfo"
 	"fmt"
+	"nwmessage"
 	"nwmodel"
+	"sort"
 	"strings"
 )
 
@@ -14,18 +15,7 @@ func (d *Dispatcher) Recv(m nwmodel.ClientMessage) error {
 		return nil
 	}
 
-	fullCmd := strings.Split(m.Data, " ")
-
-	if cmd, ok := commandList[fullCmd[0]]; ok {
-		args, err := cmd.ValidateArgs(fullCmd[1:])
-		if err != nil {
-			return fmt.Errorf("%s\n%s", err.Error(), cmd.Usage)
-		}
-
-		return cmd.handler(m.Sender, d, args)
-	}
-
-	return fmt.Errorf("Unknown command, '%s'", fullCmd[0])
+	return commandList.Exec(d, m)
 }
 
 type lobbyCommand struct {
@@ -33,26 +23,79 @@ type lobbyCommand struct {
 	handler func(*nwmodel.Player, *Dispatcher, []interface{}) error
 }
 
-var commandList = map[string]lobbyCommand{
-	"test": {
-		Info: commandinfo.Info{
-			Usage:     "test reqd_int [opt_string]",
-			ShortDesc: "Simply testing our new command struct",
-			ArgsReq:   []argtype.Type{argtype.Int},
-			ArgsOpt:   []argtype.Type{argtype.String},
-		},
-		handler: cmdTest,
-	},
+type LobbyCommandGroup map[string]lobbyCommand
+
+func (cg *LobbyCommandGroup) Exec(d *Dispatcher, m nwmodel.ClientMessage) error {
+	fullCmd := strings.Split(m.Data, " ")
+
+	// handle help
+	if fullCmd[0] == "help" {
+		if len(fullCmd) == 0 {
+
+			m.Sender.Outgoing <- nwmessage.PsNeutral(cg.AllHelp())
+
+		} else {
+			help, err := cg.Help(fullCmd[1:])
+
+			if err != nil {
+				m.Sender.Outgoing <- nwmessage.PsError(err)
+			}
+			m.Sender.Outgoing <- nwmessage.PsNeutral(help)
+
+		}
+		return nil
+
+	}
+
+	// if we find the command, try to execute
+	if cmd, ok := commandList[fullCmd[0]]; ok {
+
+		args, err := cmd.ValidateArgs(fullCmd[1:])
+		if err != nil {
+			// if we have trouble validating args
+			m.Sender.Outgoing <- nwmessage.PsError(fmt.Errorf("%s\nusage: %s", err.Error(), cmd.Usage()))
+		} else {
+			// otherwise actually execute the command
+			err = cmd.handler(m.Sender, d, args)
+			if err != nil {
+				m.Sender.Outgoing <- nwmessage.PsError(err)
+			}
+		}
+
+		return nil
+	}
+
+	// if we don't find the command, pass an error back to caller in case caller wants to do something else
+	return unknownCommand(fullCmd[0])
 }
 
-func cmdTest(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
-	// cArgs, err := lc.ValidateArgs(args)
-	// if err != nil {
-	// 	return err
-	// }
+// Help composes a help string for the given command
+func (cg LobbyCommandGroup) Help(args []string) (string, error) {
+	if cmd, ok := cg[args[0]]; ok {
+		return cmd.Help(), nil
+	}
+	return "", unknownCommand(args[0])
+}
 
-	fmt.Println("TEST")
-	return nil
+// AllHelp composes help for all commands in the group
+func (cg LobbyCommandGroup) AllHelp() string {
+	cmds := make([]string, len(cg))
+	var i int
+	for key := range cg {
+		cmds[i] = key
+	}
+
+	sort.Strings(cmds)
+	helpStr := "Available commands:\n"
+
+	for _, cmd := range cmds {
+		helpStr += fmt.Sprintf("%s\n", cg[cmd].Help())
+	}
+	return helpStr
+}
+
+func unknownCommand(cmd string) error {
+	return fmt.Errorf("Unknown command, '%s'", cmd)
 }
 
 // type playerCmd func(*nwmodel.Player, *Dispatcher, []string) nwmessage.Message
