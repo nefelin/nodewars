@@ -9,20 +9,24 @@ import (
 type Info struct {
 	Name string // strings that can be used to call this Command
 
-	// Usage     string
 	ShortDesc string
 	LongDesc  string
 
 	ArgsReq argument.ArgList
 	ArgsOpt argument.ArgList
-
-	// ArgEval func(args []string, p *nwmodel.Player, gm *nwmodel.GameModel) ([]interface{}, error)
-	//handler func(p *nwmodel.Player, gm *nwmodel.GameModel, args []interface{}) error
 }
 
 // Help provides composed help info for the command
-func (i Info) Help() string {
-	return fmt.Sprintf("%s - %s", i.Usage, i.ShortDesc)
+func (i Info) ShortHelp() string {
+	return fmt.Sprintf("%s - %s", i.Name, i.ShortDesc)
+}
+
+func (i Info) LongHelp() string {
+	ret := fmt.Sprintf("%s\n\nusage: %s", i.ShortHelp(), i.Usage())
+	if i.LongDesc != "" {
+		ret += "\n\n" + i.LongDesc
+	}
+	return ret
 }
 
 func (i Info) Usage() string {

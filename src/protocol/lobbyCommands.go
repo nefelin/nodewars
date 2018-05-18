@@ -30,7 +30,7 @@ func (cg *LobbyCommandGroup) Exec(d *Dispatcher, m nwmodel.ClientMessage) error 
 
 	// handle help
 	if fullCmd[0] == "help" {
-		if len(fullCmd) == 0 {
+		if len(fullCmd) == 1 {
 
 			m.Sender.Outgoing <- nwmessage.PsNeutral(cg.AllHelp())
 
@@ -72,7 +72,7 @@ func (cg *LobbyCommandGroup) Exec(d *Dispatcher, m nwmodel.ClientMessage) error 
 // Help composes a help string for the given command
 func (cg LobbyCommandGroup) Help(args []string) (string, error) {
 	if cmd, ok := cg[args[0]]; ok {
-		return cmd.Help(), nil
+		return cmd.LongHelp(), nil
 	}
 	return "", unknownCommand(args[0])
 }
@@ -86,12 +86,14 @@ func (cg LobbyCommandGroup) AllHelp() string {
 	}
 
 	sort.Strings(cmds)
-	helpStr := "Available commands:\n"
+	helpStr := make([]string, len(cmds)+1)
+	helpStr[0] = "Available commands:"
 
-	for _, cmd := range cmds {
-		helpStr += fmt.Sprintf("%s\n", cg[cmd].Help())
+	for i, cmd := range cmds {
+		helpStr[i+1] = cg[cmd].ShortHelp()
 	}
-	return helpStr
+
+	return strings.Join(helpStr, "\n")
 }
 
 func unknownCommand(cmd string) error {
