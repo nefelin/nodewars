@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"nwmessage"
+	"nwmodel"
 )
 
 func dispatchConsumer(d *Dispatcher) {
@@ -33,4 +34,12 @@ func dispatchConsumer(d *Dispatcher) {
 
 		}
 	}
+}
+
+func (d *Dispatcher) Recv(m nwmodel.ClientMessage) error {
+	if m.Data == "" {
+		return nil
+	}
+
+	return commandList.Exec(d, m)
 }
