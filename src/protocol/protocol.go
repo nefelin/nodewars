@@ -125,8 +125,9 @@ func incomingHandler(d *Dispatcher, msg nwmodel.ClientMessage) {
 	switch msg.Type {
 
 	case "playerCmd":
-		d.Recv(msg)
+		d.clientMessages <- msg
 
+	// TODO move these to dispatchConsumer
 	// these state messages are safe only as long as nothing touches those vars asynchronously.
 	case "editorState":
 		// fmt.Println("Received editorState msg")

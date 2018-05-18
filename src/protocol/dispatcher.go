@@ -30,14 +30,14 @@ func NewDispatcher() *Dispatcher {
 		clientMessages:    make(chan nwmodel.ClientMessage),
 	}
 
-	go actionConsumer(d)
+	go dispatchConsumer(d)
 	return d
 }
 
 type Room interface {
 	Name() string
 	Type() string // TODO switch this to a roomtype definition
-	Recv(msg nwmodel.ClientMessage)
+	Recv(msg nwmodel.ClientMessage) error
 	AddPlayer(p *nwmodel.Player) error
 	RemovePlayer(p *nwmodel.Player) error
 	GetPlayers() []*nwmodel.Player
@@ -59,10 +59,6 @@ func (d *Dispatcher) GetPlayers() []*nwmodel.Player {
 		i++
 	}
 	return list
-}
-
-func (d *Dispatcher) Recv(m nwmodel.ClientMessage) {
-	d.clientMessages <- m
 }
 
 func (d *Dispatcher) handleRegRequest(r regrequest.Request) {

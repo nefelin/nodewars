@@ -6,15 +6,13 @@ import (
 	"fmt"
 	"nwmessage"
 	"strconv"
-
-	"validation"
 )
 
 var mapCmdList = map[string]playerCommand{
 	"nm":  cmdNewBlankMap,
 	"ntm": cmdNewTestMap,
 
-	"nrm": cmdNewRandMap,
+	// "nrm": cmdNewRandMap,
 
 	"an": cmdAddNodes,
 
@@ -263,23 +261,23 @@ func cmdNewTestMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsSuccess("Generating new blank map...")
 }
 
-func cmdNewRandMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
-	// TODO fix d3 to update...
-	if gm.running {
-		return nwmessage.PsError(errors.New("Cannot alter map while game is running"))
-	}
+// func cmdNewRandMap(p *Player, gm *GameModel, args []string) nwmessage.Message {
+// 	// TODO fix d3 to update...
+// 	if gm.running {
+// 		return nwmessage.PsError(errors.New("Cannot alter map while game is running"))
+// 	}
 
-	argc, err := validation.Validate([]string{"Int"}, args)
-	if err != nil {
-		return nwmessage.PsError(err)
-	}
-	nodeCount := argc[0].(int)
+// 	argc, err := validation.Validate([]string{"Int"}, args)
+// 	if err != nil {
+// 		return nwmessage.PsError(err)
+// 	}
+// 	nodeCount := argc[0].(int)
 
-	// nodeIdcount should be irrelevant since its now tied to maps
-	// nodeIDCount = 0
-	gm.Map = newRandMap(nodeCount)
-	gm.broadcastGraphReset()
-	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
-	gm.broadcastState()
-	return nwmessage.PsSuccess("Generating new random map...")
-}
+// 	// nodeIdcount should be irrelevant since its now tied to maps
+// 	// nodeIDCount = 0
+// 	gm.Map = newRandMap(nodeCount)
+// 	gm.broadcastGraphReset()
+// 	gm.psBroadcastExcept(p, nwmessage.PsAlert("Map was reset"))
+// 	gm.broadcastState()
+// 	return nwmessage.PsSuccess("Generating new random map...")
+// }

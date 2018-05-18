@@ -605,6 +605,7 @@ func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
 			continue
 		}
 		player.Outgoing <- msg
+		player.Outgoing <- nwmessage.PsPrompt(p.Prompt())
 	}
 }
 

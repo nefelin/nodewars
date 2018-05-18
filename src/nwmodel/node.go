@@ -1,6 +1,7 @@
 package nwmodel
 
 import (
+	"feature"
 	"fmt"
 	"math/rand"
 )
@@ -40,7 +41,26 @@ func (n *node) claimFreeMachine(p *Player) error {
 
 // coinVal calculates the coin produced per machine in a given node
 func (n *node) coinVal(t teamName) float32 {
-	return float32(n.Remoteness)
+	base := float32(n.Remoteness)
+
+	if n.dominatedBy(t) {
+		base = base * 2
+	}
+
+	if n.Feature.TeamName == t && n.Feature.Type == feature.Overclock {
+		base = base * 2
+	}
+
+	return base
+}
+
+func (n *node) dominatedBy(t teamName) bool { // does t control all non feature machines?
+	for _, m := range n.Machines {
+		if m.TeamName != t {
+			return false
+		}
+	}
+	return true
 }
 
 // coinProduction gives the total produced (for team t) in a given node
@@ -125,7 +145,7 @@ func cutIntFromSlice(p int, s []int) []int {
 	return s
 }
 
-func (n *node) hasMachineFor(t *team) bool {
+func (n *node) hasMachineFor(t *team) bool { // includes feature
 	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
 	if t == nil {
 		return true
@@ -154,7 +174,7 @@ func (n *node) hasMachineFor(t *team) bool {
 	return false
 }
 
-func (n *node) machinesFor(t teamName) int {
+func (n *node) machinesFor(t teamName) int { // counts only non-feature machines
 	var count int
 
 	for _, mac := range n.Machines {
@@ -163,9 +183,9 @@ func (n *node) machinesFor(t teamName) int {
 		}
 	}
 
-	if n.Feature.TeamName == t {
-		count++
-	}
+	// if n.Feature.TeamName == t {
+	// 	count++
+	// }
 
 	return count
 }
