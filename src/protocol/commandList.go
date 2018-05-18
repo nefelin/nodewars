@@ -5,14 +5,37 @@ import (
 	"commandinfo"
 	"errors"
 	"fmt"
+	"math/rand"
 	"nwmessage"
 	"nwmodel"
 	"sort"
+	"strconv"
 	"strings"
 )
 
 // var commandList = map[string]lobbyCommand{
 var commandList = LobbyCommandGroup{
+	"chat": {
+		Info: commandinfo.Info{
+			Name:      "chat",
+			ShortDesc: "Toggles chat mode (all text entered is broadcast)",
+			ArgsReq:   argument.ArgList{},
+			ArgsOpt:   argument.ArgList{},
+		},
+		handler: cmdToggleChat,
+	},
+
+	"join": {
+		Info: commandinfo.Info{
+			Name:      "join",
+			ShortDesc: "Joins the specified game",
+			ArgsReq: argument.ArgList{
+				{Name: "game_name", Type: argument.String},
+			},
+			ArgsOpt: argument.ArgList{},
+		},
+		handler: cmdJoinGame,
+	},
 
 	"leave": {
 		Info: commandinfo.Info{
@@ -22,6 +45,52 @@ var commandList = LobbyCommandGroup{
 			ArgsOpt:   argument.ArgList{},
 		},
 		handler: cmdLeaveGame,
+	},
+
+	"ls": {
+		Info: commandinfo.Info{
+			Name:      "ls",
+			ShortDesc: "List the games that are currently running",
+			ArgsReq:   argument.ArgList{},
+			ArgsOpt:   argument.ArgList{},
+		},
+		handler: cmdListGames,
+	},
+
+	"name": {
+		Info: commandinfo.Info{
+			Name:      "name",
+			ShortDesc: "Sets the player's name",
+			ArgsReq: argument.ArgList{
+				{Name: "new_name", Type: argument.String},
+			},
+			ArgsOpt: argument.ArgList{},
+		},
+		handler: cmdSetName,
+	},
+
+	"ng": {
+		Info: commandinfo.Info{
+			Name:      "ng",
+			ShortDesc: "Creates a new game",
+			ArgsReq:   argument.ArgList{},
+			ArgsOpt: argument.ArgList{
+				{Name: "game_name", Type: argument.String},
+			},
+		},
+		handler: cmdNewGame,
+	},
+
+	"kill": {
+		Info: commandinfo.Info{
+			Name:      "kill",
+			ShortDesc: "Removes a game (must be empty)",
+			ArgsReq: argument.ArgList{
+				{Name: "game_name", Type: argument.String},
+			},
+			ArgsOpt: argument.ArgList{},
+		},
+		handler: cmdKillGame,
 	},
 
 	"tell": {
@@ -34,7 +103,29 @@ var commandList = LobbyCommandGroup{
 			},
 			ArgsOpt: argument.ArgList{},
 		},
-		handler: cmdLeaveGame,
+		handler: cmdTell,
+	},
+
+	"who": {
+		Info: commandinfo.Info{
+			Name:      "who",
+			ShortDesc: "Shows who's in the lobby",
+			ArgsReq:   argument.ArgList{},
+			ArgsOpt:   argument.ArgList{},
+		},
+		handler: cmdWho,
+	},
+
+	"yell": {
+		Info: commandinfo.Info{
+			Name:      "yell",
+			ShortDesc: "Sends a message to all player (in the same game/lobby)",
+			ArgsReq: argument.ArgList{
+				{Name: "msg", Type: argument.String},
+			},
+			ArgsOpt: argument.ArgList{},
+		},
+		handler: cmdYell,
 	},
 }
 
@@ -48,17 +139,7 @@ func assertStringSlice(f []interface{}) []string {
 	return ret
 }
 
-func cmdChat(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
-	if len(args) > 0 {
-		// broadcast args
-		msg := strings.Join(assertStringSlice(args), " ")
-
-		for _, player := range d.GetPlayers() {
-			player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
-		}
-		return nil
-	}
-
+func cmdToggleChat(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 	p.ChatMode = !p.ChatMode
 
 	var flag string
@@ -72,11 +153,24 @@ func cmdChat(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
+func cmdYell(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
+	msg := strings.Join(assertStringSlice(args), " ")
+
+	for _, player := range d.GetPlayers() {
+		player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
+	}
+	return nil
+}
+
 func cmdSetName(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
 	}
 	name := args[0].(string)
+
+	if name == p.GetName() {
+		return fmt.Errorf("Your name's already set to '%s'", name)
+	}
 
 	// check for name collision
 	for _, player := range d.players {
@@ -95,7 +189,16 @@ func cmdNewGame(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 		return fmt.Errorf("You can't create a game. You're already in a game")
 	}
 
-	gameName := args[0].(string)
+	var gameName string
+	if len(args) == 0 {
+		gameName = "Game_" + strconv.Itoa(rand.Intn(100000))
+		_, exists := d.games[gameName]
+		for exists {
+			gameName = "Game_" + strconv.Itoa(rand.Intn(100000))
+		}
+	} else {
+		gameName = args[0].(string)
+	}
 
 	// create the game
 	err := d.createGame(nwmodel.NewDefaultModel(gameName))
