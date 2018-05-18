@@ -182,6 +182,7 @@ func (p *Player) GetName() string {
 
 func (p *Player) SetName(n string) {
 	p.name = n
+	p.Outgoing <- nwmessage.PsSuccess("Name set to '" + n + "'")
 }
 
 // hasTeam is deprecated I think TOD

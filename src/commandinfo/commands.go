@@ -16,13 +16,17 @@ type Info struct {
 	ArgsOpt argument.ArgList
 }
 
+var padding int = 10
+
 // Help provides composed help info for the command
 func (i Info) ShortHelp() string {
-	return fmt.Sprintf("%s - %s", i.Name, i.ShortDesc)
+	// padding := strings.Repeat(" ", longest-len(i.Name))
+
+	return fmt.Sprintf("%-*s - %s", padding, i.Name, i.ShortDesc)
 }
 
 func (i Info) LongHelp() string {
-	ret := fmt.Sprintf("%s\n\nusage: %s", i.ShortHelp(), i.Usage())
+	ret := fmt.Sprintf("%s\nusage: %s", i.ShortHelp(), i.Usage())
 	if i.LongDesc != "" {
 		ret += "\n\n" + i.LongDesc
 	}

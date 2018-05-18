@@ -94,9 +94,10 @@ func (gm *GameModel) GetPlayers() []*Player {
 	return list
 }
 
-func (gm *GameModel) Recv(msg ClientMessage) {
+func (gm *GameModel) Recv(msg ClientMessage) error {
 	// gm.aChan <- msg
 	gm.parseCommand(msg)
+	return nil
 }
 
 func (gm *GameModel) Name() string {

@@ -56,6 +56,9 @@ func (i Info) ValidateArgs(args []string) ([]interface{}, error) {
 			converted[i] = b
 
 		case argument.String:
+			if arg == "" {
+				return nil, typeMismatch(wantArg, arg)
+			}
 			converted[i] = arg
 
 		default:

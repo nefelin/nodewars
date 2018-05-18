@@ -167,6 +167,12 @@ storiesOf('Terminal', module)
 	})
 
 storiesOf('Sandbox', module)
+	.add('Text Formatting', () => {
+		const s1 = "a      - whitespace heavy string"
+		return (
+			<p> {s1} </p>
+		)
+	})
 	.add('Cycle Test', () => {
 		return <CycleTest />
 	})

@@ -77,15 +77,27 @@ func (cg LobbyCommandGroup) Help(args []string) (string, error) {
 	return "", unknownCommand(args[0])
 }
 
+// func (cg LobbyCommandGroup) longestKey() int {
+// 	length := 0
+// 	for key := range cg {
+// 		if len(key) > length {
+// 			length = len(key)
+// 		}
+// 	}
+// 	return length
+// }
+
 // AllHelp composes help for all commands in the group
 func (cg LobbyCommandGroup) AllHelp() string {
 	cmds := make([]string, len(cg))
 	var i int
 	for key := range cg {
 		cmds[i] = key
+		i++
 	}
 
 	sort.Strings(cmds)
+	// offset := cg.longestKey()
 	helpStr := make([]string, len(cmds)+1)
 	helpStr[0] = "Available commands:"
 
