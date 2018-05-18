@@ -4,6 +4,7 @@ import (
 	"argument"
 	"fmt"
 	"nwmodel"
+	"room"
 	"strings"
 )
 
@@ -16,16 +17,17 @@ type Command struct {
 	ArgsReq argument.ArgList
 	ArgsOpt argument.ArgList
 
-	Handler func(*nwmodel.Player, interface{}, []interface{}) error
+	Handler func(*nwmodel.Player, room.Room, []interface{}) error
 }
 
-func (c Command) Exec(p *nwmodel.Player, context interface{}, strArgs []string) error {
+func (c Command) Exec(p *nwmodel.Player, context room.Room, strArgs []string) error {
 	args, err := c.ValidateArgs(strArgs)
 	if err != nil {
 		// if we have trouble validating args
 		return fmt.Errorf("%s\nusage: %s", err.Error(), c.Usage())
 	} else {
 		// otherwise actually execute the command
+		fmt.Printf("<c.Exec> Calling command %s\n", c.Name)
 		err = c.Handler(p, context, args)
 		if err != nil {
 			return err

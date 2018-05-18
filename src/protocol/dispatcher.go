@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"nwmodel"
 	"regrequest"
+	"room"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,8 +16,8 @@ type roomID = string
 // Dispatcher ...
 type Dispatcher struct {
 	players           map[*websocket.Conn]*nwmodel.Player
-	locations         map[*nwmodel.Player]Room
-	games             map[roomID]Room
+	locations         map[*nwmodel.Player]room.Room
+	games             map[roomID]room.Room
 	registrationQueue chan regrequest.Request
 	clientMessages    chan nwmodel.ClientMessage
 }
@@ -24,23 +25,14 @@ type Dispatcher struct {
 func NewDispatcher() *Dispatcher {
 	d := &Dispatcher{
 		players:           make(map[*websocket.Conn]*nwmodel.Player),
-		locations:         make(map[*nwmodel.Player]Room),
-		games:             make(map[roomID]Room),
+		locations:         make(map[*nwmodel.Player]room.Room),
+		games:             make(map[roomID]room.Room),
 		registrationQueue: make(chan regrequest.Request),
 		clientMessages:    make(chan nwmodel.ClientMessage),
 	}
 
 	go dispatchConsumer(d)
 	return d
-}
-
-type Room interface {
-	Name() string
-	Type() string // TODO switch this to a roomtype definition
-	Recv(msg nwmodel.ClientMessage) error
-	AddPlayer(p *nwmodel.Player) error
-	RemovePlayer(p *nwmodel.Player) error
-	GetPlayers() []*nwmodel.Player
 }
 
 func (d *Dispatcher) Name() string {
@@ -96,7 +88,7 @@ func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
 	return nil
 }
 
-func (d *Dispatcher) createGame(r Room) error {
+func (d *Dispatcher) createGame(r room.Room) error {
 	if _, ok := d.games[r.Name()]; ok {
 		return fmt.Errorf("A game named '%s' already exists", r.Name())
 	}

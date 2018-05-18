@@ -25,7 +25,7 @@ func (c Command) ValidateArgs(args []string) ([]interface{}, error) {
 	for i, arg := range args {
 
 		if i > len(combinedArgs)-1 {
-			return nil, fmt.Errorf("too many arguments, can't use '%s'", arg)
+			return nil, fmt.Errorf("too many arguments, '%s'", arg)
 		}
 
 		wantArg := combinedArgs[i]

@@ -1,23 +1,5 @@
 package protocol
 
-// import (
-// 	"commands"
-// 	"fmt"
-// 	"nwmessage"
-// 	"nwmodel"
-// 	"sort"
-// 	"strings"
-// )
-
-// // Recv ...
-// func (d *Dispatcher) Recv(m nwmodel.ClientMessage) error {
-// 	if m.Data == "" {
-// 		return nil
-// 	}
-
-// 	return commandList.Exec(d, m)
-// }
-
 import (
 	"argument"
 	"commands"
@@ -26,6 +8,7 @@ import (
 	"math/rand"
 	"nwmessage"
 	"nwmodel"
+	"room"
 	"sort"
 	"strconv"
 	"strings"
@@ -41,7 +24,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"join": {
-
 		Name:      "join",
 		ShortDesc: "Joins the specified game",
 		ArgsReq: argument.ArgList{
@@ -52,7 +34,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"leave": {
-
 		Name:      "leave",
 		ShortDesc: "Leaves the current game",
 		ArgsReq:   argument.ArgList{},
@@ -61,7 +42,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"ls": {
-
 		Name:      "ls",
 		ShortDesc: "List the games that are currently running",
 		ArgsReq:   argument.ArgList{},
@@ -70,7 +50,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"name": {
-
 		Name:      "name",
 		ShortDesc: "Sets the player's name",
 		ArgsReq: argument.ArgList{
@@ -81,7 +60,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"ng": {
-
 		Name:      "ng",
 		ShortDesc: "Creates a new game",
 		ArgsReq:   argument.ArgList{},
@@ -92,7 +70,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"kill": {
-
 		Name:      "kill",
 		ShortDesc: "Removes a game (must be empty)",
 		ArgsReq: argument.ArgList{
@@ -103,7 +80,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"tell": {
-
 		Name:      "tell",
 		ShortDesc: "Sends a private message to another player",
 		ArgsReq: argument.ArgList{
@@ -115,7 +91,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"who": {
-
 		Name:      "who",
 		ShortDesc: "Shows who's in the lobby",
 		ArgsReq:   argument.ArgList{},
@@ -124,7 +99,6 @@ var dispatchCommands = commands.CommandGroup{
 	},
 
 	"yell": {
-
 		Name:      "yell",
 		ShortDesc: "Sends a message to all player (in the same game/lobby)",
 		ArgsReq: argument.ArgList{
@@ -135,7 +109,7 @@ var dispatchCommands = commands.CommandGroup{
 	},
 }
 
-func cmdToggleChat(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdToggleChat(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	p.ChatMode = !p.ChatMode
 
 	var flag string
@@ -149,7 +123,8 @@ func cmdToggleChat(p *nwmodel.Player, context interface{}, args []interface{}) e
 	return nil
 }
 
-func cmdYell(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdYell(p *nwmodel.Player, context room.Room, args []interface{}) error {
+	fmt.Println("CHATTING!?")
 	d := context.(*Dispatcher)
 	msg := args[0].(string)
 
@@ -159,7 +134,7 @@ func cmdYell(p *nwmodel.Player, context interface{}, args []interface{}) error {
 	return nil
 }
 
-func cmdSetName(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdSetName(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
@@ -181,7 +156,7 @@ func cmdSetName(p *nwmodel.Player, context interface{}, args []interface{}) erro
 	return nil
 }
 
-func cmdNewGame(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdNewGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 
 	if _, ok := d.locations[p]; ok {
@@ -216,7 +191,7 @@ func cmdNewGame(p *nwmodel.Player, context interface{}, args []interface{}) erro
 	return nil
 }
 
-func cmdKillGame(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdKillGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 
 	gameName := args[0].(string)
@@ -240,7 +215,7 @@ func cmdKillGame(p *nwmodel.Player, context interface{}, args []interface{}) err
 	return nil
 }
 
-func cmdWho(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdWho(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 	// var location Room
 	// location, ok := d.games[d.locations[p.ID]]
@@ -271,7 +246,7 @@ func cmdWho(p *nwmodel.Player, context interface{}, args []interface{}) error {
 	return nil
 }
 
-func cmdJoinGame(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdJoinGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 	gameName := args[0].(string)
 
@@ -289,7 +264,7 @@ func cmdJoinGame(p *nwmodel.Player, context interface{}, args []interface{}) err
 	return nil
 }
 
-func cmdLeaveGame(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdLeaveGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 
 	err := d.leaveRoom(p)
@@ -302,7 +277,7 @@ func cmdLeaveGame(p *nwmodel.Player, context interface{}, args []interface{}) er
 	return nil
 }
 
-func cmdTell(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdTell(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 
 	name := args[0].(string)
@@ -325,7 +300,7 @@ func cmdTell(p *nwmodel.Player, context interface{}, args []interface{}) error {
 	return nil
 }
 
-func cmdListGames(p *nwmodel.Player, context interface{}, args []interface{}) error {
+func cmdListGames(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	d := context.(*Dispatcher)
 	gameList := ""
 
