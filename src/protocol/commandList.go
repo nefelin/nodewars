@@ -99,7 +99,7 @@ var commandList = LobbyCommandGroup{
 			ShortDesc: "Sends a private message to another player",
 			ArgsReq: argument.ArgList{
 				{Name: "recip", Type: argument.String},
-				{Name: "msg", Type: argument.String},
+				{Name: "msg", Type: argument.GreedyString},
 			},
 			ArgsOpt: argument.ArgList{},
 		},
@@ -121,7 +121,7 @@ var commandList = LobbyCommandGroup{
 			Name:      "yell",
 			ShortDesc: "Sends a message to all player (in the same game/lobby)",
 			ArgsReq: argument.ArgList{
-				{Name: "msg", Type: argument.String},
+				{Name: "msg", Type: argument.GreedyString},
 			},
 			ArgsOpt: argument.ArgList{},
 		},
@@ -129,15 +129,15 @@ var commandList = LobbyCommandGroup{
 	},
 }
 
-func assertStringSlice(f []interface{}) []string {
-	ret := make([]string, len(f))
+// func assertStringSlice(f []interface{}) []string {
+// 	ret := make([]string, len(f))
 
-	for i, v := range f {
-		ret[i] = v.(string)
-	}
+// 	for i, v := range f {
+// 		ret[i] = v.(string)
+// 	}
 
-	return ret
-}
+// 	return ret
+// }
 
 func cmdToggleChat(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 	p.ChatMode = !p.ChatMode
@@ -154,7 +154,7 @@ func cmdToggleChat(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 }
 
 func cmdYell(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
-	msg := strings.Join(assertStringSlice(args), " ")
+	msg := args[0].(string)
 
 	for _, player := range d.GetPlayers() {
 		player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
@@ -301,8 +301,8 @@ func cmdLeaveGame(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 
 func cmdTell(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 
-	allArgs := assertStringSlice(args)
-	name := allArgs[0]
+	name := args[0].(string)
+	msg := args[1].(string)
 	var recip *nwmodel.Player
 
 	// check lobby for recipient:
@@ -316,10 +316,8 @@ func cmdTell(p *nwmodel.Player, d *Dispatcher, args []interface{}) error {
 		return fmt.Errorf("No such player, '%s'", name)
 	}
 
-	chatMsg := strings.Join(allArgs[1:], " ")
-
-	recip.Outgoing <- nwmessage.PsChat(p.GetName(), "private", chatMsg)
-	p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), chatMsg))
+	recip.Outgoing <- nwmessage.PsChat(p.GetName(), "private", msg)
+	p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), msg))
 	return nil
 }
 
