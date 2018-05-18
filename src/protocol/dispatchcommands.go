@@ -31,7 +31,7 @@ import (
 	"strings"
 )
 
-var commandList = commands.CommandGroup{
+var dispatchCommands = commands.CommandGroup{
 	"chat": {
 		Name:      "chat",
 		ShortDesc: "Toggles chat mode (all text entered is broadcast)",

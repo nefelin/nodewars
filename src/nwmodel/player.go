@@ -97,6 +97,10 @@ func (p *Player) Prompt() string {
 		prompt += "@lobby"
 	}
 
+	if p.ChatMode {
+		prompt += "[CHATMODE]"
+	}
+
 	prompt += promptEndChar
 
 	return prompt

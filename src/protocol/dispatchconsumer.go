@@ -41,5 +41,5 @@ func (d *Dispatcher) Recv(m nwmodel.ClientMessage) error {
 		return nil
 	}
 
-	return commandList.Exec(d, m)
+	return dispatchCommands.Exec(d, m)
 }
