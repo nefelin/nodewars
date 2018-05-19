@@ -36,7 +36,7 @@ func (c Command) Exec(cli nwmessage.Client, context interface{}, strArgs []strin
 }
 
 // Help provides composed help info for the command
-var padding int = 10
+var padding int = 7
 
 func (c Command) ShortHelp() string {
 	// padding := strings.Repeat(" ", longest-len(c.Name))
@@ -64,8 +64,15 @@ func (c Command) Usage() string {
 		optional[i] = fmt.Sprintf("[%s]", arg.Name)
 	}
 
-	reqStr := strings.Join(required, " ")
-	optStr := strings.Join(optional, " ")
+	// prevent unwanted spaces
+	var reqStr, optStr string
+	if len(required) > 0 {
+		reqStr = strings.Join(required, " ")
+	}
+	if len(optional) > 0 {
+		optStr = strings.Join(optional, " ")
+	}
+	argStr := reqStr + optStr
 
-	return fmt.Sprintf("%s %s %s", c.Name, reqStr, optStr)
+	return strings.TrimSpace(strings.Join([]string{c.Name, argStr}, " "))
 }
