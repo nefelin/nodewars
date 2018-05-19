@@ -116,16 +116,16 @@ func PsChat(sender, context, msg string) Message {
 	}
 }
 
-func PsNoTeam() Message {
-	return PsError(errors.New("No team assignment"))
+func ErrorNoTeam() error {
+	return errors.New("No team assignment")
 }
 
-func PsCompileFail() Message {
-	return PsError(errors.New("Compile failed"))
+func ErrorCompileFail() error {
+	return errors.New("Compile failed")
 }
 
-func PsNoConnection() Message {
-	return PsError(errors.New("No connection"))
+func ErrorNoConnection() error {
+	return errors.New("No connection")
 }
 
 // messages with server as Sender trigger action in the front end but are not show in the pseudoterminal

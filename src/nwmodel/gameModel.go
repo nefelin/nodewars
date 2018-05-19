@@ -94,9 +94,8 @@ func (gm *GameModel) GetPlayers() []*Player {
 	return list
 }
 
-func (gm *GameModel) Recv(msg ClientMessage) error {
-	// gm.aChan <- msg
-	gm.parseCommand(msg)
+func (gm *GameModel) Recv(msg nwmessage.ClientMessage) error {
+	gameCommands.Exec(gm, msg)
 	return nil
 }
 
@@ -240,8 +239,9 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 
 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address))
-			player.Outgoing <- nwmessage.EditState(editMsg)
+			player.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address)))
+
+			player.Outgoing(nwmessage.EditState(editMsg))
 
 			player.breakConnection(true)
 
@@ -267,15 +267,18 @@ func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedRes
 	if hostile {
 		switch {
 		case mac.Health == mac.MaxHealth:
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Current solution of %d/%d is the best possible so you cannot steal this machine,\nuse 'reset' instead of 'make' to remove opponent's solution.", mac.Health, mac.MaxHealth))
+			p.Outgoing(nwmessage.PsError(fmt.Errorf("Current solution of %d/%d is the best possible so you cannot steal this machine,\nuse 'reset' instead of 'make' to remove opponent's solution.", mac.Health, mac.MaxHealth)))
+
 			return
 
 		case solutionStrength < mac.Health:
-			p.Outgoing <- nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.passed(), len(response.Grades), mac.Health+1, mac.MaxHealth))
+			p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.passed(), len(response.Grades), mac.Health+1, mac.MaxHealth)))
+
 			return
 
 		case solutionStrength == mac.Health:
-			p.Outgoing <- nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to reset this machine.\nKeep trying if you think you can do\nbetter or type 'reset' to proceed", solutionStrength, mac.MaxHealth))
+			p.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to reset this machine.\nKeep trying if you think you can do\nbetter or type 'reset' to proceed", solutionStrength, mac.MaxHealth)))
+
 			return
 		}
 
@@ -350,13 +353,16 @@ func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedRes
 	// do terminal messaging
 	if hostile {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth)))
+
 	} else if friendly {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, node.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language)))
+
 	} else {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, node.ID)))
-		p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth)))
+
 	}
 }
 
@@ -365,14 +371,13 @@ func (gm *GameModel) tryResetMachine(p *Player, mac *machine, r GradedResult) {
 	solutionStrength := r.passed()
 
 	if mac.isNeutral() {
-		p.Outgoing <- nwmessage.PsError(errors.New("Machine is already neutral"))
+		p.Outgoing(nwmessage.PsError(errors.New("Machine is already neutral")))
+
 		return
 	}
 
 	if solutionStrength < mac.Health {
-		p.Outgoing <- nwmessage.PsError(fmt.Errorf(
-			"Solution too weak: %d/%d, need %d/%d to remove",
-			r.passed(), len(r.Grades), mac.Health, mac.MaxHealth))
+		p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution too weak: %d/%d, need %d/%d to remove", r.passed(), len(r.Grades), mac.Health, mac.MaxHealth)))
 		return
 	}
 
@@ -416,7 +421,8 @@ func (gm *GameModel) tryResetMachine(p *Player, mac *machine, r GradedResult) {
 
 	// terminal messaging
 	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
-	p.Outgoing <- nwmessage.PsSuccess("Machine reset")
+	p.Outgoing(nwmessage.PsSuccess("Machine reset"))
+
 }
 
 func (gm *GameModel) tickScheduler() {
@@ -491,7 +497,8 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 
 	// Tell everyone to clear their maps
 	for _, p := range gm.Players {
-		p.Outgoing <- nwmessage.GraphReset()
+		p.Outgoing(nwmessage.GraphReset())
+
 	}
 
 	// Clear map specific data:
@@ -505,7 +512,8 @@ func (gm *GameModel) resetMap(m *nodeMap) {
 
 func (gm *GameModel) broadcastScore() {
 	for _, p := range gm.Players {
-		p.Outgoing <- nwmessage.ScoreState(gm.packScores())
+		p.Outgoing(nwmessage.ScoreState(gm.packScores()))
+
 	}
 }
 
@@ -528,13 +536,15 @@ func (gm *GameModel) broadcastState() {
 	for _, p := range gm.Players {
 		// TODO feels super hackey to have to pass in routemap but was quickest solution for now.
 		state := gm.calcState(p, routeMap)
-		p.Outgoing <- nwmessage.GraphState(state)
+		p.Outgoing(nwmessage.GraphState(state))
+
 	}
 }
 
 func (gm *GameModel) broadcastGraphReset() {
 	for _, p := range gm.Players {
-		p.Outgoing <- nwmessage.GraphReset()
+		p.Outgoing(nwmessage.GraphReset())
+
 	}
 }
 
@@ -591,8 +601,10 @@ func (gm *GameModel) psBroadcast(msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for _, player := range gm.Players {
-		player.Outgoing <- msg
-		player.Outgoing <- nwmessage.PsPrompt(player.Prompt())
+		player.Outgoing(msg)
+
+		player.Outgoing(nwmessage.PsPrompt(player.Prompt()))
+
 	}
 }
 
@@ -605,8 +617,10 @@ func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
 		if player == p {
 			continue
 		}
-		player.Outgoing <- msg
-		player.Outgoing <- nwmessage.PsPrompt(p.Prompt())
+		player.Outgoing(msg)
+
+		player.Outgoing(nwmessage.PsPrompt(p.Prompt()))
+
 	}
 }
 
@@ -640,7 +654,7 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 		i++
 	}
 
-	p.Outgoing <- nwmessage.LangSupportState(supportedLangs)
+	p.Outgoing(nwmessage.LangSupportState(supportedLangs))
 
 	var defaultLanguage string
 	for _, lang1 := range langDefaults {
@@ -662,9 +676,10 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 
 	// send initiall map state
 
-	p.Outgoing <- nwmessage.GraphReset()
+	p.Outgoing(nwmessage.GraphReset())
+
 	routeMap := gm.makeRouteMap()
-	p.Outgoing <- nwmessage.GraphState(gm.calcState(p, routeMap))
+	p.Outgoing(nwmessage.GraphState(gm.calcState(p, routeMap)))
 
 	// send initial prompt state
 	p.SendPrompt()
@@ -695,8 +710,9 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	p.breakConnection(false)
 	p.inGame = false
 
-	p.Outgoing <- nwmessage.LangSupportState([]string{})
-	p.Outgoing <- nwmessage.GraphReset()
+	p.Outgoing(nwmessage.LangSupportState([]string{}))
+
+	p.Outgoing(nwmessage.GraphReset())
 
 	return nil
 }
@@ -737,8 +753,9 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 	}
 
 	for source := range team.poes {
-		// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, gm.POEs[p.ID].ID)
+		// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, source.ID)
 		routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
+		// log.Printf("RouteNodes: %+v\n", routeNodes)
 		if routeNodes != nil {
 			// log.Println("Successful Connect")
 			// log.Printf("Route to target: %v", routeNodes)
@@ -821,6 +838,7 @@ func (gm *GameModel) setLanguage(p *Player, l string) error {
 
 	p.language = l
 
-	p.Outgoing <- nwmessage.EditLangState(p.language)
+	p.Outgoing(nwmessage.EditLangState(p.language))
+
 	return nil
 }

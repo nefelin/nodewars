@@ -16,27 +16,31 @@ func dispatchConsumer(d *Dispatcher) {
 
 		// if we get a player command, handle that
 		case m := <-d.clientMessages:
-			if room, ok := d.locations[m.Sender]; ok {
+			p := m.Sender.(*nwmodel.Player) // TODO use Client instead of player everywhere we can....
+
+			if room, ok := d.locations[p]; ok {
 				err := room.Recv(m)
 				if err != nil {
 					err := d.Recv(m)
 					if err != nil {
-						m.Sender.Outgoing <- nwmessage.PsError(err)
+						m.Sender.Outgoing(nwmessage.PsError(err))
+
 					}
 				}
 			} else {
 				err := d.Recv(m)
 				if err != nil {
-					m.Sender.Outgoing <- nwmessage.PsError(err)
+					m.Sender.Outgoing(nwmessage.PsError(err))
+
 				}
 			}
-			m.Sender.Outgoing <- nwmessage.PsPrompt(m.Sender.Prompt())
+			p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 
 		}
 	}
 }
 
-func (d *Dispatcher) Recv(m nwmodel.ClientMessage) error {
+func (d *Dispatcher) Recv(m nwmessage.ClientMessage) error {
 	if m.Data == "" {
 		return nil
 	}

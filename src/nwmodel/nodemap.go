@@ -2,6 +2,7 @@ package nwmodel
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"sort"
 
@@ -316,6 +317,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 		}
 	}
 
+	fmt.Printf("searchField: %+v\n", retField)
 	return retField
 }
 

@@ -45,7 +45,8 @@ func (t *team) broadcast(msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for player := range t.players {
-		player.Outgoing <- msg
+		player.Outgoing(msg)
+
 	}
 }
 
@@ -57,7 +58,8 @@ func (t *team) addPlayer(p *Player) {
 func (t *team) removePlayer(p *Player) {
 	delete(t.players, p)
 	p.TeamName = ""
-	p.Outgoing <- nwmessage.TeamState("")
+	p.Outgoing(nwmessage.TeamState(""))
+
 }
 
 func (t *team) addPoe(n *node) error {

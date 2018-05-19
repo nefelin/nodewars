@@ -65,7 +65,8 @@ func (m *machine) detachAll(msg string) {
 	for p := range m.attachedPlayers {
 		m.remPlayer(p)
 		if msg != "" {
-			p.Outgoing <- nwmessage.PsAlert(msg)
+			p.Outgoing(nwmessage.PsAlert(msg))
+
 		}
 	}
 }

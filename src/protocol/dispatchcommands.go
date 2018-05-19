@@ -8,7 +8,6 @@ import (
 	"math/rand"
 	"nwmessage"
 	"nwmodel"
-	"room"
 	"sort"
 	"strconv"
 	"strings"
@@ -109,32 +108,37 @@ var dispatchCommands = commands.CommandGroup{
 	},
 }
 
-func cmdToggleChat(p *nwmodel.Player, context room.Room, args []interface{}) error {
-	p.ChatMode = !p.ChatMode
+func cmdToggleChat(cl nwmessage.Client, context interface{}, args []interface{}) error {
+	p := cl.(*nwmodel.Player)
+	p.ToggleChat()
 
 	var flag string
-	if p.ChatMode {
+	if p.ChatMode() {
 		flag = "ON"
 	} else {
 		flag = "OFF"
 	}
 
-	p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("ChatMode set to %s", flag))
+	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("ChatMode set to %s", flag)))
+
 	return nil
 }
 
-func cmdYell(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdYell(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 	msg := args[0].(string)
 
 	for _, player := range d.GetPlayers() {
-		player.Outgoing <- nwmessage.PsChat(p.GetName(), "global", msg)
+		player.Outgoing(nwmessage.PsChat(p.GetName(), "global", msg))
+
 	}
 	return nil
 }
 
-func cmdSetName(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdSetName(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
 	}
@@ -155,8 +159,9 @@ func cmdSetName(p *nwmodel.Player, context room.Room, args []interface{}) error 
 	return nil
 }
 
-func cmdNewGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdNewGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 
 	if _, ok := d.locations[p]; ok {
 		return fmt.Errorf("You can't create a game. You're already in a game")
@@ -186,12 +191,14 @@ func cmdNewGame(p *nwmodel.Player, context room.Room, args []interface{}) error 
 	}
 
 	// p.SendPrompt()
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("New game, '%s', created and joined", gameName))
+	p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("New game, '%s', created and joined", gameName)))
+
 	return nil
 }
 
-func cmdKillGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdKillGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 
 	gameName := args[0].(string)
 
@@ -210,12 +217,14 @@ func cmdKillGame(p *nwmodel.Player, context room.Room, args []interface{}) error
 	// TODO is this sufficient?
 	delete(d.games, gameName)
 
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("The game, '%s', has been removed", gameName))
+	p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("The game, '%s', has been removed", gameName)))
+
 	return nil
 }
 
-func cmdWho(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdWho(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 	// var location Room
 	// location, ok := d.games[d.locations[p.ID]]
 
@@ -228,7 +237,8 @@ func cmdWho(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	}
 
 	if len(location.GetPlayers()) == 0 {
-		p.Outgoing <- nwmessage.PsNeutral("There are no players here")
+		p.Outgoing(nwmessage.PsNeutral("There are no players here"))
+
 		return nil
 	}
 
@@ -241,12 +251,14 @@ func cmdWho(p *nwmodel.Player, context room.Room, args []interface{}) error {
 	playerNames.Sort()
 
 	retMsg := "Players here:\n" + strings.Join(playerNames, ", ")
-	p.Outgoing <- nwmessage.PsNeutral(retMsg)
+	p.Outgoing(nwmessage.PsNeutral(retMsg))
+
 	return nil
 }
 
-func cmdJoinGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdJoinGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 	gameName := args[0].(string)
 
 	_, ok := d.games[gameName]
@@ -259,12 +271,14 @@ func cmdJoinGame(p *nwmodel.Player, context room.Room, args []interface{}) error
 		return err
 	}
 
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("Joined game, '%s'", gameName))
+	p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Joined game, '%s'", gameName)))
+
 	return nil
 }
 
-func cmdLeaveGame(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdLeaveGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 
 	err := d.leaveRoom(p)
 
@@ -272,12 +286,14 @@ func cmdLeaveGame(p *nwmodel.Player, context room.Room, args []interface{}) erro
 		return err
 	}
 
-	p.Outgoing <- nwmessage.PsSuccess(fmt.Sprintf("You have left the game"))
+	p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("You have left the game")))
+
 	return nil
 }
 
-func cmdTell(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdTell(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 
 	name := args[0].(string)
 	msg := args[1].(string)
@@ -294,17 +310,21 @@ func cmdTell(p *nwmodel.Player, context room.Room, args []interface{}) error {
 		return fmt.Errorf("No such player, '%s'", name)
 	}
 
-	recip.Outgoing <- nwmessage.PsChat(p.GetName(), "private", msg)
-	p.Outgoing <- nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), msg))
+	recip.Outgoing(nwmessage.PsChat(p.GetName(), "private", msg))
+
+	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), msg)))
+
 	return nil
 }
 
-func cmdListGames(p *nwmodel.Player, context room.Room, args []interface{}) error {
+func cmdListGames(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	d := context.(*Dispatcher)
+	p := cl.(*nwmodel.Player)
 	gameList := ""
 
 	if len(d.games) == 0 {
-		p.Outgoing <- nwmessage.PsNeutral("No games running. Type, 'new game_name', to start one")
+		p.Outgoing(nwmessage.PsNeutral("No games running. Type, 'new game_name', to start one"))
+
 		return nil
 	}
 
@@ -312,7 +332,8 @@ func cmdListGames(p *nwmodel.Player, context room.Room, args []interface{}) erro
 		gameList += fmt.Sprintf("'%s' - Players: %d\n", gameName, len(game.GetPlayers()))
 	}
 
-	p.Outgoing <- nwmessage.PsNeutral(strings.TrimSpace("Available games:\n" + gameList))
+	p.Outgoing(nwmessage.PsNeutral(strings.TrimSpace("Available games:\n" + gameList)))
+
 	return nil
 }
 
@@ -323,15 +344,16 @@ func cmdListGames(p *nwmodel.Player, context room.Room, args []interface{}) erro
 // 	if fullCmd[0] == "help" {
 // 		if len(fullCmd) == 1 {
 
-// 			m.Sender.Outgoing <- nwmessage.PsNeutral(cg.AllHelp())
+// 			m.Sender.Outgoing(nwmessage.PsNeutral(cg.AllHelp()))
 
 // 		} else {
 // 			help, err := cg.Help(fullCmd[1:])
 
 // 			if err != nil {
-// 				m.Sender.Outgoing <- nwmessage.PsError(err)
+// 				m.Sender.Outgoing(nwmessage.PsError(err))
+
 // 			}
-// 			m.Sender.Outgoing <- nwmessage.PsNeutral(help)
+// 			m.Sender.Outgoing(nwmessage.PsNeutral(help))
 
 // 		}
 // 		return nil
@@ -344,12 +366,14 @@ func cmdListGames(p *nwmodel.Player, context room.Room, args []interface{}) erro
 // 		args, err := cmd.ValidateArgs(fullCmd[1:])
 // 		if err != nil {
 // 			// if we have trouble validating args
-// 			m.Sender.Outgoing <- nwmessage.PsError(fmt.Errorf("%s\nusage: %s", err.Error(), cmd.Usage()))
+// 			m.Sender.Outgoing(nwmessage.PsError(fmt.Errorf("%s\nusage: %s", err.Error(), cmd.Usage())))
+
 // 		} else {
 // 			// otherwise actually execute the command
 // 			err = cmd.handler(m.Sender, d, args)
 // 			if err != nil {
-// 				m.Sender.Outgoing <- nwmessage.PsError(err)
+// 				m.Sender.Outgoing(nwmessage.PsError(err))
+
 // 			}
 // 		}
 

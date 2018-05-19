@@ -202,7 +202,7 @@ func (n *node) supportsRouting(t teamName) bool {
 		return true
 	}
 
-	if n.machinesFor(t) < 1 {
+	if n.machinesFor(t) < 1 && !n.Feature.belongsTo(t) {
 		return false
 	}
 

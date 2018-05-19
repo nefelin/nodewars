@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"nwmessage"
-	"room"
 	"sort"
 	"strings"
 )
@@ -12,7 +11,7 @@ import (
 type CommandGroup map[string]Command
 
 // Exec either provides command information via the 'help' comands, or tries to process a command
-func (cg CommandGroup) Exec(context room.Room, m nwmessage.ClientMessage) error {
+func (cg CommandGroup) Exec(context interface{}, m nwmessage.ClientMessage) error {
 	fullCmd := strings.Split(m.Data, " ")
 	cmdString := fullCmd[0]
 	args := fullCmd[1:]
@@ -22,7 +21,7 @@ func (cg CommandGroup) Exec(context room.Room, m nwmessage.ClientMessage) error 
 	if cmdString != "chat" && yellingEnabled && m.Sender.ChatMode() {
 		err := cmd.Exec(m.Sender, context, fullCmd)
 		if err != nil {
-			m.Sender.Outgoing <- nwmessage.PsError(err)
+			m.Sender.Outgoing(nwmessage.PsError(err))
 		}
 		return nil
 	}
@@ -31,15 +30,15 @@ func (cg CommandGroup) Exec(context room.Room, m nwmessage.ClientMessage) error 
 	if cmdString == "help" {
 		if len(fullCmd) == 1 {
 
-			m.Sender.Outgoing <- nwmessage.PsNeutral(cg.AllHelp())
+			m.Sender.Outgoing(nwmessage.PsNeutral(cg.AllHelp()))
 
 		} else {
 			help, err := cg.Help(fullCmd[1:])
 
 			if err != nil {
-				m.Sender.Outgoing <- nwmessage.PsError(err)
+				m.Sender.Outgoing(nwmessage.PsError(err))
 			}
-			m.Sender.Outgoing <- nwmessage.PsNeutral(help)
+			m.Sender.Outgoing(nwmessage.PsNeutral(help))
 
 		}
 		return nil
@@ -50,7 +49,7 @@ func (cg CommandGroup) Exec(context room.Room, m nwmessage.ClientMessage) error 
 	if cmd, ok := cg[cmdString]; ok {
 		err := cmd.Exec(m.Sender, context, args)
 		if err != nil {
-			m.Sender.Outgoing <- nwmessage.PsError(err)
+			m.Sender.Outgoing(nwmessage.PsError(err))
 		}
 		return nil
 	}

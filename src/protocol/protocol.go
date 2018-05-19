@@ -91,8 +91,9 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
-	go outgoingRelay(p)
-	p.Outgoing <- nwmessage.PsPrompt(p.GetName() + "@lobby>")
+
+	p.Outgoing(nwmessage.PsPrompt(p.GetName() + "@lobby>"))
+
 	// Handle socket stream
 	for {
 		msg, err := nwmessage.MsgFromClient(p)
@@ -106,21 +107,9 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	}
 }
 
-func outgoingRelay(p *nwmodel.Player) {
-	for {
-		if msg, ok := <-p.Outgoing; ok { // if channel is open...
-			if err := p.Socket.WriteJSON(msg); err != nil { // try writing message to player, complain if we have problems
-				// fmt.Printf("error dispatching message: '%v',\n to player '%s'\n", msg, p.GetName())
-			}
-		} else { // if channel is closed, player is gone.
-			return
-		}
-	}
-}
-
 // Response are sometimes handled as imperatives, sometimes only effect state and
 // are visible after entire stateMessage update. Pick a paradigm TODO
-func incomingHandler(d *Dispatcher, msg nwmodel.ClientMessage) {
+func incomingHandler(d *Dispatcher, msg nwmessage.ClientMessage) {
 	// Tie message with player name
 	switch msg.Type {
 
@@ -129,17 +118,18 @@ func incomingHandler(d *Dispatcher, msg nwmodel.ClientMessage) {
 
 	// TODO move these to dispatchConsumer
 	// these state messages are safe only as long as nothing touches those vars asynchronously.
-	case "editorState":
-		// fmt.Println("Received editorState msg")
-		msg.Sender.EditorState = msg.Data
+	// case "editorState":
+	// 	// fmt.Println("Received editorState msg")
+	// 	msg.Sender.EditorState = msg.Data
 
-	case "stdinState":
-		msg.Sender.StdinState = msg.Data
+	// case "stdinState":
+	// 	msg.Sender.StdinState = msg.Data
 
-	case "terminalState":
-		// this really requires diffing to avoid being unwieldy
+	// case "terminalState":
+	// 	// this really requires diffing to avoid being unwieldy
 
 	default:
-		msg.Sender.Outgoing <- nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)}
+		msg.Sender.Outgoing(nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)})
+
 	}
 }

@@ -52,7 +52,7 @@ class TinyTerm extends React.Component {
 	// }
 
 	recv(newContent) {
-		console.log('<TinyTerm> adding content', newContent)
+		// console.log('<TinyTerm> adding content', newContent)
 		this.setState({
 			page: this.state.page + newContent,
 		}, () => this.container.current.scrollTop = this.container.current.scrollHeight)
@@ -149,7 +149,7 @@ class TinyTerm extends React.Component {
 		}
 
 		let pageLines = this.state.page.split('\n')
-		console.log('<TinyTerm> pagelines', pageLines)
+		// console.log('<TinyTerm> pagelines', pageLines)
 		// pageLines = pageLines.slice(0, pageLines.length-1)
 
 		const pageContent = pageLines.map((line, key) => {

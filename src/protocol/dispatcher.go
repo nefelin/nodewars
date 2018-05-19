@@ -3,6 +3,7 @@ package protocol
 import (
 	"errors"
 	"fmt"
+	"nwmessage"
 	"nwmodel"
 	"regrequest"
 	"room"
@@ -19,7 +20,7 @@ type Dispatcher struct {
 	locations         map[*nwmodel.Player]room.Room
 	games             map[roomID]room.Room
 	registrationQueue chan regrequest.Request
-	clientMessages    chan nwmodel.ClientMessage
+	clientMessages    chan nwmessage.ClientMessage
 }
 
 func NewDispatcher() *Dispatcher {
@@ -28,7 +29,7 @@ func NewDispatcher() *Dispatcher {
 		locations:         make(map[*nwmodel.Player]room.Room),
 		games:             make(map[roomID]room.Room),
 		registrationQueue: make(chan regrequest.Request),
-		clientMessages:    make(chan nwmodel.ClientMessage),
+		clientMessages:    make(chan nwmessage.ClientMessage),
 	}
 
 	go dispatchConsumer(d)
@@ -69,7 +70,7 @@ func (d *Dispatcher) handleRegRequest(r regrequest.Request) {
 }
 
 func (d *Dispatcher) AddPlayer(p *nwmodel.Player) error {
-	d.players[p.Socket] = p
+	d.players[p.Socket()] = p
 	return nil
 }
 
@@ -80,10 +81,9 @@ func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
 		delete(d.locations, p)
 	}
 
-	delete(d.players, p.Socket)
+	delete(d.players, p.Socket())
 
-	p.Socket.Close()
-	close(p.Outgoing)
+	p.Cleanup()
 
 	return nil
 }
