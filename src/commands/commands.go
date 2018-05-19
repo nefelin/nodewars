@@ -4,6 +4,7 @@ import (
 	"argument"
 	"fmt"
 	"nwmessage"
+	"receiver"
 	"strings"
 )
 
@@ -16,10 +17,10 @@ type Command struct {
 	ArgsReq argument.ArgList
 	ArgsOpt argument.ArgList
 
-	Handler func(nwmessage.Client, interface{}, []interface{}) error
+	Handler func(nwmessage.Client, receiver.Receiver, []interface{}) error
 }
 
-func (c Command) Exec(cli nwmessage.Client, context interface{}, strArgs []string) error {
+func (c Command) Exec(cli nwmessage.Client, context receiver.Receiver, strArgs []string) error {
 	args, err := c.ValidateArgs(strArgs)
 	if err != nil {
 		// if we have trouble validating args

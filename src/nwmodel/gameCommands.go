@@ -7,6 +7,7 @@ import (
 	"feature"
 	"fmt"
 	"nwmessage"
+	"receiver"
 	"sort"
 	"strings"
 )
@@ -143,7 +144,7 @@ var gameCommands = commands.CommandGroup{
 	},
 }
 
-func cmdYell(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 
@@ -153,7 +154,7 @@ func cmdYell(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdTell(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 
@@ -177,7 +178,7 @@ func cmdTell(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdTeamChat(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdTeamChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	chatMsg := args[0].(string)
@@ -192,7 +193,7 @@ func cmdTeamChat(cl nwmessage.Client, context interface{}, args []interface{}) e
 
 }
 
-func cmdSay(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdSay(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	chatMsg := args[0].(string)
@@ -212,7 +213,7 @@ func cmdSay(cl nwmessage.Client, context interface{}, args []interface{}) error 
 	return nil
 }
 
-func cmdJoinTeam(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	var t teamName
@@ -260,7 +261,7 @@ func cmdJoinTeam(cl nwmessage.Client, context interface{}, args []interface{}) e
 	return nil
 }
 
-func cmdLang(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	lang := args[0].(string)
@@ -289,7 +290,7 @@ func cmdLang(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdListLanguages(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	var langs sort.StringSlice
@@ -304,7 +305,7 @@ func cmdListLanguages(cl nwmessage.Client, context interface{}, args []interface
 	return nil
 }
 
-func cmdConnect(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	targetNode := args[0].(int)
@@ -324,7 +325,7 @@ func cmdConnect(cl nwmessage.Client, context interface{}, args []interface{}) er
 	return cmdLs(p, gm, args)
 }
 
-func cmdWho(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 
@@ -351,7 +352,7 @@ func cmdWho(cl nwmessage.Client, context interface{}, args []interface{}) error 
 	return nil
 }
 
-func cmdLs(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 
@@ -383,7 +384,7 @@ func cmdLs(cl nwmessage.Client, context interface{}, args []interface{}) error {
 	return nil
 }
 
-// func cmdSetPOE(cl nwmessage.Client, context interface{}, args []interface{}) error {
+// func cmdSetPOE(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 // p := cl.(*Player)
 // gm := context.(*GameModel)
 // 	if p.TeamName == "" {
@@ -428,7 +429,7 @@ func cmdLs(cl nwmessage.Client, context interface{}, args []interface{}) error {
 // return nil
 // }
 
-func cmdTestCode(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdTestCode(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	// gm := context.(*GameModel)
 
@@ -450,7 +451,7 @@ func cmdTestCode(cl nwmessage.Client, context interface{}, args []interface{}) e
 	return nil
 }
 
-func cmdScore(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	var scoreStrs sort.StringSlice
@@ -465,7 +466,7 @@ func cmdScore(cl nwmessage.Client, context interface{}, args []interface{}) erro
 	return nil
 }
 
-func cmdAttach(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 	macAddress := args[0].(string)
@@ -539,7 +540,7 @@ func cmdAttach(cl nwmessage.Client, context interface{}, args []interface{}) err
 	return nil
 }
 
-func cmdMake(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 
@@ -593,7 +594,7 @@ func cmdMake(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdResetMachine(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
 

@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"nwmessage"
 	"nwmodel"
+	"receiver"
 	"sort"
 	"strconv"
 	"strings"
@@ -108,7 +109,7 @@ var dispatchCommands = commands.CommandGroup{
 	},
 }
 
-func cmdToggleChat(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdToggleChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*nwmodel.Player)
 	p.ToggleChat()
 
@@ -124,7 +125,7 @@ func cmdToggleChat(cl nwmessage.Client, context interface{}, args []interface{})
 	return nil
 }
 
-func cmdYell(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 	msg := args[0].(string)
@@ -136,7 +137,7 @@ func cmdYell(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdSetName(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdSetName(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 	if d.locations[p] != nil {
@@ -159,7 +160,7 @@ func cmdSetName(cl nwmessage.Client, context interface{}, args []interface{}) er
 	return nil
 }
 
-func cmdNewGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 
@@ -196,7 +197,7 @@ func cmdNewGame(cl nwmessage.Client, context interface{}, args []interface{}) er
 	return nil
 }
 
-func cmdKillGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdKillGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 
@@ -222,7 +223,7 @@ func cmdKillGame(cl nwmessage.Client, context interface{}, args []interface{}) e
 	return nil
 }
 
-func cmdWho(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 	// var location Room
@@ -256,7 +257,7 @@ func cmdWho(cl nwmessage.Client, context interface{}, args []interface{}) error 
 	return nil
 }
 
-func cmdJoinGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdJoinGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 	gameName := args[0].(string)
@@ -276,7 +277,7 @@ func cmdJoinGame(cl nwmessage.Client, context interface{}, args []interface{}) e
 	return nil
 }
 
-func cmdLeaveGame(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdLeaveGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 
@@ -291,7 +292,7 @@ func cmdLeaveGame(cl nwmessage.Client, context interface{}, args []interface{}) 
 	return nil
 }
 
-func cmdTell(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 
@@ -317,7 +318,7 @@ func cmdTell(cl nwmessage.Client, context interface{}, args []interface{}) error
 	return nil
 }
 
-func cmdListGames(cl nwmessage.Client, context interface{}, args []interface{}) error {
+func cmdListGames(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
 	p := cl.(*nwmodel.Player)
 	gameList := ""

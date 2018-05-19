@@ -3,6 +3,7 @@ package commands
 import (
 	"fmt"
 	"nwmessage"
+	"receiver"
 	"sort"
 	"strings"
 )
@@ -11,7 +12,7 @@ import (
 type CommandGroup map[string]Command
 
 // Exec either provides command information via the 'help' comands, or tries to process a command
-func (cg CommandGroup) Exec(context interface{}, m nwmessage.ClientMessage) error {
+func (cg CommandGroup) Exec(context receiver.Receiver, m nwmessage.ClientMessage) error {
 	fullCmd := strings.Split(m.Data, " ")
 	cmdString := fullCmd[0]
 	args := fullCmd[1:]
