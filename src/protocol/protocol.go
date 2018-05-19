@@ -95,7 +95,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	p.Outgoing <- nwmessage.PsPrompt(p.GetName() + "@lobby>")
 	// Handle socket stream
 	for {
-		msg, err := nwmodel.MsgFromPlayer(p)
+		msg, err := nwmessage.MsgFromClient(p)
 
 		if err != nil {
 			log.Printf("error: %v", err)

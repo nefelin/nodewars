@@ -124,7 +124,6 @@ func cmdToggleChat(p *nwmodel.Player, context room.Room, args []interface{}) err
 }
 
 func cmdYell(p *nwmodel.Player, context room.Room, args []interface{}) error {
-	fmt.Println("CHATTING!?")
 	d := context.(*Dispatcher)
 	msg := args[0].(string)
 

@@ -3,7 +3,6 @@ package commands
 import (
 	"argument"
 	"fmt"
-	"nwmodel"
 	"room"
 	"strings"
 )
@@ -17,10 +16,10 @@ type Command struct {
 	ArgsReq argument.ArgList
 	ArgsOpt argument.ArgList
 
-	Handler func(*nwmodel.Player, room.Room, []interface{}) error
+	Handler func(*client.Client, room.Room, []interface{}) error
 }
 
-func (c Command) Exec(p *nwmodel.Player, context room.Room, strArgs []string) error {
+func (c Command) Exec(cli *client.Client, context room.Room, strArgs []string) error {
 	args, err := c.ValidateArgs(strArgs)
 	if err != nil {
 		// if we have trouble validating args
@@ -28,7 +27,7 @@ func (c Command) Exec(p *nwmodel.Player, context room.Room, strArgs []string) er
 	} else {
 		// otherwise actually execute the command
 		fmt.Printf("<c.Exec> Calling command %s\n", c.Name)
-		err = c.Handler(p, context, args)
+		err = c.Handler(cli, context, args)
 		if err != nil {
 			return err
 		}

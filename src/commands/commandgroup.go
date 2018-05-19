@@ -3,7 +3,6 @@ package commands
 import (
 	"fmt"
 	"nwmessage"
-	"nwmodel"
 	"room"
 	"sort"
 	"strings"
@@ -13,15 +12,14 @@ import (
 type CommandGroup map[string]Command
 
 // Exec either provides command information via the 'help' comands, or tries to process a command
-func (cg CommandGroup) Exec(context room.Room, m nwmodel.ClientMessage) error {
+func (cg CommandGroup) Exec(context room.Room, m nwmessage.ClientMessage) error {
 	fullCmd := strings.Split(m.Data, " ")
 	cmdString := fullCmd[0]
 	args := fullCmd[1:]
 
 	// if players in chatmode and context supports yelling
-	// fmt.Printf("Yell: %+v, Chatmode: %t\n", cg["yell"], m.Sender.ChatMode)
 	cmd, yellingEnabled := cg["yell"]
-	if cmdString != "chat" && yellingEnabled && m.Sender.ChatMode {
+	if cmdString != "chat" && yellingEnabled && m.Sender.ChatMode() {
 		err := cmd.Exec(m.Sender, context, fullCmd)
 		if err != nil {
 			m.Sender.Outgoing <- nwmessage.PsError(err)

@@ -1,154 +1,143 @@
 package nwmodel
 
-import (
-	"errors"
-	"fmt"
-	"log"
-	"nwmessage"
-	"sort"
-	"strconv"
-	"strings"
+var GameCommands = commands.CommandGroup{
+	"chat": {
+		Name:      "chat",
+		ShortDesc: "Toggles chat mode (all text entered is broadcast)",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdToggleChat,
+	},
 
-	"feature"
-)
+	"yell": {
+		Name:      "yell",
+		ShortDesc: "Sends a message to all player (in the same game/lobby)",
+		ArgsReq: argument.ArgList{
+			{Name: "msg", Type: argument.GreedyString},
+		},
+		ArgsOpt: argument.ArgList{},
+		Handler: cmdYell,
+	},
 
-// type playerCommand func(p *Player, gm *GameModel, args []string) nwmessage.Message
-type playerCommand func(*Player, *GameModel, []string) nwmessage.Message
+	"tc": {
+		Name:      "tc",
+		ShortDesc: "Sends a message to all teammates",
+		ArgsReq: argument.ArgList{
+			{Name: "msg", Type: argument.GreedyString},
+		},
+		ArgsOpt: argument.ArgList{},
+		Handler: cmdYell,
+	},
 
-var gameCmdList = map[string]playerCommand{
-	// chat functions
-	"y":    cmdYell,
-	"yell": cmdYell,
-	// "t":        cmdTell,
-	// "tell":     cmdTell,
-	"tc": cmdTeamChat,
-	// "teamchat": cmdTeamChat,
+	"say": {
+		Name:      "say",
+		ShortDesc: "Sends all players at the same node",
+		ArgsReq: argument.ArgList{
+			{Name: "msg", Type: argument.GreedyString},
+		},
+		ArgsOpt: argument.ArgList{},
+		Handler: cmdSay,
+	},
 
-	// "s":   cmdSay,
-	"say": cmdSay,
+	"join": {
+		Name:      "join",
+		ShortDesc: "Joins a team",
+		LongDesc: "Joins either a specified team is one is provided or, if no argument is given, a team is selected automatically"
+		ArgsReq: argument.ArgList{},
+		ArgsOpt: argument.ArgList{
+			{Name: "team_name", Type: argument.String},
+			},
+		Handler: cmdJoinTeam,
+	},
 
-	// // player settings
-	"join": cmdJoinTeam,
-	"team": cmdJoinTeam,
+	"con": {
+		Name:      "con",
+		ShortDesc: "Connect to the specified node",
+		ArgsReq: argument.ArgList{
+			{Name: "node_id", Type: argument.Int},
+		},
+		ArgsOpt: argument.ArgList{},
+		Handler: cmdConnect,
+	},
 
-	// Just an error, setname only works in lobby. should be handled differently TODO
-	// "name": cmdSetName,
+	"lang": {
+		Name:      "lang",
+		ShortDesc: "Select a programming language",
+		ArgsReq: argument.ArgList{
+			{Name: "lang_name", Type: argument.String},
+		},
+		ArgsOpt: argument.ArgList{},
+		Handler: cmdLang,
+	},
 
-	// // world interaction
-	"con": cmdConnect,
+	"langs": {
+		Name:      "langs",
+		ShortDesc: "List languages allowed in this game",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdListLanguages,
+	},
 
-	"lang": cmdLang,
+	"make": {
+		Name:      "make",
+		ShortDesc: "Submits code to claim or steal machine",
+		LongDesc: "An argument must be provided if the current machine is a Feature. The argument is the type of Feature player would like to install"
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{
+			{Name: "feature", Type: argument.String},
+			},
+		Handler:   cmdMake,
+	},
 
-	"langs": cmdListLanguages,
+	"test": {
+		Name:      "test",
+		ShortDesc: "Runs code using custom stdin instead of challenge",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdTestCode,
+	},
 
-	"make": cmdMake,
+	"res": {
+		Name:      "res",
+		ShortDesc: "Submist code to reset machine",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdResetMachine,
+	},
 
-	"pow":   cmdScore,
-	"power": cmdScore,
+	"at": {
+		Name:      "at",
+		ShortDesc: "Attach to a machine in the current node",
+		ArgsReq:   argument.ArgList{
+			{Name: "addr", Type: argument.String},
+			},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdAttach,
+	},
 
-	"test": cmdTestCode,
+	"who": {
+		Name:      "who",
+		ShortDesc: "Prints who's in the current game",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdWho,
+	},
 
-	"res":   cmdResetMachine,
-	"reset": cmdResetMachine,
+	"ls": {
+		Name:      "ls",
+		ShortDesc: "Prints details about current node",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdLs,
+	},
 
-	"at":     cmdAttach,
-	"att":    cmdAttach,
-	"attach": cmdAttach,
-
-	"who": cmdWho,
-
-	"ls": cmdLs,
-	// "ls": cmdDetail{
-	// 		usage: "an n target",
-	// 		description: "Adds n new nodes linked to target node",
-	// 		argsReq: []argType{Int, Int}
-	// 	},
-
-	// "sp": cmdSetPOE,
 }
 
-func (gm *GameModel) parseCommand(m ClientMessage) {
-	p := m.Sender
 
-	msg := strings.Split(m.Data, " ")
 
-	// TODO clean nightmare below
-	if p.compiling != false {
-		// Would be more elegant to freeze prompt while this happens....
-		p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
-	} else if p.dialogue != nil {
-		p.Outgoing <- p.dialogue.Run(msg[0])
-	} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
-		if gm.running {
-			// make this message more situation agnostic TODO
-			p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
-			return
-		}
-		// if the games not locked, allow map to me modified.
-		res := handlerFunc(p, gm, msg[1:])
-		if res.Data != "" {
-			p.Outgoing <- res
-		}
-	} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
-		res := handlerFunc(p, gm, msg[1:])
-		if res.Data != "" {
-			p.Outgoing <- res
-		}
-	} else {
-		p.Outgoing <- nwmessage.PsUnknown(msg[0])
-	}
 
-	if p.dialogue == nil {
-		p.SendPrompt()
-	}
-}
-
-// func actionConsumer(gm *GameModel) {
-// 	for {
-// 		m := <-gm.aChan
-// 		senderID, err := strconv.Atoi(m.Sender)
-
-// 		if err != nil {
-// 			log.Println(err)
-// 		}
-
-// 		p := gm.Players[senderID]
-
-// 		msg := strings.Split(m.Data, " ")
-
-// 		// TODO clean nightmare below
-// 		if p.compiling != false {
-// 			// Would be more elegant to freeze prompt while this happens....
-// 			p.Outgoing <- nwmessage.PsError(errors.New("Code compiling. Wait for completion..."))
-// 		} else if p.dialogue != nil {
-// 			p.Outgoing <- p.dialogue.Run(msg[0])
-// 		} else if handlerFunc, ok := mapCmdList[msg[0]]; ok {
-// 			if gm.running {
-// 				// make this message more situation agnostic TODO
-// 				p.Outgoing <- nwmessage.PsError(errors.New("Cannot alter map once game has started"))
-// 				continue
-// 			}
-// 			// if the games not locked, allow map to me modified.
-// 			res := handlerFunc(p, gm, msg[1:])
-// 			if res.Data != "" {
-// 				p.Outgoing <- res
-// 			}
-// 		} else if handlerFunc, ok := gameCmdList[msg[0]]; ok {
-// 			res := handlerFunc(p, gm, msg[1:])
-// 			if res.Data != "" {
-// 				p.Outgoing <- res
-// 			}
-// 		} else {
-// 			p.Outgoing <- nwmessage.PsUnknown(msg[0])
-// 		}
-
-// 		if p.dialogue == nil {
-// 			p.SendPrompt()
-// 		}
-// 	}
-// }
-
-func cmdYell(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdYell(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	if len(args) == 0 {
 		return nwmessage.PsError(errors.New("Need a message to yell"))
@@ -160,29 +149,31 @@ func cmdYell(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.Message{}
 }
 
-// func cmdTell(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdTell(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
-// 	if len(args) < 2 {
-// 		return nwmessage.PsError(errors.New("Need a recipient and a message"))
-// 	}
-// 	var recip *Player
-// 	for _, player := range gm.Players {
-// 		if player.GetName() == args[0] {
-// 			recip = player
-// 		}
-// 	}
+	if len(args) < 2 {
+		return nwmessage.PsError(errors.New("Need a recipient and a message"))
+	}
+	var recip *Player
+	for _, player := range gm.Players {
+		if player.GetName() == args[0] {
+			recip = player
+		}
+	}
 
-// 	if recip == nil {
-// 		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
-// 	}
+	if recip == nil {
+		return nwmessage.PsError(fmt.Errorf("No such player, '%s'", args[0]))
+	}
 
-// 	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
+	chatMsg := p.GetName() + " > " + strings.Join(args[1:], " ")
 
-// 	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
-// 	return nwmessage.Message{}
-// }
+	recip.Outgoing <- nwmessage.PsChat(chatMsg, "(private)")
+	return nwmessage.Message{}
+}
 
-func cmdTeamChat(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdTeamChat(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	if p.TeamName == "" {
 		return nwmessage.PsNoTeam()
 	}
@@ -199,7 +190,8 @@ func cmdTeamChat(p *Player, gm *GameModel, args []string) nwmessage.Message {
 
 }
 
-func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdSay(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	node := p.location()
 	if node == nil {
 		return nwmessage.PsError(errors.New("Can only 'say' while connected to a node"))
@@ -220,11 +212,8 @@ func cmdSay(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.Message{}
 }
 
-// func cmdSetName(p *Player, gm *GameModel, args []string) nwmessage.Message {
-// 	return nwmessage.PsError(errors.New("Can't change name in a game"))
-// }
-
-func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdJoinTeam(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	// log.Println("cmdJoinTeam called")
 	// TODO if args[0] == "auto", join smallest team, also use for team
 	if len(args) == 0 || args[0] == "" {
@@ -264,7 +253,8 @@ func cmdJoinTeam(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsSuccess(retStr)
 }
 
-func cmdLang(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdLang(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	if len(args) == 0 {
 		return nwmessage.PsError(errors.New("Expected one argument, received zero"))
 	}
@@ -291,7 +281,8 @@ func cmdLang(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsSuccess(fmt.Sprintf("Language set to %s", args[0]))
 }
 
-func cmdListLanguages(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdListLanguages(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	var langs sort.StringSlice
 
 	for l := range gm.languages {
@@ -303,7 +294,8 @@ func cmdListLanguages(p *Player, gm *GameModel, args []string) nwmessage.Message
 	return nwmessage.PsNeutral("This game supports:\n" + strings.Join(langs, "\n"))
 }
 
-func cmdConnect(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdConnect(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	if p.TeamName == "" {
 		return nwmessage.PsError(errors.New("Join a team first"))
 	}
@@ -328,7 +320,8 @@ func cmdConnect(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return cmdLs(p, gm, args)
 }
 
-func cmdWho(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdWho(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	// Sort team names
 	whoStr := ""
@@ -352,7 +345,8 @@ func cmdWho(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsNeutral(whoStr)
 }
 
-func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdLs(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	if p.Route == nil {
 		return nwmessage.PsNoConnection()
@@ -381,7 +375,8 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsNeutral(retMsg)
 }
 
-// func cmdSetPOE(p *Player, gm *GameModel, args []string) nwmessage.Message {
+// func cmdSetPOE(p *Player, context room.Room, args []interface{}) error {
+// gm := context.(*GameModel)
 // 	if p.TeamName == "" {
 // 		return nwmessage.PsNoTeam()
 // 	}
@@ -422,7 +417,8 @@ func cmdLs(p *Player, gm *GameModel, args []string) nwmessage.Message {
 // 	return nwmessage.PsSuccess(fmt.Sprintf("%s team's point of entry set to node %d\nConnecting you there now...", p.TeamName, newPOE))
 // }
 
-func cmdTestCode(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdTestCode(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	if p.EditorState == "" {
 		return nwmessage.PsError(errors.New("No code submitted"))
@@ -440,7 +436,8 @@ func cmdTestCode(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsBegin(fmt.Sprintf("Testing code..."))
 }
 
-func cmdScore(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdScore(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	var scoreStrs sort.StringSlice
 
 	for teamName, team := range gm.Teams {
@@ -452,7 +449,8 @@ func cmdScore(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsNeutral(strings.Join(scoreStrs, "\n"))
 }
 
-func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdAttach(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	if len(args) < 1 {
 		return nwmessage.PsError(errors.New("Attach requires one argument"))
@@ -531,7 +529,8 @@ func cmdAttach(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsSuccess(retText)
 }
 
-func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdMake(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 
 	err := p.canSubmit()
 	if err != nil {
@@ -580,7 +579,8 @@ func cmdMake(p *Player, gm *GameModel, args []string) nwmessage.Message {
 	return nwmessage.PsBegin("Compiling...")
 }
 
-func cmdResetMachine(p *Player, gm *GameModel, args []string) nwmessage.Message {
+func cmdResetMachine(p *Player, context room.Room, args []interface{}) error {
+	gm := context.(*GameModel)
 	err := p.canSubmit()
 	if err != nil {
 		return nwmessage.PsError(err)
@@ -622,3 +622,4 @@ func beginRemoveModuleConf(p *Player, gm *GameModel) {
 		},
 	})
 }
+

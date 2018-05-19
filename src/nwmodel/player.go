@@ -37,6 +37,19 @@ type Player struct {
 	// termState terminalState
 }
 
+// implement client interface
+
+func (p *Player) Outgoing(m nwmessage.Message) {
+	p.Outgoing <- m
+}
+
+func (p *Player) ChatMode() bool {
+	return p.ChatMode
+}
+func (p *Player) Socket() ws *websocket.Conn {
+	return p.Socket
+}
+
 // player methods -------------------------------------------------------------------------------
 // TODO this is in the wrong place
 func NewPlayer(ws *websocket.Conn) *Player {
