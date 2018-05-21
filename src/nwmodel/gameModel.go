@@ -95,8 +95,7 @@ func (gm *GameModel) GetPlayers() []*Player {
 }
 
 func (gm *GameModel) Recv(msg nwmessage.ClientMessage) error {
-	gameCommands.Exec(gm, msg)
-	return nil
+	return gameCommands.Exec(gm, msg)
 }
 
 func (gm *GameModel) Name() string {
