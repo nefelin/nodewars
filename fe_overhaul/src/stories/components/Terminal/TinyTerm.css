@@ -12,7 +12,7 @@
   font-size: 14px;
   color: #2ba035;
   background-color: black;
-  white-space: pre;
+  white-space: pre-wrap;
 }
 /*
 .TinyTerm-cursor {
