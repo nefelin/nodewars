@@ -22,7 +22,8 @@ class TinyTerm extends React.Component {
 		this.handleChange = this.handleChange.bind(this)
 		this.focus = this.focus.bind(this)
 		this.handleLoseFocus = this.handleLoseFocus.bind(this)
-
+		
+		this.scrollHistory = this.scrollHistory.bind(this)
 		this.sendCommand = this.sendCommand.bind(this)
 		this.recv = this.recv.bind(this)
 
@@ -79,25 +80,24 @@ class TinyTerm extends React.Component {
 				break
 			case 38: // 'up'
 				if (this.state.historyIndex > 0) {
-					console.log(this.state.commandHistory)
-					this.setState({
-						historyIndex: this.state.historyIndex-1,
-						command: this.state.commandHistory[this.state.historyIndex-1]
-					})
+					this.scrollHistory(-1)
 				}
 				break
 			case 40: // 'down'
 				if (this.state.historyIndex < this.state.commandHistory.length-1) {
-					console.log(this.state.commandHistory)
-					this.setState({
-						historyIndex: this.state.historyIndex+1,
-						command: this.state.commandHistory[this.state.historyIndex+1]
-					})
+					this.scrollHistory(1)
 				} else {
 					this.setState({ command: "" })
 				}
 				break
 		}		
+	}
+
+	scrollHistory(dir) {
+		this.setState({
+			historyIndex: this.state.historyIndex+dir,
+			command: this.state.commandHistory[this.state.historyIndex+dir],
+		}, () => setTimeout(() => this.input.current.selectionStart = this.input.current.selectionEnd = 10000, 0))
 	}
 	
 	sendCommand(cmd) {
