@@ -13,7 +13,7 @@ class Incoming {
 
 	    switch (data.sender) {
 	      case 'pseudoServer':
-	        if (this.debug) console.log('<Parsers.Incoming>', data)
+	        // if (this.debug) console.log('<Parsers.Incoming>', data)
 	        this.context.terminal.current.recv(data.data)
 	        break
 

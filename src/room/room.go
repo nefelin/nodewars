@@ -11,3 +11,9 @@ type Room interface {
 	RemovePlayer(p *nwmodel.Player) error
 	GetPlayers() []*nwmodel.Player
 }
+
+type RoomManager interface {
+	Rooms() []Room
+	RemovePlayer(p *nwmodel.Player, r Room)
+	PlacePlayer(p *nwmodel.Player, r Room)
+}

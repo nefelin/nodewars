@@ -103,33 +103,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 			break
 		}
 		// log.Println("received player message")
-		incomingHandler(d, msg)
-	}
-}
-
-// Response are sometimes handled as imperatives, sometimes only effect state and
-// are visible after entire stateMessage update. Pick a paradigm TODO
-func incomingHandler(d *Dispatcher, msg nwmessage.ClientMessage) {
-	// Tie message with player name
-	switch msg.Type {
-
-	case "playerCmd":
 		d.clientMessages <- msg
-
-	// TODO move these to dispatchConsumer
-	// these state messages are safe only as long as nothing touches those vars asynchronously.
-	// case "editorState":
-	// 	// fmt.Println("Received editorState msg")
-	// 	msg.Sender.EditorState = msg.Data
-
-	// case "stdinState":
-	// 	msg.Sender.StdinState = msg.Data
-
-	// case "terminalState":
-	// 	// this really requires diffing to avoid being unwieldy
-
-	default:
-		msg.Sender.Outgoing(nwmessage.Message{"error", "server", fmt.Sprintf("client sent uknown message type: %v", msg.Type)})
-
 	}
 }

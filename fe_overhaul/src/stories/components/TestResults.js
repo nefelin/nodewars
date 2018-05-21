@@ -8,7 +8,7 @@ const style = {
 }
 
 const TestResults = ({results}) => {
-	console.log('TestResults comp', results)
+	// console.log('TestResults comp', results)
 	let tableHead, tableBody
 
 	if (results.stdouts != undefined) {

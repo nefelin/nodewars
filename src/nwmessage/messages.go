@@ -129,6 +129,14 @@ func ErrorNoConnection() error {
 }
 
 // messages with server as Sender trigger action in the front end but are not show in the pseudoterminal
+func ServerError(msg string) Message {
+	return Message{
+		Type:   "Error",
+		Sender: serverStr,
+		Data:   msg,
+	}
+}
+
 func ChallengeState(c interface{}) Message {
 	msg, _ := json.Marshal(c)
 	return Message{

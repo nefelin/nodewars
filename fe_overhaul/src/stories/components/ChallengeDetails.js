@@ -12,7 +12,7 @@ const ChallengeDetails = ( { challenge } ) => {
 	if (!challenge || challenge.name == "")
 		return <div style={style}>No Challenge</div>
 
-	console.log('ChallengeDetails', challenge)
+	// console.log('ChallengeDetails', challenge)
 	return (<div style={style}>
 				{challenge.name}<br/><br/>
 				
