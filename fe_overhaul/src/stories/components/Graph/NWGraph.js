@@ -20,31 +20,48 @@ const TRANSITIONS = {
 	exit_fast: () => d3.transition().duration(400).ease(d3.easeLinear),
 }
 
-const COIN_TIERS = [
-	{
-		glow_cycle_rate: 4000,
-		value_cutoff: 1
+const COIN_TIERS = {
+	high: {
+		cycle_rate: 300,
+		cutoff: 3
 	},
-	{
-		glow_cycle_rate: 2500,
-		value_cutoff: 2
+	med: {
+		cycle_rate: 600,
+		cutoff: 1
 	},
-	{
-		glow_cycle_rate: 1000,
-		value_cutoff: 3
+	low: {
+		cycle_rate: 1000,
+		cutoff: 0
 	},
-]
+}
 
-function coinPulseRate(value) {
+function coinTier(value) {
+	console.log('coinTier value', value)
 	switch (true) {
-		case (value > 3):
-			return 300
-		case (value > 1):
-			return 600
+		case (value > COIN_TIERS.high.cutoff):
+			return "high"
+		case (value > COIN_TIERS.med.cutoff):
+			return "med"
+		case (value > COIN_TIERS.low.cutoff):
+			return "low"
 		default:
-			return 1000
+		return "ERROR"
 	}
 }
+
+
+// function coinPulseRate(value) {
+// 	switch (true) {
+// 		case (value > COIN_TIERS.high.cutoff):
+// 			return COIN_TIERS.high.cycle_rate
+// 		case (value > COIN_TIERS.med.cutoff):
+// 			return COIN_TIERS.med.cycle_rate
+// 		case (value > COIN_TIERS.low.cutoff):
+// 			return COIN_TIERS.low.cycle_rate
+// 		default:
+// 		return "ERROR"
+// 	}
+// }
 
 // TODO grab width and height from parent container. Esp on resize
 const width = 525,
@@ -553,27 +570,36 @@ class NWGraph {
 	}
 
 	runCoinPulseDaemon(bool) {
+		if (!this.coinPulses)
+			this.coinPulses = {}
 		if (bool) {
-			this.coinPulse = setInterval(() => this.coinPulseDaemon(), 100)
+			for (let tierName of Object.keys(COIN_TIERS)) {
+				const thisTier = COIN_TIERS[tierName]
+				this.coinPulses[tierName] = setInterval(() => this.coinPulseDaemon(tierName), thisTier.cycle_rate+10)
+			}
+			// this.coinPulse = setInterval(() => this.coinPulseDaemon(), 100)
 		} else {
-			clearInterval(this.coinPulse)
+			for (let pulse of Object.values(this.coinPulses)) {
+				clearInterval(pulse)
+			}
 		}
 	}
 
-	coinPulseDaemon() {
+	coinPulseDaemon(tierName) {
 		// console.log('coinPulseDaemon')
 		if (this.nodeGroups) {
-			this.nodeGroups.selectAll('.pie-piece').each(function(d) {
+			const thisTier = COIN_TIERS[tierName]
+			this.nodeGroups.selectAll('.pie-piece.' + tierName + '-coin').each(function(d) {
 
 				const sel = d3.select(this)
-				if (d.data.powered && d.data.owner in TEAMCOLORS)
+				// if (d.data.powered && d.data.owner in TEAMCOLORS)
 					// console.log('pulsing?', this._pulsing)
-				if (!this._pulsing && d.data.powered && d.data.value > 0 && d.data.owner in TEAMCOLORS) {
+				if (!this._pulsing && d.data.powered && d.data.owner in TEAMCOLORS) {
 					this._pulsing = true
 					
-					sel.transition('coinPulse').duration(coinPulseRate(d.data.value)).ease(d3.easeLinear)
+					sel.transition('coinPulse').duration(thisTier.cycle_rate).ease(d3.easeLinear)
 					   .style('fill', d => TEAMCOLORS[d.data.owner+"_light"])
-					   .transition('coinPulse').duration(coinPulseRate(d.data.value)).ease(d3.easeLinear)
+					   .transition('coinPulse').duration(thisTier.cycle_rate).ease(d3.easeLinear)
 					   .style('fill', d => TEAMCOLORS[d.data.owner])
 				  	   .on('end', () => {
 					 	 	this._pulsing = false
@@ -1145,7 +1171,13 @@ class NWGraph {
 
 		enter.merge(pieGroups).each(function(d) {
 			d3.select(this).select('.pie-piece').attr('class', d => { // this select is necessary to rebind data i believe
-				return 'pie-piece' + (d.data.powered ? "" : " unpowered")
+				console.log('pie update d', d)
+				const classes = []
+				classes.push('pie-piece') // base class
+				classes.push(coinTier(d.data.value) + '-coin') // coin class
+				classes.push((d.data.powered ? "" : "unpowered")) // power class
+
+				return classes.join(' ')
 			}).each(function(d) {
 				// console.log('this owner', this._owner, 'data owner', d.data.owner)
 				if (this._owner != d.data.owner || this._powered != d.data.powered) {
