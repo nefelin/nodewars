@@ -132,6 +132,7 @@ func (gm *GameModel) addTeams(teams []*team) error {
 		if err != nil {
 			panic(err)
 		}
+		gm.calcPoweredNodes(t)
 
 		nodes = append(nodes[:poeIndex], nodes[poeIndex+1:]...)
 	}
@@ -180,6 +181,8 @@ func (gm *GameModel) trailingTeam() string {
 }
 
 func (gm *GameModel) updateCoinPerTick(t *team) {
+	fmt.Println("<updateCoinPerTick>")
+
 	// for each node in t.powered add power for each module
 	// if a slot is producing, set slot.Processing = true so we can animate this
 
@@ -187,25 +190,26 @@ func (gm *GameModel) updateCoinPerTick(t *team) {
 	t.coinPerTick = 0
 	// go through each node
 	for _, node := range t.powered {
+		fmt.Printf("checking node: %d\n", node.ID)
 		// store the powerpermod of that node
 		t.coinPerTick += node.coinProduction(t.Name)
 	}
 }
 
 func (gm *GameModel) calcPoweredNodes(t *team) {
+	fmt.Println("<calcPoweredNodes>")
+	t.powered = nil // clear previous list of powered nodes
 	for _, n := range gm.Map.Nodes {
-		// clear previous list of powered nodes
-		t.powered = nil
 
 		if n.hasMachineFor(t) {
 			var foundPower bool
-
 			for poe := range t.poes {
 				if gm.Map.routeToNode(t, n, poe) != nil {
 					foundPower = true
 					break
 				}
 			}
+			// fmt.Printf("foundPower: %t\n", foundPower)
 
 			if foundPower {
 				n.powerMachines(t.Name, true)
@@ -439,30 +443,11 @@ func (gm *GameModel) tickScheduler() {
 // TODO approach should be that on any module gain or loss that teams procPow is recalculated
 // this entails making a pool of all nodes connected to POE and running the below logic
 func (gm *GameModel) tick() {
-	// reset each teams ProcPow
-	// for _, team := range gm.Teams {
-	// 	team.ProcPow = 0
-	// }
 
-	// // go through each node
-	// for _, node := range gm.Map.Nodes {
-	// 	// store the powerpermod of that node
-	// 	modVal := node.getPowerPerMod()
-
-	// 	// look at each slot
-	// 	for _, slot := range node.Slots {
-	// 		// for each module give the owner team appropriate power boost
-	// 		if slot.Module != nil {
-	// 			gm.Teams[slot.Module.TeamName].ProcPow += modVal
-	// 		}
-	// 	}
-	// }
-
-	// advance each teams VicPoints
 	winners := make([]string, 0)
 
 	for _, team := range gm.Teams {
-		gm.updateCoinPerTick(team)
+		// gm.updateCoinPerTick(team) Don't think we need this if we update coinPerTick on any relevant change, IE machine gain/loss/reset
 		team.VicPoints += team.coinPerTick
 		if team.VicPoints >= gm.PointGoal {
 			winners = append(winners, team.Name)
@@ -569,6 +554,10 @@ func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
 	} else {
 		playerLoc = p.Route.Endpoint().ID
 	}
+
+	// copy map so we can doctor for this player
+	// thisMap := new(nodeMap)
+	// thisMap = *gm.Map
 
 	// compose state message
 	state := stateMessage{

@@ -161,8 +161,6 @@ func submitTest(id int64, language, code string) GradedResult {
 	var e GradedResult
 	decodeAPIResponse(r, &e)
 
-	fmt.Printf("RESULT::::::: %s\n", e)
-
 	return e
 }
 

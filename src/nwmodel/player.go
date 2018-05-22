@@ -169,7 +169,6 @@ func (p *Player) canSubmit() error {
 }
 
 func (p *Player) submitCode() (GradedResult, error) {
-	fmt.Printf("p.submitCode, code:\n%s\n", p.EditorState)
 	response := submitTest(p.currentMachine().challenge.ID, p.language, p.EditorState)
 
 	p.Outgoing(nwmessage.ResultState(response))

@@ -14,10 +14,10 @@ type machine struct {
 	// accepts   challengeCriteria // store what challenges can fill this machine
 	challenge Challenge
 
-	Powered  bool   `json:"powered"`
-	builder  string // `json:"creator"`
-	TeamName string `json:"owner"`
-
+	Powered         bool    `json:"powered"`
+	builder         string  // `json:"creator"`
+	TeamName        string  `json:"owner"`
+	CoinVal         float32 `json:"coinval"`
 	attachedPlayers map[*Player]bool
 
 	address string // mac address in node where machine resides

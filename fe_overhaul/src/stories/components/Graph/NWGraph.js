@@ -568,7 +568,7 @@ class NWGraph {
 				const sel = d3.select(this)
 				if (d.data.powered && d.data.owner in TEAMCOLORS)
 					// console.log('pulsing?', this._pulsing)
-				if (!this._pulsing && d.data.powered && d.data.owner in TEAMCOLORS) {
+				if (!this._pulsing && d.data.powered && d.data.value > 0 && d.data.owner in TEAMCOLORS) {
 					this._pulsing = true
 					
 					sel.transition('coinPulse').duration(coinPulseRate(d.data.value)).ease(d3.easeLinear)
@@ -1077,7 +1077,7 @@ class NWGraph {
 				const owner = mac.owner//mac.module != null ? mac.module.owner : "none"
 				const size = 1
 				// const value = data.remoteness/1//parseInt(data.id)%3 + 1 // Math.ceil(Math.random()*3) // groupData.coinVal TODO implement node value system on backend
-				const value = (parseInt(data.id)%4)*2 + 1
+				const value = mac.coinval
 				// console.log('composeMachineData', data)
 				const powered = mac.powered//mac.module != null ? data.powered.indexOf(mac.module.owner) != -1 : true// powered if node is powered by owner
 				// console.log('slot:' + slot)

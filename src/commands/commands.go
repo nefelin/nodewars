@@ -27,7 +27,7 @@ func (c Command) Exec(cli nwmessage.Client, context receiver.Receiver, strArgs [
 		return fmt.Errorf("%s\nusage: %s", err.Error(), c.Usage())
 	} else {
 		// otherwise actually execute the command
-		fmt.Printf("<c.Exec> Calling command %s\n", c.Name)
+		// fmt.Printf("<c.Exec> Calling command %s\n", c.Name)
 		err = c.Handler(cli, context, args)
 		if err != nil {
 			return err

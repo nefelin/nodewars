@@ -65,11 +65,16 @@ func (n *node) dominatedBy(t teamName) bool { // does t control all non feature 
 
 // coinProduction gives the total produced (for team t) in a given node
 func (n *node) coinProduction(t teamName) float32 {
+	fmt.Println("<coinProduction>")
 	var total float32
 	coinPerMac := n.coinVal(t)
 	for _, mac := range n.Machines {
-		if mac.TeamName == t && mac.Powered {
-			total += coinPerMac
+		if mac.TeamName == t {
+			mac.CoinVal = coinPerMac // bind value to machine for rendering
+			fmt.Printf("<coinProduction> Setting machine CoinVal: %f\n", mac.CoinVal)
+			if mac.Powered { // if the machine's powered, add to teams production
+				total += coinPerMac
+			}
 		}
 	}
 	return total
@@ -214,6 +219,10 @@ func (n *node) powerMachines(t teamName, onOff bool) {
 		if mac.TeamName == t {
 			mac.Powered = onOff
 		}
+	}
+
+	if n.Feature.TeamName == t {
+		n.Feature.Powered = onOff
 	}
 }
 
