@@ -248,8 +248,8 @@ func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
 	}
 }
 
-func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedResult, fType feature.Type) {
-	node := p.Route.Endpoint()
+func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, response GradedResult, fType feature.Type) {
+	// node := p.Route.Endpoint()
 	solutionStrength := response.passed()
 
 	var hostile bool
@@ -361,12 +361,16 @@ func (gm *GameModel) tryClaimMachine(p *Player, mac *machine, response GradedRes
 	} else {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, node.ID)))
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth)))
+	}
 
+	if node.dominatedBy(p.TeamName) {
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s is now dominating node %d (production bonus)", p.TeamName, node.ID)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Your team now dominates node %d! (production bonus)", node.ID)))
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *Player, mac *machine, r GradedResult) {
-	node := p.Route.Endpoint()
+func (gm *GameModel) tryResetMachine(p *Player, node *node, mac *machine, r GradedResult) {
+	// node := p.Route.Endpoint()
 	solutionStrength := r.passed()
 
 	if mac.isNeutral() {

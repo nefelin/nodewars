@@ -36,14 +36,12 @@ const COIN_TIERS = [
 ]
 
 function coinPulseRate(value) {
-	switch (value) {
-		case 5:
-		case 4:
+	switch (true) {
+		case (value > 3):
 			return 300
-		case 3:
-		case 2:
+		case (value > 1):
 			return 600
-		case 1:
+		default:
 			return 1000
 	}
 }

@@ -550,6 +550,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	}
 
 	mac := p.currentMachine()
+	node := p.location()
 
 	// Abstract this TODO
 	var feaType feature.Type
@@ -584,7 +585,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 		}
 
 		mac.Lock()
-		gm.tryClaimMachine(p, mac, response, feaType)
+		gm.tryClaimMachine(p, node, mac, response, feaType)
 		mac.Unlock()
 
 		p.SendPrompt()
@@ -597,6 +598,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*Player)
 	gm := context.(*GameModel)
+	node := p.location()
 
 	err := p.canSubmit()
 	if err != nil {
@@ -613,7 +615,7 @@ func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []inte
 		}
 
 		mac.Lock()
-		gm.tryResetMachine(p, mac, response)
+		gm.tryResetMachine(p, node, mac, response)
 		mac.Unlock()
 
 		p.SendPrompt()

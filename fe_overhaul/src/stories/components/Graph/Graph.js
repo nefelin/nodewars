@@ -30,6 +30,10 @@ class Graph extends Component {
       this.update(newProps.dataset);
   }
 
+  componendShouldUpdate() {
+    return false
+  }
+
   shouldComponentUpdate() {
     return false;
   }
@@ -62,16 +66,6 @@ class Graph extends Component {
     if (this.state.graph)
       this.state.graph.resize(newSize)
   }
-
-  // call(f, argument) {
-  //   console.log('testing ref function calls')
-  //   if (this.state.graph) {
-  //     console.log('calling', f, 'on graph')
-  //     this.state.graph[f](argument)
-  //   } else {
-  //     console.log('graph not initialized yet...')
-  //   }
-  // }
 
   render() {
     if (this.props.debug) {
