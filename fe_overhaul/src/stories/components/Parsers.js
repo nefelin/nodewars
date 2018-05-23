@@ -6,6 +6,18 @@ class Incoming {
 		// console.log('<Parsers.Incoming> context,', context)
 	}
 
+	open = () => {
+		this.context.terminal.current.recv('Attempting to contact server...\n')
+	}
+
+	error = () => {
+		this.context.terminal.current.recv('error: Unable to establish connection\n')	
+	}
+
+	close = () => {
+		this.context.terminal.current.recv('\n\nerror: Server severed connection\n')
+	}
+
 	handle = (m) => {
 		const data = JSON.parse(m.data)
 	    // if (this.debug)

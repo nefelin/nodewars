@@ -12,8 +12,10 @@ class NWSocket {
 			ws_protocol = 'wss://'
 
 		// const ws = new WebSocket(ws_protocol + window.location.host + '/ws');
+		parser.open()
 		this.ws = new WebSocket(ws_protocol + 'localhost:8080' + '/ws');
 
+		this.ws.onerror = (e) => parser.error()
 
 		this.ws.addEventListener('open', () => {
 					// Try to handshake
@@ -29,7 +31,10 @@ class NWSocket {
 				this.ws.addEventListener('message', parser.handle);
 
 				// handle server terminating connection
-				this.ws.addEventListener('close', (d) => {console.log("server severed connection:", d)});
+				this.ws.addEventListener('close', (e) => {
+					parser.close()
+					// console.log("server severed connection:", d)
+				});
 				return
 			}
 			console.log('Server said:', e.data)
