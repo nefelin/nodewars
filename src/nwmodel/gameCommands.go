@@ -120,10 +120,13 @@ var gameCommands = commands.CommandGroup{
 	"at": {
 		Name:      "at",
 		ShortDesc: "Attach to a machine in the current node",
+		LongDesc:  "An optional second argument can be provided, if that argument is 'n' or 'no', then no boilerplate will be loaded, thus preserving the current editor state.",
 		ArgsReq: argument.ArgList{
 			{Name: "addr", Type: argument.String},
 		},
-		ArgsOpt: argument.ArgList{},
+		ArgsOpt: argument.ArgList{
+			{Name: "bp_flag", Type: argument.String},
+		},
 		Handler: cmdAttach,
 	},
 
@@ -528,7 +531,7 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 		flag = args[1].(string)
 	}
 
-	if flag != "-n" && flag != "-no" {
+	if flag != "n" && flag != "no" {
 		editText := boilerplate + lockStr
 		p.editState(editText)
 	}
