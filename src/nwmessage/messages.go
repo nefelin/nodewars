@@ -41,7 +41,7 @@ const (
 	noConnectStr = "No connection"
 
 	terminatorStr = "\n"
-	preStr        = ""
+	preStr        = "\n"
 )
 
 func PsDialogue(msg string) Message {
