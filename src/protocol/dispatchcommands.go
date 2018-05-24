@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"model"
+	"model/player"
 	"nwmessage"
-	"nwmodel"
-	"nwmodel/player"
 	"receiver"
 	"sort"
 	"strconv"
@@ -181,7 +181,7 @@ func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface
 	}
 
 	// create the game
-	err := d.createGame(nwmodel.NewDefaultModel(gameName))
+	err := d.createGame(model.NewDefaultModel(gameName))
 
 	if err != nil {
 		return err
@@ -339,7 +339,7 @@ func cmdListGames(cl nwmessage.Client, context receiver.Receiver, args []interfa
 	return nil
 }
 
-// func (cg *CommandGroup) Exec(d *Dispatcher, m nwmodel.ClientMessage) error {
+// func (cg *CommandGroup) Exec(d *Dispatcher, m model.ClientMessage) error {
 // 	fullCmd := strings.Split(m.Data, " ")
 
 // 	// handle help

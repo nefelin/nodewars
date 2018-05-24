@@ -4,9 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"model/player"
 	"net/http"
 	"nwmessage"
-	"nwmodel/player"
 	"regrequest"
 
 	"github.com/gorilla/websocket"

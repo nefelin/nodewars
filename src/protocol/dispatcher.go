@@ -3,8 +3,8 @@ package protocol
 import (
 	"errors"
 	"fmt"
+	"model/player"
 	"nwmessage"
-	"nwmodel/player"
 	"regrequest"
 	"room"
 

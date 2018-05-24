@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"fmt"
+	"model/player"
 	"nwmessage"
-	"nwmodel/player"
 )
 
 func dispatchConsumer(d *Dispatcher) {

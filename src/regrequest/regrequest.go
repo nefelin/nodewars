@@ -1,7 +1,7 @@
 package regrequest
 
 import (
-	"nwmodel/player"
+	"model/player"
 )
 
 type Request struct {

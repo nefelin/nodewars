@@ -1,8 +1,8 @@
 package room
 
 import (
+	"model/player"
 	"nwmessage"
-	"nwmodel/player"
 )
 
 type Room interface {
