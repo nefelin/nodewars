@@ -11,7 +11,7 @@ import { modeMap, themeMap, modeLookup } from './brace-modes-themes.js'
 //       modeLookup = {}
 
 import { Menus } from './menus'
-console.log(Menus)
+// console.log(Menus)
 // const ResponsiveGridLayout = WidthProvider(Responsive);
 
 
@@ -273,7 +273,7 @@ class STRMLGrid extends React.Component {
   readLocalLayout = () => {
     let layout = localStorage.getItem('gridLayout')
     if (layout){
-      console.log('layout cookie loaded')
+      // console.log('layout cookie loaded')
       return layout = JSON.parse(layout)
     } else {
       console.log('error: No layout cookie found!')

@@ -36,7 +36,7 @@ const COIN_TIERS = {
 }
 
 function coinTier(value) {
-	console.log('coinTier value', value)
+	// console.log('coinTier value', value)
 	switch (true) {
 		case (value > COIN_TIERS.high.cutoff):
 			return "high"
@@ -1171,7 +1171,7 @@ class NWGraph {
 
 		enter.merge(pieGroups).each(function(d) {
 			d3.select(this).select('.pie-piece').attr('class', d => { // this select is necessary to rebind data i believe
-				console.log('pie update d', d)
+				// console.log('pie update d', d)
 				const classes = []
 				classes.push('pie-piece') // base class
 				classes.push(coinTier(d.data.value) + '-coin') // coin class
