@@ -3,7 +3,7 @@ package protocol
 import (
 	"fmt"
 	"nwmessage"
-	"nwmodel"
+	"nwmodel/player"
 )
 
 func dispatchConsumer(d *Dispatcher) {
@@ -17,13 +17,13 @@ func dispatchConsumer(d *Dispatcher) {
 
 		// if we get a player command, handle that
 		case m := <-d.clientMessages:
-			p := m.Sender.(*nwmodel.Player) // TODO use Client instead of player everywhere we can....
+			p := m.Sender.(*player.Player) // TODO use Client instead of player everywhere we can....
 
 			switch m.Type {
 			case "editorState":
-				p.EditorState = m.Data
+				p.SetEditor(m.Data, false)
 			case "stdinState":
-				p.StdinState = m.Data
+				p.SetStdin(m.Data, false)
 			case "playerCmd":
 				if room, ok := d.locations[p]; ok {
 					err := room.Recv(m)

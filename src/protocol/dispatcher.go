@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"nwmessage"
-	"nwmodel"
+	"nwmodel/player"
 	"regrequest"
 	"room"
 
@@ -16,8 +16,8 @@ type roomID = string
 
 // Dispatcher ...
 type Dispatcher struct {
-	players           map[*websocket.Conn]*nwmodel.Player
-	locations         map[*nwmodel.Player]room.Room
+	players           map[*websocket.Conn]*player.Player
+	locations         map[*player.Player]room.Room
 	games             map[roomID]room.Room
 	registrationQueue chan regrequest.Request
 	clientMessages    chan nwmessage.ClientMessage
@@ -25,8 +25,8 @@ type Dispatcher struct {
 
 func NewDispatcher() *Dispatcher {
 	d := &Dispatcher{
-		players:           make(map[*websocket.Conn]*nwmodel.Player),
-		locations:         make(map[*nwmodel.Player]room.Room),
+		players:           make(map[*websocket.Conn]*player.Player),
+		locations:         make(map[*player.Player]room.Room),
 		games:             make(map[roomID]room.Room),
 		registrationQueue: make(chan regrequest.Request),
 		clientMessages:    make(chan nwmessage.ClientMessage),
@@ -44,8 +44,8 @@ func (d *Dispatcher) Type() string {
 	return "Lobby"
 }
 
-func (d *Dispatcher) GetPlayers() []*nwmodel.Player {
-	list := make([]*nwmodel.Player, len(d.players))
+func (d *Dispatcher) GetPlayers() []*player.Player {
+	list := make([]*player.Player, len(d.players))
 	var i int
 	for _, p := range d.players {
 		list[i] = p
@@ -69,12 +69,12 @@ func (d *Dispatcher) handleRegRequest(r regrequest.Request) {
 	}
 }
 
-func (d *Dispatcher) AddPlayer(p *nwmodel.Player) error {
+func (d *Dispatcher) AddPlayer(p *player.Player) error {
 	d.players[p.Socket()] = p
 	return nil
 }
 
-func (d *Dispatcher) RemovePlayer(p *nwmodel.Player) error {
+func (d *Dispatcher) RemovePlayer(p *player.Player) error {
 
 	if game, ok := d.locations[p]; ok {
 		game.RemovePlayer(p)
@@ -101,7 +101,7 @@ func (d *Dispatcher) destroyGame() {}
 
 // manipulating/examining player objects
 
-func (d *Dispatcher) joinRoom(p *nwmodel.Player, r roomID) error {
+func (d *Dispatcher) joinRoom(p *player.Player, r roomID) error {
 	if d.locations[p] != nil {
 		return errors.New("Can't join game, already in a game")
 	}
@@ -111,7 +111,7 @@ func (d *Dispatcher) joinRoom(p *nwmodel.Player, r roomID) error {
 	return nil
 }
 
-func (d *Dispatcher) leaveRoom(p *nwmodel.Player) error {
+func (d *Dispatcher) leaveRoom(p *player.Player) error {
 	game, ok := d.locations[p]
 	if !ok {
 		return errors.New("Your not in a game")

@@ -2,10 +2,10 @@ package nwmodel
 
 import (
 	"errors"
+	"feature"
 	"fmt"
 	"nwmessage"
-
-	"feature"
+	"nwmodel/player"
 )
 
 type teamName = string
@@ -13,7 +13,7 @@ type teamName = string
 type team struct {
 	Name        string  `json:"name"` // Names are only colors for now
 	VicPoints   float32 `json:"vicPoints"`
-	players     map[*Player]bool
+	players     map[*player.Player]bool
 	maxSize     int            //`json:"maxSize"`
 	poes        map[*node]bool // point of entry, the place where all team.players connect to the map through
 	powered     []*node        // list of nodes connected ot the poe, optimization to minimize re-calculating which nodes are feeding processing power
@@ -25,7 +25,7 @@ type team struct {
 func NewTeam(n teamName) *team {
 	return &team{
 		Name:    n,
-		players: make(map[*Player]bool),
+		players: make(map[*player.Player]bool),
 		maxSize: 100,
 		powered: make([]*node, 0),
 		poes:    make(map[*node]bool),
@@ -50,12 +50,12 @@ func (t *team) broadcast(msg nwmessage.Message) {
 	}
 }
 
-func (t *team) addPlayer(p *Player) {
+func (t *team) addPlayer(p *player.Player) {
 	t.players[p] = true
 	p.TeamName = t.Name
 }
 
-func (t *team) removePlayer(p *Player) {
+func (t *team) removePlayer(p *player.Player) {
 	delete(t.players, p)
 	p.TeamName = ""
 	p.Outgoing(nwmessage.TeamState(""))

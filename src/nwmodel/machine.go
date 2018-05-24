@@ -1,24 +1,25 @@
 package nwmodel
 
 import (
+	"challenges"
 	"feature"
 	"fmt"
 	"math/rand"
-	"sync"
-
 	"nwmessage"
+	"nwmodel/player"
+	"sync"
 )
 
 type machine struct {
 	sync.Mutex
 	// accepts   challengeCriteria // store what challenges can fill this machine
-	challenge Challenge
+	challenge challenges.Challenge
 
 	Powered         bool    `json:"powered"`
 	builder         string  // `json:"creator"`
 	TeamName        string  `json:"owner"`
 	CoinVal         float32 `json:"coinval"`
-	attachedPlayers map[*Player]bool
+	attachedPlayers map[*player.Player]bool
 
 	address string // mac address in node where machine resides
 
@@ -41,7 +42,7 @@ type challengeCriteria struct {
 func newMachine() *machine {
 	return &machine{
 		Powered:         true,
-		attachedPlayers: make(map[*Player]bool),
+		attachedPlayers: make(map[*player.Player]bool),
 	}
 }
 
@@ -53,11 +54,11 @@ func newFeature() *machine {
 
 // machine methods -------------------------------------------------------------------------
 
-func (m *machine) addPlayer(p *Player) {
+func (m *machine) addPlayer(p *player.Player) {
 	m.attachedPlayers[p] = true
 }
 
-func (m *machine) remPlayer(p *Player) {
+func (m *machine) remPlayer(p *player.Player) {
 	delete(m.attachedPlayers, p)
 }
 
@@ -73,7 +74,7 @@ func (m *machine) detachAll(msg string) {
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *machine) resetChallenge() {
-	m.challenge = getRandomChallenge()
+	m.challenge = challenges.GetRandomChallenge()
 	m.MaxHealth = len(m.challenge.Cases)
 }
 
@@ -117,13 +118,13 @@ func (m *machine) reset() {
 	m.resetChallenge()
 }
 
-func (m *machine) claim(p *Player, r GradedResult) {
-	m.builder = p.name
+func (m *machine) claim(p *player.Player, r challenges.GradedResult) {
+	m.builder = p.Name()
 	m.TeamName = p.TeamName
-	m.language = p.language
+	m.language = p.Language()
 	// m.Powered = true
 
-	m.Health = r.passed()
+	m.Health = r.Passed()
 	// m.MaxHealth = len(r.Graded)
 }
 

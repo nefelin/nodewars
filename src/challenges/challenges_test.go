@@ -1,4 +1,4 @@
-package nwmodel
+package challenges
 
 import (
 	"log"

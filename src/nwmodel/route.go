@@ -1,12 +1,13 @@
 package nwmodel
 
 import (
+	"nwmodel/player"
 	"strconv"
 )
 
 type route struct {
 	Nodes  []*node `json:"nodes"`
-	player *Player
+	player *player.Player
 }
 
 // route methods --------------------------------------------

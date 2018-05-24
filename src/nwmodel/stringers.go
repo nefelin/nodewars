@@ -1,8 +1,8 @@
 package nwmodel
 
-// Stringers ----------------------------------------------------------------------------------
 import (
 	"fmt"
+	"nwmodel/player"
 	"sort"
 	"strconv"
 	"strings"
@@ -25,13 +25,9 @@ func (n node) String() string {
 func (t team) String() string {
 	var playerList []string
 	for player := range t.players {
-		playerList = append(playerList, string(player.GetName()))
+		playerList = append(playerList, string(player.Name()))
 	}
 	return fmt.Sprintf("( <team> {Name: %v, Players:%v} )", t.Name, playerList)
-}
-
-func (p Player) String() string {
-	return fmt.Sprintf("( <player> {Name: %v, team: %v} )", p.GetName(), p.TeamName)
 }
 
 func (r route) String() string {
@@ -48,7 +44,7 @@ func (r route) String() string {
 	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint().ID, strings.Join(nodeList, ", "))
 }
 
-func (n node) StringFor(p *Player) string {
+func (n node) StringFor(p *player.Player) string {
 
 	// sort keys for consistent presentation
 	addList := make([]string, 0)
@@ -61,7 +57,7 @@ func (n node) StringFor(p *Player) string {
 	macList := ""
 	for _, add := range addList {
 		atIndicator := ""
-		if p.macAddress == add {
+		if p.MacAddress() == add {
 			atIndicator = "*"
 		}
 		mac := n.addressMap[add]
@@ -73,7 +69,7 @@ func (n node) StringFor(p *Player) string {
 	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
 }
 
-func (m machine) StringFor(p *Player) string {
+func (m machine) StringFor(p *player.Player) string {
 	var feature string
 
 	if m.isFeature() {

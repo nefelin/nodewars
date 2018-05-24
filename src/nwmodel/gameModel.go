@@ -1,30 +1,32 @@
 package nwmodel
 
 import (
+	"challenges"
 	"encoding/json"
 	"errors"
+	"feature"
 	"fmt"
 	"log"
 	"math/rand"
 	"nwmessage"
+	"nwmodel/player"
 	"time"
-
-	"feature"
 )
 
 // GameModel holds all state information
 type GameModel struct {
 	name    string
-	Map     *nodeMap             `json:"map"`
-	Teams   map[teamName]*team   `json:"teams"`
-	Players map[playerID]*Player `json:"players"`
+	Map     *nodeMap                           `json:"map"`
+	Teams   map[teamName]*team                 `json:"teams"`
+	Players map[player.PlayerID]*player.Player `json:"players"`
 	// POEs          map[playerID]*node   `json:"poes"`
 	PointGoal     float32 `json:"pointGoal"`
-	languages     map[string]Language
+	languages     map[string]challenges.Language
 	aChan         chan nwmessage.Message
 	running       bool //running should replace mapLocked
-	pendingAlerts map[playerID][]alert
+	pendingAlerts map[player.PlayerID][]alert
 
+	routes map[*player.Player]*route
 	// timelimit should be able to set a timelimit and count points at the end
 }
 
@@ -41,7 +43,7 @@ var langDefaults = []string{
 // NewDefaultModel Generic game model
 func NewDefaultModel(name string) *GameModel {
 	m := newRandMap(10)
-	p := make(map[playerID]*Player)
+	p := make(map[player.PlayerID]*player.Player)
 	// poes := make(map[playerID]*node)
 
 	aChan := make(chan nwmessage.Message, 100)
@@ -53,10 +55,11 @@ func NewDefaultModel(name string) *GameModel {
 		Players: p,
 		// Routes:  r,
 		// POEs:          poes,
-		languages:     getLanguages(),
+		languages:     challenges.GetLanguages(),
 		aChan:         aChan,
 		PointGoal:     1000,
-		pendingAlerts: make(map[playerID][]alert),
+		pendingAlerts: make(map[player.PlayerID][]alert),
+		routes:        make(map[*player.Player]*route),
 	}
 
 	// fmt.Println("Supported Languages:")
@@ -84,8 +87,8 @@ func makeDummyTeams() []*team {
 // GameModel methods --------------------------------------------------------------------------
 
 // fulfill Room interface
-func (gm *GameModel) GetPlayers() []*Player {
-	list := make([]*Player, len(gm.Players))
+func (gm *GameModel) GetPlayers() []*player.Player {
+	list := make([]*player.Player, len(gm.Players))
 	var i int
 	for _, p := range gm.Players {
 		list[i] = p
@@ -221,40 +224,40 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 	}
 }
 
-func (gm *GameModel) playersAt(n *node) []*Player {
-	players := make([]*Player, 0)
+func (gm *GameModel) playersAt(n *node) []*player.Player {
+	players := make([]*player.Player, 0)
 	for _, p := range gm.Players {
-		if p.location() == n {
+		if gm.PlayerLocation(p) == n {
 			players = append(players, p)
 		}
 	}
 	return players
 }
 
-func (gm *GameModel) detachOtherPlayers(p *Player, msg string) {
-	if p.currentMachine() == nil {
-		log.Panic("Player is not attached to a machine")
+func (gm *GameModel) detachOtherPlayers(p *player.Player, msg string) {
+	if gm.CurrentMachine(p) == nil {
+		log.Panic("player.Player is not attached to a machine")
 	}
 
-	for _, player := range gm.playersAt(p.Route.Endpoint()) {
+	for _, player := range gm.playersAt(gm.routes[p].Endpoint()) {
 		if player != p {
-			comment := gm.languages[player.language].CommentPrefix
+			comment := gm.languages[player.Language()].CommentPrefix
 
 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", player.currentMachine().address)))
+			player.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", gm.CurrentMachine(p).address)))
 
 			player.Outgoing(nwmessage.EditState(editMsg))
 
-			player.breakConnection(true)
+			gm.BreakConnection(player, true)
 
 		}
 	}
 }
 
-func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, response GradedResult, fType feature.Type) {
-	// node := p.Route.Endpoint()
-	solutionStrength := response.passed()
+func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machine, response challenges.GradedResult, fType feature.Type) {
+	// node := gm.routes[p].Endpoint()
+	solutionStrength := response.Passed()
 
 	var hostile bool
 	var friendly bool
@@ -275,7 +278,7 @@ func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, respon
 			return
 
 		case solutionStrength < mac.Health:
-			p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.passed(), len(response.Grades), mac.Health+1, mac.MaxHealth)))
+			p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.Passed(), len(response.Grades), mac.Health+1, mac.MaxHealth)))
 
 			return
 
@@ -306,7 +309,7 @@ func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, respon
 
 	// refactor module to new owner and health
 	mac.TeamName = p.TeamName
-	mac.language = p.language
+	mac.language = p.Language()
 	mac.Health = solutionStrength
 
 	if mac.Type == feature.None {
@@ -355,15 +358,15 @@ func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, respon
 
 	// do terminal messaging
 	if hostile {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.Name(), p.TeamName, oldTeam.Name, node.ID)))
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth)))
 
 	} else if friendly {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.GetName(), p.TeamName, node.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.Name(), p.TeamName, node.ID)))
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language)))
 
 	} else {
-		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.GetName(), p.TeamName, node.ID)))
+		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.Name(), p.TeamName, node.ID)))
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth)))
 	}
 
@@ -373,9 +376,9 @@ func (gm *GameModel) tryClaimMachine(p *Player, node *node, mac *machine, respon
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *Player, node *node, mac *machine, r GradedResult) {
-	// node := p.Route.Endpoint()
-	solutionStrength := r.passed()
+func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machine, r challenges.GradedResult) {
+	// node := gm.routes[p].Endpoint()
+	solutionStrength := r.Passed()
 
 	if mac.isNeutral() {
 		p.Outgoing(nwmessage.PsError(errors.New("Machine is already neutral")))
@@ -384,7 +387,7 @@ func (gm *GameModel) tryResetMachine(p *Player, node *node, mac *machine, r Grad
 	}
 
 	if solutionStrength < mac.Health {
-		p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution too weak: %d/%d, need %d/%d to remove", r.passed(), len(r.Grades), mac.Health, mac.MaxHealth)))
+		p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution too weak: %d/%d, need %d/%d to remove", r.Passed(), len(r.Grades), mac.Health, mac.MaxHealth)))
 		return
 	}
 
@@ -427,7 +430,7 @@ func (gm *GameModel) tryResetMachine(p *Player, node *node, mac *machine, r Grad
 	gm.broadcastState()
 
 	// terminal messaging
-	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.GetName(), p.TeamName, oldTeam.Name, node.ID)))
+	gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) reset a (%s) machine in node %d", p.Name(), p.TeamName, oldTeam.Name, node.ID)))
 	p.Outgoing(nwmessage.PsSuccess("Machine reset"))
 
 }
@@ -510,8 +513,8 @@ func (gm *GameModel) makeRouteMap() *trafficMap {
 	traffic := newTrafficMap()
 
 	for _, p := range gm.Players {
-		if p.Route != nil {
-			traffic.addRoute(p.Route, p.TeamName)
+		if gm.routes[p] != nil {
+			traffic.addRoute(gm.routes[p], p.TeamName)
 		}
 	}
 
@@ -545,14 +548,14 @@ func (gm *GameModel) packScores() string {
 }
 
 // calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
-func (gm *GameModel) calcState(p *Player, tMap *trafficMap) string {
+func (gm *GameModel) calcState(p *player.Player, tMap *trafficMap) string {
 
 	// calculate player location
 	var playerLoc nodeID
-	if p.Route == nil {
+	if gm.routes[p] == nil {
 		playerLoc = -1
 	} else {
-		playerLoc = p.Route.Endpoint().ID
+		playerLoc = gm.routes[p].Endpoint().ID
 	}
 
 	// copy map so we can doctor for this player
@@ -601,7 +604,7 @@ func (gm *GameModel) psBroadcast(msg nwmessage.Message) {
 }
 
 // broadcast to all but one player
-func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
+func (gm *GameModel) psBroadcastExcept(p *player.Player, msg nwmessage.Message) {
 	msg.Sender = "pseudoServer"
 
 	for _, player := range gm.Players {
@@ -616,26 +619,26 @@ func (gm *GameModel) psBroadcastExcept(p *Player, msg nwmessage.Message) {
 	}
 }
 
-func (gm *GameModel) setPlayerName(p *Player, n string) error {
+func (gm *GameModel) setPlayerName(p *player.Player, n string) error {
 
 	// check to see if name is in use
 	for _, player := range gm.Players {
-		if player.name == n {
+		if player.Name() == n {
 			return errors.New("Name '" + n + "' already in use")
 		}
 	}
 
-	p.name = n
+	p.SetName(n)
 	return nil
 }
 
 // AddPlayer ...
-func (gm *GameModel) AddPlayer(p *Player) error {
+func (gm *GameModel) AddPlayer(p *player.Player) error {
 	if _, ok := gm.Players[p.ID]; ok {
-		return errors.New("player '" + p.GetName() + "' is already in this game")
+		return errors.New("player '" + p.Name() + "' is already in this game")
 	}
 
-	p.inGame = true
+	// p.inGame = true
 	gm.Players[p.ID] = p
 	gm.pendingAlerts[p.ID] = make([]alert, 0) // make alerts slot for new player
 
@@ -679,10 +682,10 @@ func (gm *GameModel) AddPlayer(p *Player) error {
 }
 
 // RemovePlayer ...
-func (gm *GameModel) RemovePlayer(p *Player) error {
-	fmt.Printf("<gm.RemovePlayer> Removing player, %s\n", p.name)
+func (gm *GameModel) RemovePlayer(p *player.Player) error {
+	fmt.Printf("<gm.RemovePlayer> Removing player, %s\n", p.Name())
 	if _, ok := gm.Players[p.ID]; !ok {
-		return errors.New("player '" + p.GetName() + "' is not registered")
+		return errors.New("player '" + p.Name() + "' is not registered")
 	}
 
 	// remove player infor from gamemodel
@@ -699,8 +702,8 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	// remove game infor from player object
 
 	p.TeamName = ""
-	p.breakConnection(false)
-	p.inGame = false
+	gm.BreakConnection(p, false)
+	// p.inGame = false
 
 	p.Outgoing(nwmessage.LangSupportState([]string{}))
 
@@ -709,7 +712,7 @@ func (gm *GameModel) RemovePlayer(p *Player) error {
 	return nil
 }
 
-func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
+func (gm *GameModel) assignPlayerToTeam(p *player.Player, tn teamName) error {
 	// log.Printf("assignPlayerToTeam, player: %v", p)
 	if team, ok := gm.Teams[tn]; !ok {
 		return errors.New("'" + tn + "' team does not exist")
@@ -730,7 +733,7 @@ func (gm *GameModel) assignPlayerToTeam(p *Player, tn teamName) error {
 	return nil
 }
 
-func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error) {
+func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n nodeID) (*route, error) {
 
 	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
 	team := gm.Teams[p.TeamName]
@@ -745,13 +748,13 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 	}
 
 	for source := range team.poes {
-		// log.Printf("player %v attempting to connect to node %v from POE %v", p.GetName(), n, source.ID)
+		// log.Printf("player %v attempting to connect to node %v from POE %v", p.Name(), n, source.ID)
 		routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
 		// log.Printf("RouteNodes: %+v\n", routeNodes)
 		if routeNodes != nil {
 			// log.Println("Successful Connect")
 			// log.Printf("Route to target: %v", routeNodes)
-			p.breakConnection(false)
+			gm.BreakConnection(p, false)
 			route, err := gm.establishConnection(p, routeNodes)
 
 			if err != nil {
@@ -767,7 +770,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *Player, n nodeID) (*route, error)
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically
-func (gm *GameModel) establishConnection(p *Player, routeNodes []*node) (*route, error) {
+func (gm *GameModel) establishConnection(p *player.Player, routeNodes []*node) (*route, error) {
 	// set's players route to the route generated via routeToNode
 	// gm.Routes[p.ID] = &route{Endpoint: n, Nodes: routeNodes}
 	r := &route{Nodes: routeNodes, player: p}
@@ -781,8 +784,8 @@ func (gm *GameModel) establishConnection(p *Player, routeNodes []*node) (*route,
 		}
 	}
 
-	p.Route = r
-	return p.Route, nil
+	gm.routes[p] = r
+	return gm.routes[p], nil
 	// return gm.Routes[p.ID]
 }
 
@@ -790,8 +793,8 @@ func (gm *GameModel) trafficCount(n *node, t teamName) int {
 	var count int
 
 	for p := range gm.Teams[t].players {
-		if p.Route != nil {
-			if p.Route.runsThrough(n) || p.Route.Endpoint() == n {
+		if gm.routes[p] != nil {
+			if gm.routes[p].runsThrough(n) || gm.routes[p].Endpoint() == n {
 				count++
 			}
 		}
@@ -802,13 +805,13 @@ func (gm *GameModel) trafficCount(n *node, t teamName) int {
 func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 	// if the module no longer supports routing for this modules team
 	if !n.hasMachineFor(t) {
-		for _, player := range gm.Players {
-			// check each player who is on team's route
-			if player.TeamName == t.Name {
+		for _, p := range gm.Players {
+			// check each p who is on team's route
+			if p.TeamName == t.Name {
 				// and if it contained that node, break the players connection
-				if player.Route != nil {
-					if player.Route.runsThrough(n) {
-						player.breakConnection(true)
+				if gm.routes[p] != nil {
+					if gm.routes[p].runsThrough(n) {
+						gm.BreakConnection(p, true)
 					}
 				}
 			}
@@ -816,21 +819,21 @@ func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
 	}
 }
 
-func (gm *GameModel) setLanguage(p *Player, l string) error {
+func (gm *GameModel) setLanguage(p *player.Player, l string) error {
 	_, ok := gm.languages[l]
 
 	if !ok {
 		return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")
 	}
 
-	mac := p.currentMachine()
+	mac := gm.CurrentMachine(p)
 	if mac != nil && !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != l {
 		return errors.New("Can't change language while attached to a hostile machine")
 	}
 
-	p.language = l
-
-	p.Outgoing(nwmessage.EditLangState(p.language))
+	// TODO combine
+	p.SetLanguage(l)
+	p.Outgoing(nwmessage.EditLangState(l))
 
 	return nil
 }

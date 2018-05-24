@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"nwmessage"
-	"nwmodel"
+	"nwmodel/player"
 	"regrequest"
 
 	"github.com/gorilla/websocket"
@@ -77,7 +77,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// create a single use channel to receive a registered player on
 	tempChan := make(chan bool)
 
-	p := nwmodel.NewPlayer(ws)
+	p := player.NewPlayer(ws)
 	d.registrationQueue <- regrequest.Reg(p, tempChan) // add player registration to dispatcher jobs,
 
 	defer func() {
@@ -92,7 +92,7 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
 
-	p.Outgoing(nwmessage.PsPrompt(p.GetName() + "@lobby>"))
+	p.Outgoing(nwmessage.PsPrompt(p.Name() + "@lobby>"))
 
 	// Handle socket stream
 	for {

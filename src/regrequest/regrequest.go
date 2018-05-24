@@ -1,20 +1,20 @@
 package regrequest
 
 import (
-	"nwmodel"
+	"nwmodel/player"
 )
 
 type Request struct {
 	Action  Action
-	Player  *nwmodel.Player
+	Player  *player.Player
 	ResChan chan bool
 }
 
-func Reg(p *nwmodel.Player, c chan bool) Request {
+func Reg(p *player.Player, c chan bool) Request {
 	return Request{Register, p, c}
 }
 
-func Dereg(p *nwmodel.Player) Request {
+func Dereg(p *player.Player) Request {
 	return Request{Deregister, p, nil}
 }
 

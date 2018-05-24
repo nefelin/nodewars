@@ -4,6 +4,7 @@ import (
 	"feature"
 	"fmt"
 	"math/rand"
+	"nwmodel/player"
 )
 
 type nodeID = int
@@ -19,7 +20,7 @@ type node struct {
 
 // node methods -------------------------------------------------------------------------------
 
-func (n *node) claimFreeMachine(p *Player) error {
+func (n *node) claimFreeMachine(p *player.Player) error {
 	neutral := make([]int, 0)
 
 	for i := range n.Machines {

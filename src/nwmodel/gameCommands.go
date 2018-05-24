@@ -2,11 +2,13 @@ package nwmodel
 
 import (
 	"argument"
+	"challenges"
 	"commands"
 	"errors"
 	"feature"
 	"fmt"
 	"nwmessage"
+	"nwmodel/player"
 	"receiver"
 	"sort"
 	"strings"
@@ -148,25 +150,25 @@ var gameCommands = commands.CommandGroup{
 }
 
 func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
 	chatMsg := args[0].(string)
 
-	gm.psBroadcast(nwmessage.PsChat(p.GetName(), "global", chatMsg))
+	gm.psBroadcast(nwmessage.PsChat(p.Name(), "global", chatMsg))
 	return nil
 }
 
 func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
 	recipName := args[0].(string)
 	msgText := args[1].(string)
 
-	var recip *Player
+	var recip *player.Player
 	for _, player := range gm.Players {
-		if player.GetName() == recipName {
+		if player.Name() == recipName {
 			recip = player
 		}
 	}
@@ -175,14 +177,14 @@ func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 		return fmt.Errorf("No such player, '%s'", recipName)
 	}
 
-	chatMsg := fmt.Sprintf("%s > %s", p.GetName(), msgText)
+	chatMsg := fmt.Sprintf("%s > %s", p.Name(), msgText)
 
-	recip.Outgoing(nwmessage.PsChat(p.name, chatMsg, "(private)"))
+	recip.Outgoing(nwmessage.PsChat(p.Name(), chatMsg, "(private)"))
 	return nil
 }
 
 func cmdTeamChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	chatMsg := args[0].(string)
 
@@ -190,23 +192,23 @@ func cmdTeamChat(cl nwmessage.Client, context receiver.Receiver, args []interfac
 		return nwmessage.ErrorNoTeam()
 	}
 
-	gm.Teams[p.TeamName].broadcast(nwmessage.PsChat(p.GetName(), "team", chatMsg))
+	gm.Teams[p.TeamName].broadcast(nwmessage.PsChat(p.Name(), "team", chatMsg))
 
 	return nil
 
 }
 
 func cmdSay(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	chatMsg := args[0].(string)
 
-	node := p.location()
+	node := gm.PlayerLocation(p)
 	if node == nil {
 		return errors.New("Can only 'say' while connected to a node")
 	}
 
-	msg := nwmessage.PsChat(p.GetName(), "node", chatMsg)
+	msg := nwmessage.PsChat(p.Name(), "node", chatMsg)
 
 	for _, p := range gm.playersAt(node) {
 		p.Outgoing(msg)
@@ -217,7 +219,7 @@ func cmdSay(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 }
 
 func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	var t teamName
 
@@ -265,7 +267,7 @@ func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interfac
 }
 
 func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	lang := args[0].(string)
 
@@ -275,10 +277,10 @@ func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	}
 
 	// if the player's attached somewhere, update the buffer
-	mac := p.currentMachine()
+	mac := gm.CurrentMachine(p)
 	if mac != nil {
 		// TODO syntax
-		langDetails := gm.languages[p.language]
+		langDetails := gm.languages[p.Language()]
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
 		sampleIO := mac.challenge.SampleIO
@@ -294,7 +296,7 @@ func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 }
 
 func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	var langs sort.StringSlice
 
@@ -309,7 +311,7 @@ func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []int
 }
 
 func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	targetNode := args[0].(int)
 	if p.TeamName == "" {
@@ -329,7 +331,7 @@ func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface
 }
 
 func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
 	// Sort team names
@@ -345,7 +347,7 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 		t := gm.Teams[n]
 		whoStr += n + ":\n"
 		for mem := range t.players {
-			whoStr += "\t" + mem.GetName() + "\n"
+			whoStr += "\t" + mem.Name() + "\n"
 		}
 	}
 
@@ -356,14 +358,14 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 }
 
 func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
-	if p.Route == nil {
+	if gm.routes[p] == nil {
 		return nwmessage.ErrorNoConnection()
 	}
 
-	node := p.Route.Endpoint()
+	node := gm.routes[p].Endpoint()
 	retMsg := node.StringFor(p)
 	pHere := gm.playersAt(node)
 
@@ -371,8 +373,8 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 		//make slice of names (excluding this player)
 		names := make([]string, 0, len(pHere)-1)
 		for _, player := range pHere {
-			if player.GetName() != p.GetName() {
-				names = append(names, fmt.Sprintf("%s (%s)", player.GetName(), player.TeamName))
+			if player.Name() != p.Name() {
+				names = append(names, fmt.Sprintf("%s (%s)", player.Name(), player.TeamName))
 			}
 		}
 
@@ -388,7 +390,7 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 }
 
 // func cmdSetPOE(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-// p := cl.(*Player)
+// p := cl.(*player.Player)
 // gm := context.(*GameModel)
 // 	if p.TeamName == "" {
 // 		p.Outgoing(nwmessage.PsNoTeam())
@@ -433,17 +435,17 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 // }
 
 func cmdTestCode(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	// gm := context.(*GameModel)
 
-	if p.EditorState == "" {
+	if p.Editor() == "" {
 		return errors.New("No code submitted")
 	}
 
 	go func() {
 		defer p.SendPrompt()
 
-		response := getOutput(p.language, p.EditorState, p.StdinState)
+		response := challenges.GetOutput(p.Language(), p.Editor(), p.Stdin())
 		p.Outgoing(nwmessage.PsSuccess("Finished running (check output box)"))
 
 		p.Outgoing(nwmessage.ResultState(response))
@@ -455,7 +457,7 @@ func cmdTestCode(cl nwmessage.Client, context receiver.Receiver, args []interfac
 }
 
 func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	var scoreStrs sort.StringSlice
 
@@ -470,15 +472,15 @@ func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}
 }
 
 func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 	macAddress := args[0].(string)
 
-	if p.Route == nil {
+	if gm.routes[p] == nil {
 		return nwmessage.ErrorNoConnection()
 	}
 
-	_, addOk := p.Route.Endpoint().addressMap[macAddress]
+	_, addOk := gm.routes[p].Endpoint().addressMap[macAddress]
 
 	if !addOk {
 		return fmt.Errorf("Invalid address, '%s'", macAddress)
@@ -487,11 +489,11 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	// passed checks, set player mac to target
 
 	// remove old attachments
-	p.macDetach()
+	gm.MacDetach(p)
 
 	// add this attachment
-	p.macAddress = macAddress
-	mac := p.currentMachine()
+	p.SetMacAddress(macAddress)
+	mac := gm.CurrentMachine(p)
 	mac.addPlayer(p)
 
 	// if the mac has an enemy module, player's language is set to that module's
@@ -514,16 +516,16 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	}
 
 	// get language details
-	langDetails := gm.languages[p.language]
+	langDetails := gm.languages[p.Language()]
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
 
-	p.challengeState(mac.challenge)
-	p.stdinState(mac.challenge.SampleIO[0].Input)
+	p.SetChallenge(mac.challenge)
+	p.SetStdin(mac.challenge.SampleIO[0].Input, true)
 
 	var lockStr string
 	if langLock {
-		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(p.currentMachine().language))
+		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(gm.CurrentMachine(p).language))
 	}
 
 	var flag string
@@ -533,7 +535,7 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 
 	if flag != "n" && flag != "no" {
 		editText := boilerplate + lockStr
-		p.editState(editText)
+		p.SetEditor(editText, true)
 	}
 
 	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.StringFor(p))
@@ -544,16 +546,16 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 }
 
 func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
-	err := p.canSubmit()
+	err := gm.CanSubmit(p)
 	if err != nil {
 		return err
 	}
 
-	mac := p.currentMachine()
-	node := p.location()
+	mac := gm.CurrentMachine(p)
+	node := gm.PlayerLocation(p)
 
 	// Abstract this TODO
 	var feaType feature.Type
@@ -579,7 +581,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 
 	// passed error checks
 	go func() {
-		response, err := p.submitCode()
+		response, err := p.SubmitCode(mac.challenge.ID)
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))
@@ -599,18 +601,19 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 }
 
 func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*Player)
+	p := cl.(*player.Player)
 	gm := context.(*GameModel)
-	node := p.location()
+	node := gm.PlayerLocation(p)
+	mac := gm.CurrentMachine(p)
 
-	err := p.canSubmit()
+	err := gm.CanSubmit(p)
 	if err != nil {
 		return err
 	}
 
 	go func() {
-		mac := p.currentMachine()
-		response, err := p.submitCode()
+
+		response, err := p.SubmitCode(mac.challenge.ID)
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))
@@ -629,7 +632,7 @@ func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []inte
 }
 
 // Async Confirmation Dialogues
-// func beginRemoveModuleConf(p *Player, gm *GameModel) {
+// func beginRemoveModuleConf(p *player.Player, gm *GameModel) {
 // 	p.Outgoing(nwmessage.PsDialogue("Resetting friendly machine, (y)es to confirm\nany other key to abort: "))
 
 // 	p.dialogue = nwmessage.NewDialogue([]nwmessage.Fn{

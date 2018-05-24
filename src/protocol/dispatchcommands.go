@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"nwmessage"
 	"nwmodel"
+	"nwmodel/player"
 	"receiver"
 	"sort"
 	"strconv"
@@ -110,7 +111,7 @@ var dispatchCommands = commands.CommandGroup{
 }
 
 func cmdToggleChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	p.ToggleChat()
 
 	var flag string
@@ -127,11 +128,11 @@ func cmdToggleChat(cl nwmessage.Client, context receiver.Receiver, args []interf
 
 func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	msg := args[0].(string)
 
 	for _, player := range d.GetPlayers() {
-		player.Outgoing(nwmessage.PsChat(p.GetName(), "global", msg))
+		player.Outgoing(nwmessage.PsChat(p.Name(), "global", msg))
 
 	}
 	return nil
@@ -139,19 +140,19 @@ func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 
 func cmdSetName(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
 	}
 	name := args[0].(string)
 
-	if name == p.GetName() {
+	if name == p.Name() {
 		return fmt.Errorf("Your name's already set to '%s'", name)
 	}
 
 	// check for name collision
 	for _, player := range d.players {
-		if name == player.GetName() {
+		if name == player.Name() {
 			return fmt.Errorf("The name '%s' is already taken", name)
 		}
 	}
@@ -162,7 +163,7 @@ func cmdSetName(cl nwmessage.Client, context receiver.Receiver, args []interface
 
 func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 
 	if _, ok := d.locations[p]; ok {
 		return fmt.Errorf("You can't create a game. You're already in a game")
@@ -199,7 +200,7 @@ func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface
 
 func cmdKillGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 
 	gameName := args[0].(string)
 
@@ -225,7 +226,7 @@ func cmdKillGame(cl nwmessage.Client, context receiver.Receiver, args []interfac
 
 func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	// var location Room
 	// location, ok := d.games[d.locations[p.ID]]
 
@@ -246,7 +247,7 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 	var playerNames sort.StringSlice
 
 	for _, p := range location.GetPlayers() {
-		playerNames = append(playerNames, p.GetName())
+		playerNames = append(playerNames, p.Name())
 	}
 
 	playerNames.Sort()
@@ -259,7 +260,7 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 
 func cmdJoinGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	gameName := args[0].(string)
 
 	_, ok := d.games[gameName]
@@ -279,7 +280,7 @@ func cmdJoinGame(cl nwmessage.Client, context receiver.Receiver, args []interfac
 
 func cmdLeaveGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 
 	err := d.leaveRoom(p)
 
@@ -294,15 +295,15 @@ func cmdLeaveGame(cl nwmessage.Client, context receiver.Receiver, args []interfa
 
 func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 
 	name := args[0].(string)
 	msg := args[1].(string)
-	var recip *nwmodel.Player
+	var recip *player.Player
 
 	// check lobby for recipient:
 	for _, player := range d.players {
-		if player.GetName() == name {
+		if player.Name() == name {
 			recip = player
 		}
 	}
@@ -311,16 +312,16 @@ func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 		return fmt.Errorf("No such player, '%s'", name)
 	}
 
-	recip.Outgoing(nwmessage.PsChat(p.GetName(), "private", msg))
+	recip.Outgoing(nwmessage.PsChat(p.Name(), "private", msg))
 
-	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.GetName(), msg)))
+	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("(you to %s): %s", recip.Name(), msg)))
 
 	return nil
 }
 
 func cmdListGames(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	d := context.(*Dispatcher)
-	p := cl.(*nwmodel.Player)
+	p := cl.(*player.Player)
 	gameList := ""
 
 	if len(d.games) == 0 {

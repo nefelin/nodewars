@@ -1,4 +1,4 @@
-package nwmodel
+package challenges
 
 import (
 	"bytes"
@@ -9,15 +9,17 @@ import (
 	"os"
 )
 
+type ChallengeID = int64
+
 // Challenge holds info for individual programming challenges
 type Challenge struct {
-	ID        int64    `json:"id"`
-	Name      string   `json:"name"`
-	ShortDesc string   `json:"shortDesc"`
-	LongDesc  string   `json:"longDesc"`
-	Tags      tagList  `json:"tags"`
-	Cases     caseList `json:"cases"`
-	SampleIO  caseList `json:"sampleIO"`
+	ID        ChallengeID `json:"id"`
+	Name      string      `json:"name"`
+	ShortDesc string      `json:"shortDesc"`
+	LongDesc  string      `json:"longDesc"`
+	Tags      tagList     `json:"tags"`
+	Cases     caseList    `json:"cases"`
+	SampleIO  caseList    `json:"sampleIO"`
 }
 
 type safeChallenge struct {
@@ -28,7 +30,7 @@ type safeChallenge struct {
 	SampleIO  caseList `json:"sampleIO"`
 }
 
-func (c *Challenge) redacted() safeChallenge {
+func (c *Challenge) Redacted() safeChallenge {
 	return safeChallenge{
 		Name:      c.Name,
 		ShortDesc: c.ShortDesc,
@@ -103,7 +105,7 @@ func (r GradedResult) gradeMsg() string {
 	return res
 }
 
-func (r GradedResult) passed() int {
+func (r GradedResult) Passed() int {
 	var passed int
 	for _, grade := range r.Grades {
 		if grade == "Pass" {
@@ -127,7 +129,7 @@ type Language struct {
 // LanguagesResponse describes the data format testbox will describe supported languages in.
 type LanguagesResponse map[string]Language
 
-func getRandomChallenge() Challenge {
+func GetRandomChallenge() Challenge {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -144,7 +146,7 @@ func getRandomChallenge() Challenge {
 }
 
 // returns a map of inputs to test pass/fail
-func submitTest(id int64, language, code string) GradedResult {
+func SubmitTest(id int64, language, code string) GradedResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -164,7 +166,7 @@ func submitTest(id int64, language, code string) GradedResult {
 	return e
 }
 
-func getOutput(language, code, stdin string) GradedResult {
+func GetOutput(language, code, stdin string) GradedResult {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -183,7 +185,7 @@ func getOutput(language, code, stdin string) GradedResult {
 	return e
 }
 
-func getLanguages() map[string]Language {
+func GetLanguages() map[string]Language {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
