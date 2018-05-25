@@ -61,7 +61,7 @@ func (n node) StringFor(p *player.Player) string {
 			atIndicator = "*"
 		}
 		mac := n.addressMap[add]
-		macList += "\n" + add + ":" + mac.StringFor(p) + atIndicator
+		macList += "\n" + add + ":" + mac2Str(mac, p) + atIndicator
 	}
 
 	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")

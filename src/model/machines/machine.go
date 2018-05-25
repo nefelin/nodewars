@@ -3,9 +3,7 @@ package machines
 import (
 	"challenges"
 	"feature"
-	"fmt"
 	"math/rand"
-	"model/player"
 	"sync"
 )
 
@@ -15,7 +13,7 @@ type Machine struct {
 	Challenge challenges.Challenge
 
 	Powered  bool    `json:"powered"`
-	builder  string  // `json:"creator"`
+	Builder  string  // `json:"creator"`
 	TeamName string  `json:"owner"`
 	CoinVal  float32 `json:"coinval"`
 	// attachedPlayers map[*player.Player]bool
@@ -102,7 +100,7 @@ func (m *Machine) BelongsTo(teamName string) bool {
 }
 
 func (m *Machine) Reset() {
-	m.builder = ""
+	m.Builder = ""
 	m.TeamName = ""
 	m.Language = ""
 	m.Powered = true
@@ -115,10 +113,11 @@ func (m *Machine) Reset() {
 	m.ResetChallenge()
 }
 
-func (m *Machine) Claim(p *player.Player, r challenges.GradedResult) {
-	m.builder = p.Name()
-	m.TeamName = p.TeamName
-	m.Language = p.Language()
+func (m *Machine) Claim(lang, Builder, team string, r challenges.GradedResult) {
+	m.Language = lang
+	m.Builder = Builder
+	m.TeamName = team
+
 	// m.Powered = true
 
 	m.Health = r.Passed()
@@ -127,7 +126,7 @@ func (m *Machine) Claim(p *player.Player, r challenges.GradedResult) {
 
 // dummyClaim is used to claim a Machine for a player without an execution result
 func (m *Machine) DummyClaim(teamName string, str string) {
-	// m.builder = p.name
+	// m.Builder = p.name
 	m.TeamName = teamName
 	m.Language = "python" // TODO find ore elegent solution for this
 	// m.Powered = true
@@ -139,29 +138,5 @@ func (m *Machine) DummyClaim(teamName string, str string) {
 		m.Health = rand.Intn(m.MaxHealth) + 1
 	case "MIN":
 		m.Health = 1
-	}
-}
-
-// func (m *Machine) LoadChallenge() {
-// 	m.Challenge = getRandomChallenge()
-
-// 	fmt.Printf("Loaded challenge, %v\n", m.Challenge)
-// }
-func (m Machine) details() string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.Language, m.Health, m.MaxHealth)
-}
-
-func (m Machine) StringFor(p *player.Player) string {
-	var feature string
-
-	if m.IsFeature() {
-		feature = " (feature)"
-	}
-
-	switch {
-	case m.TeamName != "":
-		return "(" + m.details() + ")" + feature
-	default:
-		return "( -neutral- )" + feature
 	}
 }

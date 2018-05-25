@@ -538,7 +538,7 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 		p.SetEditor(editText, true)
 	}
 
-	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac.StringFor(p))
+	retText := fmt.Sprintf("Attached to machine at %s: \ncontents:%v", macAddress, mac2Str(mac, p))
 	retText += lockStr
 
 	p.Outgoing(nwmessage.PsSuccess(retText))

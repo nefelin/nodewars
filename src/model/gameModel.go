@@ -874,3 +874,21 @@ func (gm *GameModel) resetMachine(m *machines.Machine) {
 	m.Reset()
 
 }
+
+func mac2Str(m *machines.Machine, p *player.Player) string {
+	// p is the player observing the machine. Unused atm but allows us to show/hide info from different players
+	var feature string
+
+	if m.IsFeature() {
+		feature = " (feature)"
+	}
+
+	details := fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.Builder, m.Language, m.Health, m.MaxHealth)
+
+	switch {
+	case m.TeamName != "":
+		return "(" + details + ")" + feature
+	default:
+		return "( -neutral- )" + feature
+	}
+}
