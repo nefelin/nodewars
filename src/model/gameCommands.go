@@ -283,8 +283,8 @@ func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 		langDetails := gm.languages[p.Language()]
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
-		sampleIO := mac.challenge.SampleIO
-		description := mac.challenge.ShortDesc
+		sampleIO := mac.Challenge.SampleIO
+		description := mac.Challenge.ShortDesc
 
 		editText := fmt.Sprintf("%s Challenge:\n%s %s\n%s Sample IO: %s\n\n%s", comment, comment, description, comment, sampleIO, boilerplate)
 		p.Outgoing(nwmessage.EditState(editText))
@@ -494,14 +494,14 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	// add this attachment
 	p.SetMacAddress(macAddress)
 	mac := gm.CurrentMachine(p)
-	mac.addPlayer(p)
+	mac.AddPlayer(p)
 
 	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false
-	if !mac.isNeutral() && !mac.belongsTo(p.TeamName) {
+	if !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) {
 		langLock = true
-		gm.setLanguage(p, mac.language)
-		p.Outgoing(nwmessage.LangSupportState([]string{mac.language}))
+		gm.setLanguage(p, mac.Language)
+		p.Outgoing(nwmessage.LangSupportState([]string{mac.Language}))
 
 	} else {
 		supportedLangs := make([]string, len(gm.languages))
@@ -520,12 +520,12 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
 
-	p.SetChallenge(mac.challenge)
-	p.SetStdin(mac.challenge.SampleIO[0].Input, true)
+	p.SetChallenge(mac.Challenge)
+	p.SetStdin(mac.Challenge.SampleIO[0].Input, true)
 
 	var lockStr string
 	if langLock {
-		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(gm.CurrentMachine(p).language))
+		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(gm.CurrentMachine(p).Language))
 	}
 
 	var flag string
@@ -559,7 +559,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 
 	// Abstract this TODO
 	var feaType feature.Type
-	if mac.isFeature() {
+	if mac.IsFeature() {
 		if mac.Type == feature.None {
 			if len(args) < 1 {
 				return errors.New("Make requires one argument when attached to an untyped feature")
@@ -581,7 +581,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 
 	// passed error checks
 	go func() {
-		response, err := p.SubmitCode(mac.challenge.ID)
+		response, err := p.SubmitCode(mac.Challenge.ID)
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))
@@ -613,7 +613,7 @@ func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []inte
 
 	go func() {
 
-		response, err := p.SubmitCode(mac.challenge.ID)
+		response, err := p.SubmitCode(mac.Challenge.ID)
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))

@@ -69,25 +69,6 @@ func (n node) StringFor(p *player.Player) string {
 	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
 }
 
-func (m machine) StringFor(p *player.Player) string {
-	var feature string
-
-	if m.isFeature() {
-		feature = " (feature)"
-	}
-
-	switch {
-	case m.TeamName != "":
-		return "(" + m.details() + ")" + feature
-	default:
-		return "( -neutral- )" + feature
-	}
-}
-
-func (m machine) details() string {
-	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.language, m.Health, m.MaxHealth)
-}
-
 func (r route) forMsg() string {
 	nodeCount := len(r.Nodes)
 	nodeList := make([]string, nodeCount)

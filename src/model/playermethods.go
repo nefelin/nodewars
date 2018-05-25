@@ -4,6 +4,7 @@ import (
 	"challenges"
 	"errors"
 	"fmt"
+	"model/machines"
 	"model/player"
 	"nwmessage"
 )
@@ -24,8 +25,8 @@ func (gm *GameModel) CanSubmit(p *player.Player) error {
 		return errors.New("No code to submit")
 	case mac == nil:
 		return errors.New("Not attached to a machine")
-	case !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != p.Language():
-		return fmt.Errorf("This machine is written in %s, your code must also be written in %s", mac.language, mac.language)
+	case !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) && mac.Language != p.Language():
+		return fmt.Errorf("This machine is written in %s, your code must also be written in %s", mac.Language, mac.Language)
 	}
 	return nil
 
@@ -37,7 +38,7 @@ func (gm *GameModel) MacDetach(p *player.Player) {
 	p.SetChallenge(challenges.Challenge{})
 
 	if mac != nil {
-		mac.remPlayer(p)
+		mac.RemPlayer(p)
 		p.SetMacAddress("")
 	}
 }
@@ -57,7 +58,7 @@ func (gm *GameModel) BreakConnection(p *player.Player, forced bool) {
 }
 
 // TODO refactor this, modify how slots are tracked, probably with IDs
-func (gm *GameModel) CurrentMachine(p *player.Player) *machine {
+func (gm *GameModel) CurrentMachine(p *player.Player) *machines.Machine {
 	r := gm.routes[p]
 	if r == nil || p.MacAddress() == "" {
 		return nil

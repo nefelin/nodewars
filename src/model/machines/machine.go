@@ -1,4 +1,4 @@
-package model
+package machines
 
 import (
 	"challenges"
@@ -10,10 +10,10 @@ import (
 	"sync"
 )
 
-type machine struct {
+type Machine struct {
 	sync.Mutex
-	// accepts   challengeCriteria // store what challenges can fill this machine
-	challenge challenges.Challenge
+	// accepts   challengeCriteria // store what challenges can fill this Machine
+	Challenge challenges.Challenge
 
 	Powered         bool    `json:"powered"`
 	builder         string  // `json:"creator"`
@@ -21,12 +21,12 @@ type machine struct {
 	CoinVal         float32 `json:"coinval"`
 	attachedPlayers map[*player.Player]bool
 
-	address string // mac address in node where machine resides
+	Address string // mac address in node where Machine resides
 
 	// solution string // store solution used to pass. could be useful for later mechanics
 	Type feature.Type `json:"type"` // NA for non-features, none or other feature.Type for features
 
-	language  string // `json:"languageId"`
+	Language  string // `json:"languageId"`
 	Health    int    `json:"health"`
 	MaxHealth int    `json:"maxHealth"`
 }
@@ -39,32 +39,32 @@ type challengeCriteria struct {
 
 // init methods
 
-func newMachine() *machine {
-	return &machine{
+func NewMachine() *Machine {
+	return &Machine{
 		Powered:         true,
 		attachedPlayers: make(map[*player.Player]bool),
 	}
 }
 
-func newFeature() *machine {
-	m := newMachine()
+func NewFeature() *Machine {
+	m := NewMachine()
 	m.Type = feature.None
 	return m
 }
 
-// machine methods -------------------------------------------------------------------------
+// Machine methods -------------------------------------------------------------------------
 
-func (m *machine) addPlayer(p *player.Player) {
+func (m *Machine) AddPlayer(p *player.Player) {
 	m.attachedPlayers[p] = true
 }
 
-func (m *machine) remPlayer(p *player.Player) {
+func (m *Machine) RemPlayer(p *player.Player) {
 	delete(m.attachedPlayers, p)
 }
 
-func (m *machine) detachAll(msg string) {
+func (m *Machine) DetachAll(msg string) {
 	for p := range m.attachedPlayers {
-		m.remPlayer(p)
+		m.RemPlayer(p)
 		if msg != "" {
 			p.Outgoing(nwmessage.PsAlert(msg))
 
@@ -73,20 +73,20 @@ func (m *machine) detachAll(msg string) {
 }
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
-func (m *machine) resetChallenge() {
-	m.challenge = challenges.GetRandomChallenge()
-	m.MaxHealth = len(m.challenge.Cases)
+func (m *Machine) ResetChallenge() {
+	m.Challenge = challenges.GetRandomChallenge()
+	m.MaxHealth = len(m.Challenge.Cases)
 }
 
-func (m *machine) isNeutral() bool {
+func (m *Machine) IsNeutral() bool {
 	if m.TeamName == "" {
 		return true
 	}
 	return false
 }
 
-func (m *machine) isFeature() bool {
-	// fmt.Printf("machine Type: %v", m.Type)
+func (m *Machine) IsFeature() bool {
+	// fmt.Printf("Machine Type: %v", m.Type)
 	// fmt.Printf("Feature NA: %v", feature.NA)
 	// fmt.Printf("Equal: %v", m.Type == feature.NA)
 	if m.Type == nil {
@@ -95,44 +95,44 @@ func (m *machine) isFeature() bool {
 	return true
 }
 
-func (m *machine) belongsTo(teamName string) bool {
+func (m *Machine) BelongsTo(teamName string) bool {
 	if m.TeamName == teamName {
 		return true
 	}
 	return false
 }
 
-func (m *machine) reset() {
+func (m *Machine) Reset() {
 	m.builder = ""
 	m.TeamName = ""
-	m.language = ""
+	m.Language = ""
 	m.Powered = true
 
-	m.detachAll(fmt.Sprintf("mac:%s is resetting, you have been detached", m.address))
+	m.DetachAll(fmt.Sprintf("mac:%s is resetting, you have been detached", m.Address))
 
 	// if m.Type != nil { // reset feature type?
 	// 	m.Type = feature.None
 	// }
 
 	m.Health = 0
-	m.resetChallenge()
+	m.ResetChallenge()
 }
 
-func (m *machine) claim(p *player.Player, r challenges.GradedResult) {
+func (m *Machine) Claim(p *player.Player, r challenges.GradedResult) {
 	m.builder = p.Name()
 	m.TeamName = p.TeamName
-	m.language = p.Language()
+	m.Language = p.Language()
 	// m.Powered = true
 
 	m.Health = r.Passed()
 	// m.MaxHealth = len(r.Graded)
 }
 
-// dummyClaim is used to claim a machine for a player without an execution result
-func (m *machine) dummyClaim(teamName string, str string) {
+// dummyClaim is used to claim a Machine for a player without an execution result
+func (m *Machine) DummyClaim(teamName string, str string) {
 	// m.builder = p.name
 	m.TeamName = teamName
-	m.language = "python" // TODO find ore elegent solution for this
+	m.Language = "python" // TODO find ore elegent solution for this
 	// m.Powered = true
 
 	switch str {
@@ -145,8 +145,26 @@ func (m *machine) dummyClaim(teamName string, str string) {
 	}
 }
 
-// func (m *machine) loadChallenge() {
-// 	m.challenge = getRandomChallenge()
+// func (m *Machine) LoadChallenge() {
+// 	m.Challenge = getRandomChallenge()
 
-// 	fmt.Printf("Loaded challenge, %v\n", m.challenge)
+// 	fmt.Printf("Loaded challenge, %v\n", m.Challenge)
 // }
+func (m Machine) details() string {
+	return fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.builder, m.Language, m.Health, m.MaxHealth)
+}
+
+func (m Machine) StringFor(p *player.Player) string {
+	var feature string
+
+	if m.IsFeature() {
+		feature = " (feature)"
+	}
+
+	switch {
+	case m.TeamName != "":
+		return "(" + m.details() + ")" + feature
+	default:
+		return "( -neutral- )" + feature
+	}
+}

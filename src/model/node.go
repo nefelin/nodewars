@@ -4,18 +4,19 @@ import (
 	"feature"
 	"fmt"
 	"math/rand"
+	"model/machines"
 	"model/player"
 )
 
 type nodeID = int
 
 type node struct {
-	ID          nodeID     `json:"id"` // keys and ids is redundant? TODO
-	Connections []nodeID   `json:"connections"`
-	Machines    []*machine `json:"machines"` // TODO why is this a list of pointerS?
-	Feature     *machine   `json:"feature"`
-	Remoteness  float64    //`json:"remoteness"`
-	addressMap  map[string]*machine
+	ID          nodeID              `json:"id"` // keys and ids is redundant? TODO
+	Connections []nodeID            `json:"connections"`
+	Machines    []*machines.Machine `json:"machines"` // TODO why is this a list of pointerS?
+	Feature     *machines.Machine   `json:"feature"`
+	Remoteness  float64             //`json:"remoteness"`
+	addressMap  map[string]*machines.Machine
 }
 
 // node methods -------------------------------------------------------------------------------
@@ -35,7 +36,7 @@ func (n *node) claimFreeMachine(p *player.Player) error {
 
 	target := neutral[rand.Intn(len(neutral))]
 
-	n.Machines[target].dummyClaim(p.TeamName, "FULL")
+	n.Machines[target].DummyClaim(p.TeamName, "FULL")
 	return nil
 
 }
@@ -82,14 +83,14 @@ func (n *node) coinProduction(t teamName) float32 {
 }
 
 func (n *node) initMachines() {
-	n.Machines = make([]*machine, len(n.Connections))
+	n.Machines = make([]*machines.Machine, len(n.Connections))
 	for i := range n.Connections {
-		n.Machines[i] = newMachine()
-		n.Machines[i].resetChallenge()
+		n.Machines[i] = machines.NewMachine()
+		n.Machines[i].ResetChallenge()
 	}
 
 	// n.Feature = newFeature(n.Feature.Type) // Preserve type in case map contains feature type info
-	n.Feature.resetChallenge()
+	n.Feature.ResetChallenge()
 
 	n.initAddressMap()
 }
@@ -112,9 +113,9 @@ func (n *node) initAddressMap() {
 
 }
 
-func (n *node) setMacAddress(address string, mac *machine) {
+func (n *node) setMacAddress(address string, mac *machines.Machine) {
 	// TODO error check name collisions
-	mac.address = address
+	mac.Address = address
 	n.addressMap[address] = mac
 
 }
@@ -208,7 +209,7 @@ func (n *node) supportsRouting(t teamName) bool {
 		return true
 	}
 
-	if n.machinesFor(t) < 1 && !n.Feature.belongsTo(t) {
+	if n.machinesFor(t) < 1 && !n.Feature.BelongsTo(t) {
 		return false
 	}
 

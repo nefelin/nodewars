@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"model/machines"
 	"model/player"
 	"nwmessage"
 	"time"
@@ -130,7 +131,7 @@ func (gm *GameModel) addTeams(teams []*team) error {
 		poeIndex := rand.Intn(len(nodes))
 		poeNode := nodes[poeIndex]
 
-		poeNode.Feature.dummyClaim(t.Name, "MIN")
+		poeNode.Feature.DummyClaim(t.Name, "MIN")
 		err := t.addPoe(poeNode)
 		if err != nil {
 			panic(err)
@@ -234,36 +235,36 @@ func (gm *GameModel) playersAt(n *node) []*player.Player {
 	return players
 }
 
-func (gm *GameModel) detachOtherPlayers(p *player.Player, msg string) {
-	if gm.CurrentMachine(p) == nil {
-		log.Panic("player.Player is not attached to a machine")
-	}
+// func (gm *GameModel) detachOtherPlayers(p *player.Player, msg string) {
+// 	if gm.CurrentMachine(p) == nil {
+// 		log.Panic("player.Player is not attached to a machine")
+// 	}
 
-	for _, player := range gm.playersAt(gm.routes[p].Endpoint()) {
-		if player != p {
-			comment := gm.languages[player.Language()].CommentPrefix
+// 	for _, player := range gm.playersAt(gm.routes[p].Endpoint()) {
+// 		if player != p {
+// 			comment := gm.languages[player.Language()].CommentPrefix
 
-			editMsg := fmt.Sprintf("%s %s", comment, msg)
+// 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
-			player.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", gm.CurrentMachine(p).address)))
+// 			player.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You have been detached from the machine at %s", gm.CurrentMachine(p).address)))
 
-			player.Outgoing(nwmessage.EditState(editMsg))
+// 			player.Outgoing(nwmessage.EditState(editMsg))
 
-			gm.BreakConnection(player, true)
+// 			gm.BreakConnection(player, true)
 
-		}
-	}
-}
+// 		}
+// 	}
+// }
 
-func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machine, response challenges.GradedResult, fType feature.Type) {
+func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machines.Machine, response challenges.GradedResult, fType feature.Type) {
 	// node := gm.routes[p].Endpoint()
 	solutionStrength := response.Passed()
 
 	var hostile bool
 	var friendly bool
 
-	if !mac.isNeutral() {
-		if !mac.belongsTo(p.TeamName) {
+	if !mac.IsNeutral() {
+		if !mac.BelongsTo(p.TeamName) {
 			hostile = true
 		} else {
 			friendly = true
@@ -309,7 +310,7 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machine,
 
 	// refactor module to new owner and health
 	mac.TeamName = p.TeamName
-	mac.language = p.Language()
+	mac.Language = p.Language()
 	mac.Health = solutionStrength
 
 	if mac.Type == feature.None {
@@ -363,11 +364,11 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machine,
 
 	} else if friendly {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.Name(), p.TeamName, node.ID)))
-		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.language)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.Language)))
 
 	} else {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.Name(), p.TeamName, node.ID)))
-		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.language, mac.Health, mac.MaxHealth)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.Language, mac.Health, mac.MaxHealth)))
 	}
 
 	if node.dominatedBy(p.TeamName) {
@@ -376,11 +377,11 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machine,
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machine, r challenges.GradedResult) {
+func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machines.Machine, r challenges.GradedResult) {
 	// node := gm.routes[p].Endpoint()
 	solutionStrength := r.Passed()
 
-	if mac.isNeutral() {
+	if mac.IsNeutral() {
 		p.Outgoing(nwmessage.PsError(errors.New("Machine is already neutral")))
 
 		return
@@ -398,7 +399,7 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machine,
 	allowed := node.hasMachineFor(oldTeam)
 
 	// reset the machine
-	mac.reset()
+	mac.Reset()
 
 	// evaluate routing of player trffic through node
 	gm.evalTrafficForTeam(node, oldTeam)
@@ -827,7 +828,7 @@ func (gm *GameModel) setLanguage(p *player.Player, l string) error {
 	}
 
 	mac := gm.CurrentMachine(p)
-	if mac != nil && !mac.isNeutral() && !mac.belongsTo(p.TeamName) && mac.language != l {
+	if mac != nil && !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) && mac.Language != l {
 		return errors.New("Can't change language while attached to a hostile machine")
 	}
 

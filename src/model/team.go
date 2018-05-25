@@ -67,7 +67,7 @@ func (t *team) addPoe(n *node) error {
 		return fmt.Errorf("No Point of Entry feature at Node, '%d'", n.ID)
 	}
 
-	if !n.Feature.belongsTo(t.Name) {
+	if !n.Feature.BelongsTo(t.Name) {
 		return errors.New("Team can only route to poes where it controls the feature")
 	}
 

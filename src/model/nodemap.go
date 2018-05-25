@@ -2,10 +2,10 @@ package model
 
 import (
 	"errors"
-	"log"
-	"sort"
-
 	"feature"
+	"log"
+	"model/machines"
+	"sort"
 )
 
 type nodeMap struct {
@@ -162,9 +162,9 @@ func (m *nodeMap) newNode() *node {
 		ID:          id,
 		Connections: make([]int, 0),
 		Remoteness:  100,
-		Machines:    []*machine{newMachine()},
-		Feature:     newFeature(),
-		addressMap:  make(map[string]*machine),
+		Machines:    []*machines.Machine{machines.NewMachine()},
+		Feature:     machines.NewFeature(),
+		addressMap:  make(map[string]*machines.Machine),
 	}
 }
 
