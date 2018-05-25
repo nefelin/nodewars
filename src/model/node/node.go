@@ -1,13 +1,13 @@
-package model
+package node
 
 import (
 	"feature"
 	"fmt"
 	"math/rand"
 	"model/machines"
-	// "model/player"
 )
 
+type teamName = string
 type nodeID = int
 
 type node struct {
@@ -20,26 +20,6 @@ type node struct {
 }
 
 // node methods -------------------------------------------------------------------------------
-
-// func (n *node) claimFreeMachine(p *player.Player) error {
-// 	neutral := make([]int, 0)
-
-// 	for i := range n.Machines {
-// 		if n.Machines[i].TeamName == "" {
-// 			neutral = append(neutral, i)
-// 		}
-// 	}
-
-// 	if len(neutral) < 1 {
-// 		return fmt.Errorf("Node %d contains no neutral machines to claim", n.ID)
-// 	}
-
-// 	target := neutral[rand.Intn(len(neutral))]
-
-// 	n.Machines[target].DummyClaim(p.TeamName, "FULL")
-// 	return nil
-
-// }
 
 // coinVal calculates the coin produced per machine in a given node
 func (n *node) coinVal(t teamName) float32 {
@@ -152,9 +132,9 @@ func cutIntFromSlice(p int, s []int) []int {
 	return s
 }
 
-func (n *node) hasMachineFor(t *team) bool { // includes feature
+func (n *node) hasMachineFor(t teamName) bool { // includes feature
 	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
-	if t == nil {
+	if t == "" {
 		return true
 	}
 
@@ -167,14 +147,14 @@ func (n *node) hasMachineFor(t *team) bool { // includes feature
 	// if we control a powered machine here we can route through
 	for _, mac := range n.Machines {
 		if mac.TeamName != "" {
-			if mac.TeamName == t.Name { // && mac.Powered {
+			if mac.TeamName == t { // && mac.Powered {
 				return true
 			}
 		}
 	}
 
 	// or if we control a powered feature here we can route through
-	if n.Feature.TeamName == t.Name { // && n.Feature.Powered {
+	if n.Feature.TeamName == t { // && n.Feature.Powered {
 		return true
 	}
 

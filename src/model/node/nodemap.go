@@ -1,4 +1,4 @@
-package model
+package node
 
 import (
 	"errors"
@@ -9,8 +9,7 @@ import (
 )
 
 type nodeMap struct {
-	Nodes []*node `json:"nodes"`
-	// POEs        map[nodeID]bool `json:"poes"`
+	Nodes       []*node `json:"nodes"`
 	diameter    float64
 	radius      float64
 	nodeIDCount nodeID
@@ -19,8 +18,7 @@ type nodeMap struct {
 // initializer:
 func newNodeMap() nodeMap {
 	return nodeMap{
-		Nodes: make([]*node, 0),
-		// POEs:     make(map[nodeID]bool),
+		Nodes:    make([]*node, 0),
 		diameter: 0,
 		radius:   1000,
 	}
@@ -67,7 +65,7 @@ func (m *nodeMap) findNodeEccentricity(n *node) int {
 
 		// don't check our starting point
 		if n != node {
-			nodePath := m.routeToNode(&team{}, n, node)
+			nodePath := m.routeToNode("", n, node)
 			if len(nodePath) > maxDist {
 				maxDist = len(nodePath)
 				// farthestNode = node.ID
@@ -285,7 +283,7 @@ type searchField struct {
 	prev      map[*node]*node
 }
 
-func (m *nodeMap) newSearchField(t *team, source *node) searchField {
+func (m *nodeMap) newSearchField(t teamName, source *node) searchField {
 	retField := searchField{
 		unchecked: make(map[*node]bool), // TODO this should be a priority queue for efficiency
 		dist:      make(map[*node]int),
@@ -301,7 +299,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 		tocheck = tocheck[1:]
 		// log.Printf("this: %v", thisNode)
 		// t == nil signifies that we don't care about routability and we want a field containing the whole (contiguous) map
-		if t == nil || thisNode.supportsRouting(t.Name) {
+		if t == "" || thisNode.supportsRouting(t) {
 			retField.unchecked[thisNode] = true
 			retField.dist[thisNode] = 1000
 			seen[thisNode] = true
@@ -322,7 +320,7 @@ func (m *nodeMap) newSearchField(t *team, source *node) searchField {
 
 // routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find node path
 // TODO get code review on this. I think I'm maybe not getting optimal route
-func (m *nodeMap) routeToNode(t *team, source, target *node) []*node {
+func (m *nodeMap) routeToNode(t teamName, source, target *node) []*node {
 
 	if source.hasMachineFor(t) {
 		// if we're connecting to our POE, return a route which is only our POE
