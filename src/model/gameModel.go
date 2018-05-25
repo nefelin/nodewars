@@ -14,6 +14,8 @@ import (
 	"time"
 )
 
+type playerSet = map[*player.Player]bool
+
 // GameModel holds all state information
 type GameModel struct {
 	name    string
@@ -27,7 +29,10 @@ type GameModel struct {
 	running       bool //running should replace mapLocked
 	pendingAlerts map[player.PlayerID][]alert
 
-	routes map[*player.Player]*route
+	// Interactions
+	attachments map[*machines.Machine]playerSet
+	routes      map[*player.Player]*route
+
 	// timelimit should be able to set a timelimit and count points at the end
 }
 
@@ -60,7 +65,9 @@ func NewDefaultModel(name string) *GameModel {
 		aChan:         aChan,
 		PointGoal:     1000,
 		pendingAlerts: make(map[player.PlayerID][]alert),
-		routes:        make(map[*player.Player]*route),
+
+		attachments: make(map[*machines.Machine]playerSet),
+		routes:      make(map[*player.Player]*route),
 	}
 
 	// fmt.Println("Supported Languages:")
@@ -837,4 +844,33 @@ func (gm *GameModel) setLanguage(p *player.Player, l string) error {
 	p.Outgoing(nwmessage.EditLangState(l))
 
 	return nil
+}
+
+// Machine related methods
+func (gm *GameModel) attachPlayer(p *player.Player, m *machines.Machine) {
+	if _, ok := gm.attachments[m]; !ok {
+		gm.attachments[m] = make(playerSet)
+	}
+	gm.attachments[m][p] = true
+}
+
+func (gm *GameModel) detachPlayer(p *player.Player) {
+	m := gm.CurrentMachine(p)
+	if m != nil {
+		delete(gm.attachments[m], p)
+	}
+}
+
+func (gm *GameModel) detachAll(m *machines.Machine, msg string) {
+	for p := range gm.attachments[m] {
+		gm.detachPlayer(p)
+	}
+
+}
+
+func (gm *GameModel) resetMachine(m *machines.Machine) {
+	msg := fmt.Sprintf("mac:%s is resetting, you have been detached", m.Address)
+	gm.detachAll(m, msg)
+	m.Reset()
+
 }

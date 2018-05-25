@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math/rand"
 	"model/player"
-	"nwmessage"
 	"sync"
 )
 
@@ -15,11 +14,11 @@ type Machine struct {
 	// accepts   challengeCriteria // store what challenges can fill this Machine
 	Challenge challenges.Challenge
 
-	Powered         bool    `json:"powered"`
-	builder         string  // `json:"creator"`
-	TeamName        string  `json:"owner"`
-	CoinVal         float32 `json:"coinval"`
-	attachedPlayers map[*player.Player]bool
+	Powered  bool    `json:"powered"`
+	builder  string  // `json:"creator"`
+	TeamName string  `json:"owner"`
+	CoinVal  float32 `json:"coinval"`
+	// attachedPlayers map[*player.Player]bool
 
 	Address string // mac address in node where Machine resides
 
@@ -41,8 +40,7 @@ type challengeCriteria struct {
 
 func NewMachine() *Machine {
 	return &Machine{
-		Powered:         true,
-		attachedPlayers: make(map[*player.Player]bool),
+		Powered: true,
 	}
 }
 
@@ -54,23 +52,24 @@ func NewFeature() *Machine {
 
 // Machine methods -------------------------------------------------------------------------
 
-func (m *Machine) AddPlayer(p *player.Player) {
-	m.attachedPlayers[p] = true
-}
+// func (m *Machine) AddPlayer(p *player.Player) {
+// 	m.attachedPlayers[p] = true
+// }
 
-func (m *Machine) RemPlayer(p *player.Player) {
-	delete(m.attachedPlayers, p)
-}
+// func (m *Machine) RemPlayer(p *player.Player) {
 
-func (m *Machine) DetachAll(msg string) {
-	for p := range m.attachedPlayers {
-		m.RemPlayer(p)
-		if msg != "" {
-			p.Outgoing(nwmessage.PsAlert(msg))
+// 	delete(m.attachedPlayers, p)
+// }
 
-		}
-	}
-}
+// func (m *Machine) DetachAll(msg string) {
+// 	for p := range m.attachedPlayers {
+// 		m.RemPlayer(p)
+// 		if msg != "" {
+// 			p.Outgoing(nwmessage.PsAlert(msg))
+
+// 		}
+// 	}
+// }
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *Machine) ResetChallenge() {
@@ -107,8 +106,6 @@ func (m *Machine) Reset() {
 	m.TeamName = ""
 	m.Language = ""
 	m.Powered = true
-
-	m.DetachAll(fmt.Sprintf("mac:%s is resetting, you have been detached", m.Address))
 
 	// if m.Type != nil { // reset feature type?
 	// 	m.Type = feature.None

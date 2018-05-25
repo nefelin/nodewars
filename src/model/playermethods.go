@@ -1,7 +1,6 @@
 package model
 
 import (
-	"challenges"
 	"errors"
 	"fmt"
 	"model/machines"
@@ -32,23 +31,12 @@ func (gm *GameModel) CanSubmit(p *player.Player) error {
 
 }
 
-func (gm *GameModel) MacDetach(p *player.Player) {
-
-	mac := gm.CurrentMachine(p)
-	p.SetChallenge(challenges.Challenge{})
-
-	if mac != nil {
-		mac.RemPlayer(p)
-		p.SetMacAddress("")
-	}
-}
-
 func (gm *GameModel) BreakConnection(p *player.Player, forced bool) {
 	if gm.routes[p] == nil {
 		return
 	}
 
-	gm.MacDetach(p)
+	gm.detachPlayer(p)
 	gm.routes[p] = nil
 
 	if forced {

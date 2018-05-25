@@ -489,12 +489,12 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	// passed checks, set player mac to target
 
 	// remove old attachments
-	gm.MacDetach(p)
+	gm.detachPlayer(p)
 
 	// add this attachment
 	p.SetMacAddress(macAddress)
 	mac := gm.CurrentMachine(p)
-	mac.AddPlayer(p)
+	gm.attachPlayer(p, mac)
 
 	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false
