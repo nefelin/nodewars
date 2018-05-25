@@ -16,7 +16,6 @@ type Machine struct {
 	Builder  string  // `json:"creator"`
 	TeamName string  `json:"owner"`
 	CoinVal  float32 `json:"coinval"`
-	// attachedPlayers map[*player.Player]bool
 
 	Address string // mac address in node where Machine resides
 
@@ -49,25 +48,6 @@ func NewFeature() *Machine {
 }
 
 // Machine methods -------------------------------------------------------------------------
-
-// func (m *Machine) AddPlayer(p *player.Player) {
-// 	m.attachedPlayers[p] = true
-// }
-
-// func (m *Machine) RemPlayer(p *player.Player) {
-
-// 	delete(m.attachedPlayers, p)
-// }
-
-// func (m *Machine) DetachAll(msg string) {
-// 	for p := range m.attachedPlayers {
-// 		m.RemPlayer(p)
-// 		if msg != "" {
-// 			p.Outgoing(nwmessage.PsAlert(msg))
-
-// 		}
-// 	}
-// }
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *Machine) ResetChallenge() {
