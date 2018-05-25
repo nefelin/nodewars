@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"model/machines"
-	"model/player"
+	// "model/player"
 )
 
 type nodeID = int
@@ -21,25 +21,25 @@ type node struct {
 
 // node methods -------------------------------------------------------------------------------
 
-func (n *node) claimFreeMachine(p *player.Player) error {
-	neutral := make([]int, 0)
+// func (n *node) claimFreeMachine(p *player.Player) error {
+// 	neutral := make([]int, 0)
 
-	for i := range n.Machines {
-		if n.Machines[i].TeamName == "" {
-			neutral = append(neutral, i)
-		}
-	}
+// 	for i := range n.Machines {
+// 		if n.Machines[i].TeamName == "" {
+// 			neutral = append(neutral, i)
+// 		}
+// 	}
 
-	if len(neutral) < 1 {
-		return fmt.Errorf("Node %d contains no neutral machines to claim", n.ID)
-	}
+// 	if len(neutral) < 1 {
+// 		return fmt.Errorf("Node %d contains no neutral machines to claim", n.ID)
+// 	}
 
-	target := neutral[rand.Intn(len(neutral))]
+// 	target := neutral[rand.Intn(len(neutral))]
 
-	n.Machines[target].DummyClaim(p.TeamName, "FULL")
-	return nil
+// 	n.Machines[target].DummyClaim(p.TeamName, "FULL")
+// 	return nil
 
-}
+// }
 
 // coinVal calculates the coin produced per machine in a given node
 func (n *node) coinVal(t teamName) float32 {
