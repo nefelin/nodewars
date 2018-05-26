@@ -4,6 +4,7 @@ import (
 	"errors"
 	"feature"
 	"fmt"
+	"model/node"
 	"model/player"
 	"nwmessage"
 )
@@ -14,10 +15,10 @@ type team struct {
 	Name        string  `json:"name"` // Names are only colors for now
 	VicPoints   float32 `json:"vicPoints"`
 	players     map[*player.Player]bool
-	maxSize     int            //`json:"maxSize"`
-	poes        map[*node]bool // point of entry, the place where all team.players connect to the map through
-	powered     []*node        // list of nodes connected ot the poe, optimization to minimize re-calculating which nodes are feeding processing power
-	coinPerTick float32        // stored current coint production so we don't need to recalculate every tick
+	maxSize     int                 //`json:"maxSize"`
+	poes        map[*node.Node]bool // point of entry, the place where all team.players connect to the map through
+	powered     []*node.Node        // list of nodes connected ot the poe, optimization to minimize re-calculating which nodes are feeding processing power
+	coinPerTick float32             // stored current coint production so we don't need to recalculate every tick
 }
 
 // initializer:
@@ -27,8 +28,8 @@ func NewTeam(n teamName) *team {
 		Name:    n,
 		players: make(map[*player.Player]bool),
 		maxSize: 100,
-		powered: make([]*node, 0),
-		poes:    make(map[*node]bool),
+		powered: make([]*node.Node, 0),
+		poes:    make(map[*node.Node]bool),
 	}
 }
 
@@ -62,7 +63,7 @@ func (t *team) removePlayer(p *player.Player) {
 
 }
 
-func (t *team) addPoe(n *node) error {
+func (t *team) addPoe(n *node.Node) error {
 	if n.Feature.Type != feature.POE {
 		return fmt.Errorf("No Point of Entry feature at Node, '%d'", n.ID)
 	}
@@ -79,7 +80,7 @@ func (t *team) addPoe(n *node) error {
 	return nil
 }
 
-func (t *team) remPoe(n *node) error {
+func (t *team) remPoe(n *node.Node) error {
 	if _, ok := t.poes[n]; !ok {
 		return fmt.Errorf("%s team's poes do not include node %d", t.Name, n.ID)
 	}

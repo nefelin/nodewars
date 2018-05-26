@@ -2,15 +2,7 @@ package model
 
 import (
 	"fmt"
-	"model/player"
-	"sort"
-	"strconv"
-	"strings"
 )
-
-func (n node) String() string {
-	return fmt.Sprintf("( <node> {ID: %v, Connections:%v, Machines:%v} )", n.ID, n.Connections, n.Machines)
-}
 
 // func (n node) modIDs() []modID {
 // 	ids := make([]modID, 0)
@@ -28,58 +20,6 @@ func (t team) String() string {
 		playerList = append(playerList, string(player.Name()))
 	}
 	return fmt.Sprintf("( <team> {Name: %v, Players:%v} )", t.Name, playerList)
-}
-
-func (r route) String() string {
-	nodeCount := len(r.Nodes)
-	nodeList := make([]string, nodeCount)
-
-	for i, node := range r.Nodes {
-		// this loop is a little funny because we are reversing the order of the node list
-		// it's reverse ordered in the data structure but to be human readable we'd like
-		// the list to read from source to target
-		nodeList[nodeCount-i-1] = strconv.Itoa(node.ID)
-	}
-
-	return fmt.Sprintf("( <route> {Endpoint: %v, Through: %v} )", r.Endpoint().ID, strings.Join(nodeList, ", "))
-}
-
-func (n node) StringFor(p *player.Player) string {
-
-	// sort keys for consistent presentation
-	addList := make([]string, 0)
-	for add := range n.addressMap {
-		addList = append(addList, add)
-	}
-	sort.Strings(addList)
-
-	// compose list of all machines
-	macList := ""
-	for _, add := range addList {
-		atIndicator := ""
-		if p.MacAddress() == add {
-			atIndicator = "*"
-		}
-		mac := n.addressMap[add]
-		macList += "\n" + add + ":" + mac2Str(mac, p) + atIndicator
-	}
-
-	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
-
-	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
-}
-
-func (r route) forMsg() string {
-	nodeCount := len(r.Nodes)
-	nodeList := make([]string, nodeCount)
-
-	for i, node := range r.Nodes {
-		// this loop is a little funny because we are reversing the order of the node list
-		// it's reverse ordered in the data structure but to be human readable we'd like
-		// the list to read from source to target
-		nodeList[nodeCount-i-1] = strconv.Itoa(node.ID)
-	}
-	return fmt.Sprintf("(Endpoint: %v, Through: %v)", r.Endpoint().ID, strings.Join(nodeList, ", "))
 }
 
 // func (c CompileResult) String() string {

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"feature"
 	"fmt"
+	"model/node"
 	"model/player"
 	"nwmessage"
 	"receiver"
@@ -242,7 +243,7 @@ func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interfac
 		p.Outgoing(nwmessage.PsNeutral("Your team doesn't have a point of entry yet.\nUse 'sp node_id' to set one and begin playing"))
 	} else {
 		// if we do have poes, connect player to a randome one
-		var tp *node
+		var tp *node.Node
 		for n := range gm.Teams[p.TeamName].poes {
 			tp = n
 			break
@@ -313,13 +314,13 @@ func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []int
 func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
 	p := cl.(*player.Player)
 	gm := context.(*GameModel)
-	targetNode := args[0].(int)
+	target := args[0].(int)
 	if p.TeamName == "" {
 		return errors.New("Join a team first")
 	}
 
 	// break any pre-existing connection before connecting elsewhere
-	_, err := gm.tryConnectPlayerToNode(p, targetNode)
+	_, err := gm.tryConnectPlayerToNode(p, target)
 	if err != nil {
 		return err
 	}
@@ -366,7 +367,7 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 	}
 
 	node := gm.routes[p].Endpoint()
-	retMsg := node.StringFor(p)
+	retMsg := node2Str(node, p)
 	pHere := gm.playersAt(node)
 
 	if len(pHere) > 1 {
@@ -480,10 +481,10 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 		return nwmessage.ErrorNoConnection()
 	}
 
-	_, addOk := gm.routes[p].Endpoint().addressMap[macAddress]
+	err := gm.routes[p].Endpoint().CanAttach(p.TeamName, macAddress)
 
-	if !addOk {
-		return fmt.Errorf("Invalid address, '%s'", macAddress)
+	if err != nil {
+		return err
 	}
 
 	// passed checks, set player mac to target

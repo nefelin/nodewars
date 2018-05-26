@@ -4,11 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"model/machines"
+	"model/node"
 	"model/player"
 	"nwmessage"
 )
 
-func (gm *GameModel) PlayerLocation(p *player.Player) *node {
+func (gm *GameModel) PlayerLocation(p *player.Player) *node.Node {
 	r := gm.routes[p]
 	if r == nil {
 		return nil
@@ -52,5 +53,5 @@ func (gm *GameModel) CurrentMachine(p *player.Player) *machines.Machine {
 		return nil
 	}
 
-	return r.Endpoint().addressMap[p.MacAddress()]
+	return r.Endpoint().MacAt(p.MacAddress())
 }

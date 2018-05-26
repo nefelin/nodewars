@@ -9,8 +9,12 @@ import (
 	"log"
 	"math/rand"
 	"model/machines"
+	"model/node"
 	"model/player"
+	"model/statemessage"
 	"nwmessage"
+	"sort"
+	"strings"
 	"time"
 )
 
@@ -19,7 +23,7 @@ type playerSet = map[*player.Player]bool
 // GameModel holds all state information
 type GameModel struct {
 	name    string
-	Map     *nodeMap                           `json:"map"`
+	Map     *node.Map                          `json:"map"`
 	Teams   map[teamName]*team                 `json:"teams"`
 	Players map[player.PlayerID]*player.Player `json:"players"`
 	// POEs          map[playerID]*node   `json:"poes"`
@@ -27,11 +31,11 @@ type GameModel struct {
 	languages     map[string]challenges.Language
 	aChan         chan nwmessage.Message
 	running       bool //running should replace mapLocked
-	pendingAlerts map[player.PlayerID][]alert
+	pendingAlerts map[player.PlayerID][]statemessage.Alert
 
 	// Interactions
 	attachments map[*machines.Machine]playerSet
-	routes      map[*player.Player]*route
+	routes      map[*player.Player]*node.Route
 
 	// timelimit should be able to set a timelimit and count points at the end
 }
@@ -48,7 +52,7 @@ var langDefaults = []string{
 
 // NewDefaultModel Generic game model
 func NewDefaultModel(name string) *GameModel {
-	m := newRandMap(10)
+	m := node.NewRandMap(10)
 	p := make(map[player.PlayerID]*player.Player)
 	// poes := make(map[playerID]*node)
 
@@ -64,10 +68,10 @@ func NewDefaultModel(name string) *GameModel {
 		languages:     challenges.GetLanguages(),
 		aChan:         aChan,
 		PointGoal:     1000,
-		pendingAlerts: make(map[player.PlayerID][]alert),
+		pendingAlerts: make(map[player.PlayerID][]statemessage.Alert),
 
 		attachments: make(map[*machines.Machine]playerSet),
-		routes:      make(map[*player.Player]*route),
+		routes:      make(map[*player.Player]*node.Route),
 	}
 
 	// fmt.Println("Supported Languages:")
@@ -121,7 +125,7 @@ func (gm *GameModel) Type() string {
 
 // Addteams can only be called once. After addteams is called unused poes are removed
 func (gm *GameModel) addTeams(teams []*team) error {
-	nodes := gm.Map.collectEmptyPoes()
+	nodes := gm.Map.CollectEmptyPoes()
 
 	// add each team to gm.Teams
 	for _, t := range teams {
@@ -203,7 +207,7 @@ func (gm *GameModel) updateCoinPerTick(t *team) {
 	for _, node := range t.powered {
 		fmt.Printf("checking node: %d\n", node.ID)
 		// store the powerpermod of that node
-		t.coinPerTick += node.coinProduction(t.Name)
+		t.coinPerTick += node.CoinProduction(t.Name)
 	}
 }
 
@@ -212,10 +216,10 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 	t.powered = nil // clear previous list of powered nodes
 	for _, n := range gm.Map.Nodes {
 
-		if n.hasMachineFor(t) {
+		if n.HasMachineFor(t.Name) {
 			var foundPower bool
 			for poe := range t.poes {
-				if gm.Map.routeToNode(t, n, poe) != nil {
+				if gm.Map.RouteToNode(t.Name, n, poe) != nil {
 					foundPower = true
 					break
 				}
@@ -223,16 +227,16 @@ func (gm *GameModel) calcPoweredNodes(t *team) {
 			// fmt.Printf("foundPower: %t\n", foundPower)
 
 			if foundPower {
-				n.powerMachines(t.Name, true)
+				n.PowerMachines(t.Name, true)
 				t.powered = append(t.powered, n)
 			} else {
-				n.powerMachines(t.Name, false)
+				n.PowerMachines(t.Name, false)
 			}
 		}
 	}
 }
 
-func (gm *GameModel) playersAt(n *node) []*player.Player {
+func (gm *GameModel) playersAt(n *node.Node) []*player.Player {
 	players := make([]*player.Player, 0)
 	for _, p := range gm.Players {
 		if gm.PlayerLocation(p) == n {
@@ -263,7 +267,7 @@ func (gm *GameModel) playersAt(n *node) []*player.Player {
 // 	}
 // }
 
-func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machines.Machine, response challenges.GradedResult, fType feature.Type) {
+func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *machines.Machine, response challenges.GradedResult, fType feature.Type) {
 	// node := gm.routes[p].Endpoint()
 	solutionStrength := response.Passed()
 
@@ -308,9 +312,9 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machines
 	}
 
 	// track whether node allowed routing for active player before refactor
-	allowed := node.hasMachineFor(newTeam)
+	allowed := node.HasMachineFor(newTeam.Name)
 	if hostile {
-		oldAllowed = node.hasMachineFor(oldTeam)
+		oldAllowed = node.HasMachineFor(oldTeam.Name)
 	}
 
 	// TODO I think we need to do same for old team, but test first
@@ -343,11 +347,11 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machines
 	}
 
 	// if routing status has changed, recalculate powered nodes
-	if node.hasMachineFor(newTeam) != allowed {
+	if node.HasMachineFor(newTeam.Name) != allowed {
 		gm.calcPoweredNodes(newTeam)
 	}
 	if hostile {
-		if node.hasMachineFor(oldTeam) != oldAllowed {
+		if node.HasMachineFor(oldTeam.Name) != oldAllowed {
 			gm.calcPoweredNodes(oldTeam)
 		}
 	}
@@ -378,13 +382,13 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node, mac *machines
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.Language, mac.Health, mac.MaxHealth)))
 	}
 
-	if node.dominatedBy(p.TeamName) {
+	if node.DominatedBy(p.TeamName) {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s is now dominating node %d (production bonus)", p.TeamName, node.ID)))
 		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Your team now dominates node %d! (production bonus)", node.ID)))
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machines.Machine, r challenges.GradedResult) {
+func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *machines.Machine, r challenges.GradedResult) {
 	// node := gm.routes[p].Endpoint()
 	solutionStrength := r.Passed()
 
@@ -403,7 +407,7 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machines
 	oldTeam := gm.Teams[mac.TeamName]
 
 	// track whether node allowed routing for active player before refactor
-	allowed := node.hasMachineFor(oldTeam)
+	allowed := node.HasMachineFor(oldTeam.Name)
 
 	// reset the machine
 	mac.Reset()
@@ -412,7 +416,7 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node, mac *machines
 	gm.evalTrafficForTeam(node, oldTeam)
 
 	// if routing status has changed, recalculate powered nodes
-	if node.hasMachineFor(oldTeam) != allowed {
+	if node.HasMachineFor(oldTeam.Name) != allowed {
 		gm.calcPoweredNodes(oldTeam)
 	}
 
@@ -491,7 +495,7 @@ func (gm *GameModel) stopGame() {
 	// ticking goroutine should auto collapse when running is false
 }
 
-func (gm *GameModel) resetMap(m *nodeMap) {
+func (gm *GameModel) resetMap(m *node.Map) {
 	gm.Map = m
 
 	// Tell everyone to clear their maps
@@ -516,13 +520,13 @@ func (gm *GameModel) broadcastScore() {
 	}
 }
 
-func (gm *GameModel) makeRouteMap() *trafficMap {
-	// collect routes, TODO redundat loop
-	traffic := newTrafficMap()
+func (gm *GameModel) makeRouteMap() *statemessage.TrafficMap {
+	// collect node.Routes, TODO redundat loop
+	traffic := statemessage.NewTrafficMap()
 
 	for _, p := range gm.Players {
 		if gm.routes[p] != nil {
-			traffic.addRoute(gm.routes[p], p.TeamName)
+			traffic.AddRoute(gm.routes[p], p.TeamName)
 		}
 	}
 
@@ -530,11 +534,9 @@ func (gm *GameModel) makeRouteMap() *trafficMap {
 }
 
 func (gm *GameModel) broadcastState() {
-	routeMap := gm.makeRouteMap()
-
 	for _, p := range gm.Players {
-		// TODO feels super hackey to have to pass in routemap but was quickest solution for now.
-		state := gm.calcState(p, routeMap)
+		// TODO feels super hackey to have to pass in node.Routemap but was quickest solution for now.
+		state := gm.calcState(p)
 		p.Outgoing(nwmessage.GraphState(state))
 
 	}
@@ -556,10 +558,11 @@ func (gm *GameModel) packScores() string {
 }
 
 // calcState takes a player argument on the assumption that at some point we'll want to show different states to different players
-func (gm *GameModel) calcState(p *player.Player, tMap *trafficMap) string {
+func (gm *GameModel) calcState(p *player.Player) string {
+	routeMap := gm.makeRouteMap()
 
 	// calculate player location
-	var playerLoc nodeID
+	var playerLoc node.NodeID
 	if gm.routes[p] == nil {
 		playerLoc = -1
 	} else {
@@ -567,15 +570,15 @@ func (gm *GameModel) calcState(p *player.Player, tMap *trafficMap) string {
 	}
 
 	// copy map so we can doctor for this player
-	// thisMap := new(nodeMap)
+	// thisMap := new(node.Map)
 	// thisMap = *gm.Map
 
 	// compose state message
-	state := stateMessage{
-		nodeMap:    gm.Map,
+	state := statemessage.Message{
+		Map:        gm.Map,
 		Alerts:     gm.pendingAlerts[p.ID],
 		PlayerLoc:  playerLoc,
-		trafficMap: tMap,
+		TrafficMap: routeMap,
 	}
 
 	// fmt.Printf("state: %v", state)
@@ -593,9 +596,9 @@ func (gm *GameModel) calcState(p *player.Player, tMap *trafficMap) string {
 	return string(stateMsg)
 }
 
-func (gm *GameModel) pushActionAlert(color string, location nodeID) {
+func (gm *GameModel) pushActionAlert(color string, location node.NodeID) {
 	for k := range gm.pendingAlerts {
-		gm.pendingAlerts[k] = append(gm.pendingAlerts[k], alert{color, location})
+		gm.pendingAlerts[k] = append(gm.pendingAlerts[k], statemessage.Alert{color, location})
 	}
 }
 
@@ -648,7 +651,7 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 
 	// p.inGame = true
 	gm.Players[p.ID] = p
-	gm.pendingAlerts[p.ID] = make([]alert, 0) // make alerts slot for new player
+	gm.pendingAlerts[p.ID] = make([]statemessage.Alert, 0) // make alerts slot for new player
 
 	supportedLangs := make([]string, len(gm.languages))
 	var i int
@@ -681,8 +684,7 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 
 	p.Outgoing(nwmessage.GraphReset())
 
-	routeMap := gm.makeRouteMap()
-	p.Outgoing(nwmessage.GraphState(gm.calcState(p, routeMap)))
+	p.Outgoing(nwmessage.GraphState(gm.calcState(p)))
 
 	// send initial prompt state
 	p.SendPrompt()
@@ -741,7 +743,7 @@ func (gm *GameModel) assignPlayerToTeam(p *player.Player, tn teamName) error {
 	return nil
 }
 
-func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n nodeID) (*route, error) {
+func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n node.NodeID) (*node.Route, error) {
 
 	// log.Printf("source: %v, poeOK: %v, gm.POEs: %v", source, poeOK, gm.POEs)
 	team := gm.Teams[p.TeamName]
@@ -750,20 +752,20 @@ func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n nodeID) (*route,
 		return nil, errors.New("No point of entry")
 	}
 
-	target := gm.Map.getNode(n)
+	target := gm.Map.GetNode(n)
 	if target == nil {
-		return nil, fmt.Errorf("%v is not a valid node", n)
+		return nil, fmt.Errorf("Invalid node, '%d'", n)
 	}
 
 	for source := range team.poes {
 		// log.Printf("player %v attempting to connect to node %v from POE %v", p.Name(), n, source.ID)
-		routeNodes := gm.Map.routeToNode(gm.Teams[p.TeamName], source, target)
-		// log.Printf("RouteNodes: %+v\n", routeNodes)
-		if routeNodes != nil {
+		route := gm.Map.RouteToNode(p.TeamName, source, target)
+		// log.Printf("route: %+v\n", node.route)
+		if route != nil {
 			// log.Println("Successful Connect")
-			// log.Printf("Route to target: %v", routeNodes)
+			// log.Printf("Route to target: %v", route)
 			gm.BreakConnection(p, false)
-			route, err := gm.establishConnection(p, routeNodes)
+			err := gm.establishConnection(p, *route)
 
 			if err != nil {
 				return nil, err
@@ -774,35 +776,33 @@ func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n nodeID) (*route,
 
 	}
 	// log.Println("Cannot Connect")
-	return nil, errors.New("No route exists")
+	return nil, errors.New("No node.Route exists")
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically
-func (gm *GameModel) establishConnection(p *player.Player, routeNodes []*node) (*route, error) {
-	// set's players route to the route generated via routeToNode
-	// gm.Routes[p.ID] = &route{Endpoint: n, Nodes: routeNodes}
-	r := &route{Nodes: routeNodes, player: p}
-
+func (gm *GameModel) establishConnection(p *player.Player, r node.Route) error {
+	// set's players node.Route to the node.Route generated via node.RouteToNode
+	// gm.Routes[p.ID] = &node.Route{Endpoint: n, Nodes: routeNodes}
 	// make sure we're not blocked by any firewalls:
 	for _, n := range r.Nodes {
 		if n.Feature.Type == feature.Firewall {
-			if n.machinesFor(p.TeamName) <= gm.trafficCount(n, p.TeamName) {
-				return nil, fmt.Errorf("Connection refused (firewall at node %d)", n.ID)
+			if n.MachinesFor(p.TeamName) <= gm.trafficCount(n, p.TeamName) {
+				return fmt.Errorf("Connection refused (firewall at node %d)", n.ID)
 			}
 		}
 	}
 
-	gm.routes[p] = r
-	return gm.routes[p], nil
+	gm.routes[p] = &r
+	return nil
 	// return gm.Routes[p.ID]
 }
 
-func (gm *GameModel) trafficCount(n *node, t teamName) int {
+func (gm *GameModel) trafficCount(n *node.Node, t teamName) int {
 	var count int
 
 	for p := range gm.Teams[t].players {
 		if gm.routes[p] != nil {
-			if gm.routes[p].runsThrough(n) || gm.routes[p].Endpoint() == n {
+			if gm.routes[p].RunsThrough(n) || gm.routes[p].Endpoint() == n {
 				count++
 			}
 		}
@@ -810,15 +810,15 @@ func (gm *GameModel) trafficCount(n *node, t teamName) int {
 	return count
 }
 
-func (gm *GameModel) evalTrafficForTeam(n *node, t *team) {
+func (gm *GameModel) evalTrafficForTeam(n *node.Node, t *team) {
 	// if the module no longer supports routing for this modules team
-	if !n.hasMachineFor(t) {
+	if !n.HasMachineFor(t.Name) {
 		for _, p := range gm.Players {
-			// check each p who is on team's route
+			// check each p who is on team's node.Route
 			if p.TeamName == t.Name {
 				// and if it contained that node, break the players connection
 				if gm.routes[p] != nil {
-					if gm.routes[p].runsThrough(n) {
+					if gm.routes[p].RunsThrough(n) {
 						gm.BreakConnection(p, true)
 					}
 				}
@@ -873,6 +873,31 @@ func (gm *GameModel) resetMachine(m *machines.Machine) {
 	gm.detachAll(m, msg)
 	m.Reset()
 
+}
+
+func node2Str(n *node.Node, p *player.Player) string {
+
+	// sort keys for consistent presentation
+	addList := make([]string, 0)
+	for add := range n.Addresses() {
+		addList = append(addList, add)
+	}
+	sort.Strings(addList)
+
+	// compose list of all machines
+	macList := ""
+	for _, add := range addList {
+		atIndicator := ""
+		if p.MacAddress() == add {
+			atIndicator = "*"
+		}
+		mac := n.MacAt(add)
+		macList += "\n" + add + ":" + mac2Str(mac, p) + atIndicator
+	}
+
+	connectList := strings.Trim(strings.Join(strings.Split(fmt.Sprint(n.Connections), " "), ","), "[]")
+
+	return fmt.Sprintf("NodeID: %v\nConnects To: %s\nMachines: %v", n.ID, connectList, macList)
 }
 
 func mac2Str(m *machines.Machine, p *player.Player) string {

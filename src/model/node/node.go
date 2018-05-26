@@ -8,24 +8,25 @@ import (
 )
 
 type teamName = string
-type nodeID = int
+type NodeID = int
+type MacAddress = string
 
-type node struct {
-	ID          nodeID              `json:"id"` // keys and ids is redundant? TODO
-	Connections []nodeID            `json:"connections"`
+type Node struct {
+	ID          NodeID              `json:"id"` // keys and ids is redundant? TODO
+	Connections []NodeID            `json:"connections"`
 	Machines    []*machines.Machine `json:"machines"` // TODO why is this a list of pointerS?
 	Feature     *machines.Machine   `json:"feature"`
 	Remoteness  float64             //`json:"remoteness"`
-	addressMap  map[string]*machines.Machine
+	addressMap  map[MacAddress]*machines.Machine
 }
 
-// node methods -------------------------------------------------------------------------------
+// Node methods -------------------------------------------------------------------------------
 
-// coinVal calculates the coin produced per machine in a given node
-func (n *node) coinVal(t teamName) float32 {
+// coinVal calculates the coin produced per machine in a given Node
+func (n *Node) coinVal(t teamName) float32 {
 	base := float32(n.Remoteness)
 
-	if n.dominatedBy(t) {
+	if n.DominatedBy(t) {
 		base = base * 2
 	}
 
@@ -36,7 +37,7 @@ func (n *node) coinVal(t teamName) float32 {
 	return base
 }
 
-func (n *node) dominatedBy(t teamName) bool { // does t control all non feature machines?
+func (n *Node) DominatedBy(t teamName) bool { // does t control all non feature machines?
 	for _, m := range n.Machines {
 		if m.TeamName != t {
 			return false
@@ -45,8 +46,8 @@ func (n *node) dominatedBy(t teamName) bool { // does t control all non feature 
 	return true
 }
 
-// coinProduction gives the total produced (for team t) in a given node
-func (n *node) coinProduction(t teamName) float32 {
+// coinProduction gives the total produced (for team t) in a given Node
+func (n *Node) CoinProduction(t teamName) float32 {
 	fmt.Println("<coinProduction>")
 	var total float32
 	coinPerMac := n.coinVal(t)
@@ -62,7 +63,7 @@ func (n *node) coinProduction(t teamName) float32 {
 	return total
 }
 
-func (n *node) initMachines() {
+func (n *Node) initMachines() {
 	n.Machines = make([]*machines.Machine, len(n.Connections))
 	for i := range n.Connections {
 		n.Machines[i] = machines.NewMachine()
@@ -75,7 +76,7 @@ func (n *node) initMachines() {
 	n.initAddressMap()
 }
 
-func (n *node) initAddressMap() {
+func (n *Node) initAddressMap() {
 	featureAddress := newMacAddress(2)
 	n.setMacAddress(featureAddress, n.Feature)
 
@@ -93,7 +94,7 @@ func (n *node) initAddressMap() {
 
 }
 
-func (n *node) setMacAddress(address string, mac *machines.Machine) {
+func (n *Node) setMacAddress(address string, mac *machines.Machine) {
 	// TODO error check name collisions
 	mac.Address = address
 	n.addressMap[address] = mac
@@ -101,7 +102,7 @@ func (n *node) setMacAddress(address string, mac *machines.Machine) {
 }
 
 // addConnection is reciprocol
-func (n *node) addConnection(m *node) {
+func (n *Node) addConnection(m *Node) {
 	// if the connection already exists, ignore
 	for _, nID := range n.Connections {
 		if m.ID == nID {
@@ -117,7 +118,7 @@ func (n *node) addConnection(m *node) {
 	m.Connections = append(m.Connections, n.ID)
 }
 
-func (n *node) remConnection(ni nodeID) {
+func (n *Node) remConnection(ni NodeID) {
 	n.Connections = cutIntFromSlice(ni, n.Connections)
 }
 
@@ -132,13 +133,13 @@ func cutIntFromSlice(p int, s []int) []int {
 	return s
 }
 
-func (n *node) hasMachineFor(t teamName) bool { // includes feature
-	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
+func (n *Node) HasMachineFor(t teamName) bool { // includes feature
+	// t == nil means we don't care... used in calculating Node eccentricity without rewriting dijkstras
 	if t == "" {
 		return true
 	}
 
-	// if a node has no machines, it allows routing for everyone
+	// if a Node has no machines, it allows routing for everyone
 	// allows creation of neutral hubs
 	if len(n.Machines) == 0 {
 		return true
@@ -161,7 +162,7 @@ func (n *node) hasMachineFor(t teamName) bool { // includes feature
 	return false
 }
 
-func (n *node) machinesFor(t teamName) int { // counts only non-feature machines
+func (n *Node) MachinesFor(t teamName) int { // counts only non-feature machines
 	var count int
 
 	for _, mac := range n.Machines {
@@ -177,26 +178,26 @@ func (n *node) machinesFor(t teamName) int { // counts only non-feature machines
 	return count
 }
 
-func (n *node) supportsRouting(t teamName) bool {
-	// t == nil means we don't care... used in calculating node eccentricity without rewriting dijkstras
+func (n *Node) supportsRouting(t teamName) bool {
+	// t == nil means we don't care... used in calculating Node eccentricity without rewriting dijkstras
 	if t == "" {
 		return true
 	}
 
-	// if a node has no machines, it allows routing for everyone
+	// if a Node has no machines, it allows routing for everyone
 	// allows creation of neutral hubs
 	if len(n.Machines) == 0 {
 		return true
 	}
 
-	if n.machinesFor(t) < 1 && !n.Feature.BelongsTo(t) {
+	if n.MachinesFor(t) < 1 && !n.Feature.BelongsTo(t) {
 		return false
 	}
 
 	return true
 }
 
-func (n *node) powerMachines(t teamName, onOff bool) {
+func (n *Node) PowerMachines(t teamName, onOff bool) {
 	for _, mac := range n.Machines {
 		if mac.TeamName == t {
 			mac.Powered = onOff
@@ -208,8 +209,36 @@ func (n *node) powerMachines(t teamName, onOff bool) {
 	}
 }
 
+// func (n *Node) AddressList() []MacAddress {
+// 	addList := make([]string, 0)
+// 	for add := range n.addressMap {
+// 		addList = append(addList, add)
+// 	}
+// 	sort.Strings(addList)
+// 	return addList
+// }
+
+func (n *Node) Addresses() map[MacAddress]*machines.Machine {
+	return n.addressMap
+}
+
+func (n *Node) MacAt(a MacAddress) *machines.Machine {
+	// TODO ERROR check
+	return n.addressMap[a]
+}
+
+func (n *Node) CanAttach(t teamName, macAddress string) error {
+	if _, ok := n.addressMap[macAddress]; !ok {
+		return fmt.Errorf("Invalid address, '%s'", macAddress)
+	}
+
+	// If for some reason player is forbidden from attaching (ie encryption)...
+
+	return nil
+}
+
 // n.resetMachine should never be called directly. only from gm.removeModule
-// func (n *node) resetMachine(slotIndex int) error {
+// func (n *Node) resetMachine(slotIndex int) error {
 // 	if slotIndex < 0 || slotIndex > len(n.Machines)-1 {
 // 		return errors.New("No valid attachment")
 // 	}
@@ -249,4 +278,8 @@ func cutStrFromSlice(p string, s []string) []string {
 	// log.Printf("CutPlayer returning: %v", s)
 	// log.Println("Player not found in slice")
 	return s
+}
+
+func (n Node) String() string {
+	return fmt.Sprintf("( <node> {ID: %v, Connections:%v, Machines:%v} )", n.ID, n.Connections, n.Machines)
 }

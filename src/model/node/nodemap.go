@@ -8,104 +8,104 @@ import (
 	"sort"
 )
 
-type nodeMap struct {
-	Nodes       []*node `json:"nodes"`
+type Map struct {
+	Nodes       []*Node `json:"nodes"`
 	diameter    float64
 	radius      float64
-	nodeIDCount nodeID
+	NodeIDCount NodeID
 }
 
 // initializer:
-func newNodeMap() nodeMap {
-	return nodeMap{
-		Nodes:    make([]*node, 0),
+func NewMap() Map {
+	return Map{
+		Nodes:    make([]*Node, 0),
 		diameter: 0,
 		radius:   1000,
 	}
 }
 
-// nodeMap methods -----------------------------------------------------------------------------
+// Map methods -----------------------------------------------------------------------------
 
-func (m *nodeMap) initAllNodes() {
+func (m *Map) initAllNodes() {
 	m.initAllMachines()
 	m.initAllRemoteness()
 }
 
-func (m *nodeMap) initAllMachines() {
-	// initialize each node's machines
-	for _, node := range m.Nodes {
-		node.initMachines()
+func (m *Map) initAllMachines() {
+	// initialize each Node's machines
+	for _, Node := range m.Nodes {
+		Node.initMachines()
 	}
 }
 
-func (m *nodeMap) initAllRemoteness() {
-	// initialize each nodes remoteness.
-	for _, node := range m.Nodes {
-		node.Remoteness = float64(m.findNodeEccentricity(node))
-		if node.Remoteness > m.diameter {
-			m.diameter = node.Remoteness
+func (m *Map) initAllRemoteness() {
+	// initialize each Nodes remoteness.
+	for _, Node := range m.Nodes {
+		Node.Remoteness = float64(m.findNodeEccentricity(Node))
+		if Node.Remoteness > m.diameter {
+			m.diameter = Node.Remoteness
 		}
-		if node.Remoteness < m.radius {
-			m.radius = node.Remoteness
+		if Node.Remoteness < m.radius {
+			m.radius = Node.Remoteness
 		}
-		// log.Printf("Node %d, eccentricity: %d", node.ID, node.Remoteness)
+		// log.Printf("Node %d, eccentricity: %d", Node.ID, Node.Remoteness)
 	}
 
-	for _, node := range m.Nodes {
-		node.Remoteness = node.Remoteness / m.diameter
-		// log.Printf("Node %d, remoteness: %d", node.ID, node.Remoteness)
+	for _, Node := range m.Nodes {
+		Node.Remoteness = Node.Remoteness / m.diameter
+		// log.Printf("Node %d, remoteness: %d", Node.ID, Node.Remoteness)
 	}
 }
 
-func (m *nodeMap) findNodeEccentricity(n *node) int {
-	// for every node, count distance to other nodes, pick the largest
+func (m *Map) findNodeEccentricity(n *Node) int {
+	// for every Node, count distance to other Nodes, pick the largest
 	var maxDist int
-	// var farthesNode nodeID
-	for _, node := range m.Nodes {
+	// var farthesNode NodeID
+	for _, Node := range m.Nodes {
 
 		// don't check our starting point
-		if n != node {
-			nodePath := m.routeToNode("", n, node)
-			if len(nodePath) > maxDist {
-				maxDist = len(nodePath)
-				// farthestNode = node.ID
+		if n != Node {
+			NodePath := m.RouteToNode("", n, Node)
+			if NodePath.Length() > maxDist {
+				maxDist = NodePath.Length()
+				// farthestNode = Node.ID
 			}
 		}
 
 	}
-	// log.Printf("Farthest node from %d: %d", n.ID, farthesNode)
+	// log.Printf("Farthest Node from %d: %d", n.ID, farthesNode)
 	return maxDist
 }
 
-func (m *nodeMap) addPoes(ns ...nodeID) {
+func (m *Map) addPoes(ns ...NodeID) {
 	for _, id := range ns {
 		// skip bad ids
-		node := m.getNode(id)
-		if node == nil {
+		Node := m.GetNode(id)
+		if Node == nil {
 			continue
 		}
-		// make an available POE for each nodeID passed
-		node.Feature.Type = feature.POE
+		// make an available POE for each NodeID passed
+		Node.Feature.Type = feature.POE
 		// m.POEs[id] = true
 	}
 }
 
-func (m *nodeMap) collectEmptyPoes() []*node {
-	poes := make([]*node, 0)
-	for _, node := range m.Nodes {
-		if node.Feature.Type == feature.POE {
-			poes = append(poes, node)
+func (m *Map) CollectEmptyPoes() []*Node {
+	poes := make([]*Node, 0)
+	for _, Node := range m.Nodes {
+		if Node.Feature.Type == feature.POE {
+			poes = append(poes, Node)
 		}
 	}
 	return poes
 }
 
 // initPoes right now places poes at remotest locations, which is not idea if remoteness = value
-func (m *nodeMap) initPoes(n int) {
-	// make a map of remotesnesses to nodes
-	remMap := make(map[float64][]*node)
-	for _, node := range m.Nodes {
-		remMap[node.Remoteness] = append(remMap[node.Remoteness], node)
+func (m *Map) initPoes(n int) {
+	// make a map of remotesnesses to Nodes
+	remMap := make(map[float64][]*Node)
+	for _, Node := range m.Nodes {
+		remMap[Node.Remoteness] = append(remMap[Node.Remoteness], Node)
 	}
 
 	// create sorted list of remotenesses
@@ -122,15 +122,15 @@ func (m *nodeMap) initPoes(n int) {
 
 	// if not, move up to the next remoteness tier
 	for _, v := range ordRem {
-		// if there're enough nodes of that remoteness, seen if we can place n poes in those remotenesses
+		// if there're enough Nodes of that remoteness, seen if we can place n poes in those remotenesses
 		if len(remMap[v]) >= n {
-			// add a poe at each node of that remoteness
-			for _, node := range remMap[v] {
-				m.addPoes(node.ID)
+			// add a poe at each Node of that remoteness
+			for _, Node := range remMap[v] {
+				m.addPoes(Node.ID)
 			}
 			break
 		}
-		// log.Printf("We have %d nodes of remoteness %v", len(remMap[ordRem[i]]), ordRem[i])
+		// log.Printf("We have %d Nodes of remoteness %v", len(remMap[ordRem[i]]), ordRem[i])
 	}
 
 	// if all else fails, assign at random
@@ -138,25 +138,25 @@ func (m *nodeMap) initPoes(n int) {
 
 }
 
-// func (m *nodeMap) NewNode() *node {
-// 	id := m.nodeIDCount
-// 	m.nodeIDCount++
+// func (m *Map) NewNode() *Node {
+// 	id := m.NodeIDCount
+// 	m.NodeIDCount++
 
 // 	connections := make([]int, 0)
 // 	modules := make(map[modID]*module)
 
-// 	return &node{
+// 	return &Node{
 // 		ID:          id,
 // 		Connections: connections,
 // 		Modules:     modules,
 // 	}
 // }
 
-func (m *nodeMap) newNode() *node {
-	id := m.nodeIDCount
-	m.nodeIDCount++
+func (m *Map) newNode() *Node {
+	id := m.NodeIDCount
+	m.NodeIDCount++
 
-	return &node{
+	return &Node{
 		ID:          id,
 		Connections: make([]int, 0),
 		Remoteness:  100,
@@ -166,8 +166,8 @@ func (m *nodeMap) newNode() *node {
 	}
 }
 
-func (m *nodeMap) addNodes(count int) []*node {
-	enter := make([]*node, count)
+func (m *Map) addNodes(count int) []*Node {
+	enter := make([]*Node, count)
 	for i := 0; i < count; i++ {
 
 		newNode := m.newNode()
@@ -178,9 +178,9 @@ func (m *nodeMap) addNodes(count int) []*node {
 	return enter
 }
 
-func (m *nodeMap) removeNodes(ns []int) {
+func (m *Map) removeNodes(ns []int) {
 	for _, id := range ns {
-		// look at connections and remove any connections point to node
+		// look at connections and remove any connections point to Node
 		for _, conn := range m.Nodes[id].Connections {
 			m.Nodes[conn].remConnection(id)
 		}
@@ -192,12 +192,12 @@ func (m *nodeMap) removeNodes(ns []int) {
 	// fix holes in the slice
 	m.Nodes = fillNodeSliceHoles(m.Nodes)
 
-	// fix node ID count
-	m.nodeIDCount -= len(ns)
+	// fix Node ID count
+	m.NodeIDCount -= len(ns)
 }
 
-func fillNodeSliceHoles(ns []*node) []*node {
-	// for every node i the node slice
+func fillNodeSliceHoles(ns []*Node) []*Node {
+	// for every Node i the Node slice
 	for i := 0; i < len(ns); i++ {
 		// for i, n := range ns {
 		n := ns[i]
@@ -235,40 +235,40 @@ func fillNodeSliceHoles(ns []*node) []*node {
 	return ns
 }
 
-func (m *nodeMap) connectNodes(n1, n2 nodeID) error {
+func (m *Map) connectNodes(n1, n2 NodeID) error {
 	// Check existence of both elements
-	node1 := m.getNode(n1)
-	node2 := m.getNode(n2)
+	Node1 := m.GetNode(n1)
+	Node2 := m.GetNode(n2)
 
-	if node1 == nil && node2 == nil {
+	if Node1 == nil && Node2 == nil {
 		log.Println("connectNodes error")
-		return errors.New("One or both nodes out of range")
+		return errors.New("One or both Nodes out of range")
 	}
 
 	m.Nodes[n1].addConnection(m.Nodes[n2])
 	return nil
 }
 
-func (m *nodeMap) getNode(n nodeID) *node {
+func (m *Map) GetNode(n NodeID) *Node {
 	if n < 0 || n > len(m.Nodes)-1 {
 		return nil
 	}
 	return m.Nodes[n]
 }
 
-// nodesConnections takes one of the maps nodes and converts its connections (in the form of nodeIDs) into pointers to actual node objects
+// NodesConnections takes one of the maps Nodes and converts its connections (in the form of NodeIDs) into pointers to actual Node objects
 // TODO ask about this, feels hacky
-func (m *nodeMap) nodesConnections(n *node) []*node {
-	res := make([]*node, 0)
-	for _, nodeID := range n.Connections {
-		res = append(res, m.Nodes[nodeID])
+func (m *Map) NodesConnections(n *Node) []*Node {
+	res := make([]*Node, 0)
+	for _, NodeID := range n.Connections {
+		res = append(res, m.Nodes[NodeID])
 	}
 	return res
 }
 
-func (m *nodeMap) nodesTouch(n1, n2 *node) bool {
+func (m *Map) NodesTouch(n1, n2 *Node) bool {
 	// for every one of n1's connections
-	for _, connectedNode := range m.nodesConnections(n1) {
+	for _, connectedNode := range m.NodesConnections(n1) {
 		// if it is n2, return true
 		if connectedNode == n2 {
 			return true
@@ -278,20 +278,20 @@ func (m *nodeMap) nodesTouch(n1, n2 *node) bool {
 }
 
 type searchField struct {
-	unchecked map[*node]bool
-	dist      map[*node]int
-	prev      map[*node]*node
+	unchecked map[*Node]bool
+	dist      map[*Node]int
+	prev      map[*Node]*Node
 }
 
-func (m *nodeMap) newSearchField(t teamName, source *node) searchField {
+func (m *Map) newSearchField(t teamName, source *Node) searchField {
 	retField := searchField{
-		unchecked: make(map[*node]bool), // TODO this should be a priority queue for efficiency
-		dist:      make(map[*node]int),
-		prev:      make(map[*node]*node),
+		unchecked: make(map[*Node]bool), // TODO this should be a priority queue for efficiency
+		dist:      make(map[*Node]int),
+		prev:      make(map[*Node]*Node),
 	}
 
-	seen := make(map[*node]bool)
-	tocheck := make([]*node, 1)
+	seen := make(map[*Node]bool)
+	tocheck := make([]*Node, 1)
 	tocheck[0] = source
 
 	for len(tocheck) > 0 {
@@ -303,10 +303,10 @@ func (m *nodeMap) newSearchField(t teamName, source *node) searchField {
 			retField.unchecked[thisNode] = true
 			retField.dist[thisNode] = 1000
 			seen[thisNode] = true
-			for _, nodeID := range thisNode.Connections {
-				// log.Printf("nodeid: %v", nodeID)
-				if !seen[m.Nodes[nodeID]] {
-					tocheck = append(tocheck, m.Nodes[nodeID])
+			for _, NodeID := range thisNode.Connections {
+				// log.Printf("Nodeid: %v", NodeID)
+				if !seen[m.Nodes[NodeID]] {
+					tocheck = append(tocheck, m.Nodes[NodeID])
 
 				}
 				// log.Printf("tocheck %v", tocheck)
@@ -318,40 +318,40 @@ func (m *nodeMap) newSearchField(t teamName, source *node) searchField {
 	return retField
 }
 
-// routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find node path
+// routeToNode uses vanilla dijkstra's (vanilla for now) algorithm to find Node path
 // TODO get code review on this. I think I'm maybe not getting optimal route
-func (m *nodeMap) routeToNode(t teamName, source, target *node) []*node {
+func (m *Map) RouteToNode(t teamName, source, target *Node) *Route {
 
-	if source.hasMachineFor(t) {
+	if source.HasMachineFor(t) {
 		// if we're connecting to our POE, return a route which is only our POE
 		if source == target {
-			route := make([]*node, 1)
+			route := make([]*Node, 1)
 			route[0] = source
-			return route
+			return &Route{route}
 		}
 
-		nodePool := m.newSearchField(t, source)
+		NodePool := m.newSearchField(t, source)
 
-		nodePool.dist[source] = 0
+		NodePool.dist[source] = 0
 
-		for len(nodePool.unchecked) > 0 {
-			thisNode := getBestNode(nodePool.unchecked, nodePool.dist)
+		for len(NodePool.unchecked) > 0 {
+			thisNode := getBestNode(NodePool.unchecked, NodePool.dist)
 
-			delete(nodePool.unchecked, thisNode)
+			delete(NodePool.unchecked, thisNode)
 
-			if m.nodesTouch(thisNode, target) {
-				nodePool.prev[target] = thisNode
-				route := constructRoute(nodePool.prev, target)
+			if m.NodesTouch(thisNode, target) {
+				NodePool.prev[target] = thisNode
+				route := constructRoute(NodePool.prev, target)
 				// log.Println("Found target!")
-				return route
+				return &route
 			}
 
-			for _, cNode := range m.nodesConnections(thisNode) {
+			for _, cNode := range m.NodesConnections(thisNode) {
 				// TODO refactor to take least risky routes by weighing against vulnerability to enemy connection
-				alt := nodePool.dist[thisNode] + 1
-				if alt < nodePool.dist[cNode] {
-					nodePool.dist[cNode] = alt
-					nodePool.prev[cNode] = thisNode
+				alt := NodePool.dist[thisNode] + 1
+				if alt < NodePool.dist[cNode] {
+					NodePool.dist[cNode] = alt
+					NodePool.prev[cNode] = thisNode
 				}
 			}
 		}
@@ -364,28 +364,28 @@ func (m *nodeMap) routeToNode(t teamName, source, target *node) []*node {
 }
 
 // helper functions for routeToNode ------------------------------------------------------------
-// constructRoute takes the routes discovered via routeToNode and the endpoint (target) and creates a slice of the correct path, note order is still reversed and path contains source but not target node
-func constructRoute(prevMap map[*node]*node, t *node) []*node {
+// constructRoute takes the routes discovered via routeToNode and the endpoint (target) and creates a slice of the correct path, note order is still reversed and path contains source but not target Node
+func constructRoute(prevMap map[*Node]*Node, t *Node) Route {
 	// log.Printf("constructRoute working from prev: %v", prevMap)
 
-	route := make([]*node, 1)
+	route := make([]*Node, 1)
 	route[0] = t
 
 	for step, ok := prevMap[t]; ok; step, ok = prevMap[step] {
 		route = append(route, step)
 	}
 
-	return route
+	return Route{route}
 }
 
-// getBestNode TODO extract the node with shortes path from pool, it is a substitute for using a priority queue
-func getBestNode(pool map[*node]bool, distMap map[*node]int) *node {
+// getBestNode TODO extract the Node with shortes path from pool, it is a substitute for using a priority queue
+func getBestNode(pool map[*Node]bool, distMap map[*Node]int) *Node {
 	bestDist := 100000
-	var bestNode *node
-	for node := range pool {
-		if distMap[node] < bestDist {
-			bestNode = node
-			bestDist = distMap[node]
+	var bestNode *Node
+	for Node := range pool {
+		if distMap[Node] < bestDist {
+			bestNode = Node
+			bestDist = distMap[Node]
 		}
 	}
 	return bestNode

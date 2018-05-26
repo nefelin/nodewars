@@ -1,14 +1,14 @@
-package model
+package node
 
 import (
 	"math/rand"
 	"time"
 )
 
-func newRandMap(n int) *nodeMap {
+func NewRandMap(n int) *Map {
 	rand.Seed(time.Now().UTC().UnixNano())
 	nodeCount := n
-	newMap := newNodeMap()
+	newMap := NewMap()
 
 	// for i := 0; i < nodeCount; i++ {
 	// 	newMap.addNodes(newMap.NewNode())
@@ -35,8 +35,8 @@ func newRandMap(n int) *nodeMap {
 	return &newMap
 }
 
-func newDefaultMap() *nodeMap {
-	newMap := newNodeMap()
+func newDefaultMap() *Map {
+	newMap := NewMap()
 
 	nodecount := 12
 
