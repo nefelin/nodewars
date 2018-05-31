@@ -1,8 +1,7 @@
 class Incoming {
-	constructor(context, debug){
-		// this.ws = ws
-		this.debug = debug || false
-		this.context = context
+	constructor(props){
+		this.context = props.context
+		this.debug = props.debug || false
 		// console.log('<Parsers.Incoming> context,', context)
 	}
 
@@ -42,6 +41,14 @@ class Incoming {
 	      			if (this.context.graph.current!=null)
 		      			this.context.graph.current.reset()
 	      			break
+	      		case 'graphResetFocus':
+	      			if (this.context.graph.current!=null)
+		      			this.context.graph.current.resetFocus()
+	      			break
+	      		case 'graphFocus':
+	      			if (this.context.graph.current!=null)
+		      			this.context.graph.current.focusOn(data.data)
+	      			break
 	      		case 'challengeState':
 	      			const challenge = JSON.parse(data.data)
 	      			this.context.setState({ challenge })
@@ -79,10 +86,10 @@ class Incoming {
 }
 
 class Outgoing {
-	constructor(ws, context, debug){
-		this.ws = ws
-		this.context = context
-		this.debug = debug || false
+	constructor(props){
+		this.ws = props.socket
+		this.context = props.context
+		this.debug = props.debug || false
 	}
 
 	parseCmd(cmd) {
