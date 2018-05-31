@@ -114,7 +114,7 @@ func (d *Dispatcher) joinRoom(p *player.Player, r roomID) error {
 func (d *Dispatcher) leaveRoom(p *player.Player) error {
 	game, ok := d.locations[p]
 	if !ok {
-		return errors.New("Your not in a game")
+		return errors.New("You're not in a game")
 	}
 
 	game.RemovePlayer(p)
