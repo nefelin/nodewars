@@ -97,7 +97,7 @@ class TinyTerm extends React.Component {
 		this.setState({
 			historyIndex: this.state.historyIndex+dir,
 			command: this.state.commandHistory[this.state.historyIndex+dir],
-		}, () => setTimeout(() => this.input.current.selectionStart = this.input.current.selectionEnd = 10000, 0))
+		}, () => setTimeout(() => this.input.current.selectionStart = this.input.current.selectionEnd = 10000, 0)) 
 	}
 	
 	sendCommand(cmd) {
@@ -111,7 +111,12 @@ class TinyTerm extends React.Component {
 			command: "" ,
 			historyIndex: commandHistory.length,
 			})
-		this.props.onSend(cmd)
+
+		if (this.props.hijackCommands && cmd in this.props.hijackCommands) {
+			this.props.onHijack(cmd)
+		} else {
+			this.props.onSend(cmd)
+		}		
 	}
 
 	handleChange(e) {
