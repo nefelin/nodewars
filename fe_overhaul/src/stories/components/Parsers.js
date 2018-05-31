@@ -42,12 +42,14 @@ class Incoming {
 		      			this.context.graph.current.reset()
 	      			break
 	      		case 'graphResetFocus':
+		      		// console.log('REEEEESetting graph focus')
 	      			if (this.context.graph.current!=null)
 		      			this.context.graph.current.resetFocus()
 	      			break
 	      		case 'graphFocus':
+		      		// console.log('Setting graph focus')
 	      			if (this.context.graph.current!=null)
-		      			this.context.graph.current.focusOn(data.data)
+		      			this.context.graph.current.setFocus(parseInt(data.data))
 	      			break
 	      		case 'challengeState':
 	      			const challenge = JSON.parse(data.data)

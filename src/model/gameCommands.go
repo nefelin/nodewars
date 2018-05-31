@@ -75,6 +75,17 @@ var gameCommands = commands.CommandGroup{
 		Handler: cmdConnect,
 	},
 
+	"foc": {
+		Name:      "foc",
+		ShortDesc: "Controls map focus",
+		LongDesc:  "Focuses on the specified node or resets focus to include all nodes",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt: argument.ArgList{
+			{Name: "node_id", Type: argument.Int},
+		},
+		Handler: cmdGraphFocus,
+	},
+
 	"lang": {
 		Name:      "lang",
 		ShortDesc: "Select a programming language",
@@ -632,21 +643,25 @@ func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []inte
 	return nil
 }
 
-// Async Confirmation Dialogues
-// func beginRemoveModuleConf(p *player.Player, gm *GameModel) {
-// 	p.Outgoing(nwmessage.PsDialogue("Resetting friendly machine, (y)es to confirm\nany other key to abort: "))
+func cmdGraphFocus(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
+	p := cl.(*player.Player)
+	gm := context.(*GameModel)
 
-// 	p.dialogue = nwmessage.NewDialogue([]nwmessage.Fn{
-// 		func(d *nwmessage.Dialogue, s string) nwmessage.Message {
-// 			if s == "y" || s == "ye" || s == "yes" {
-// 				d.SetProp("flag", "-yes")
-// 			} else {
-// 				d.SetProp("flag", "-no")
-// 			}
+	if len(args) < 1 {
+		// send resetfocus message
+		p.Outgoing(nwmessage.PsNeutral("Resetting map focus..."))
+		p.Outgoing(nwmessage.GraphFocusReset())
+		return nil
+	}
 
-// 			p.dialogue = nil
+	id := args[0].(int)
 
-// 			return cmdResetMachine(p, gm, []string{d.GetProp("flag")})
-// 		},
-// 	})
-// }
+	if gm.Map.GetNode(id) == nil {
+		return fmt.Errorf("Invalid node id, '%d'", id)
+	}
+
+	// send focus message
+	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("Focusing on node, '%d'", id)))
+	p.Outgoing(nwmessage.GraphFocus(id))
+	return nil
+}

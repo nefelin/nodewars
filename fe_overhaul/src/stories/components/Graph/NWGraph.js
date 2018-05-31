@@ -913,7 +913,7 @@ class NWGraph {
 	}
 
 	setFocus(id) {
-		// console.log('setFocus clickd', clickD, 'i', i, 'group', group)
+		console.log('Map is focusing on node', id)
 
 		if (this.nodeLayer.select('#node-'+id).classed('focused-primary')) {
 			this.resetZoom()

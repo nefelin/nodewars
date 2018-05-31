@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strconv"
 )
 
 // Message is our basic message struct
@@ -26,6 +27,8 @@ const (
 	editLangStateStr    = "editorLangState"
 	langSupportStateStr = "langSupportState"
 	editStateStr        = "editorState"
+	graphFocusStr       = "graphFocus"
+	graphResetFocusStr  = "graphResetFocus"
 	graphStateStr       = "graphState"
 	scoreStateStr       = "scoreState"
 	StdinStateStr       = "stdinState"
@@ -193,6 +196,22 @@ func GraphState(msg string) Message {
 func GraphReset() Message {
 	return Message{
 		Type:   graphResetStr,
+		Sender: serverStr,
+		Data:   "",
+	}
+}
+
+func GraphFocus(id int) Message {
+	return Message{
+		Type:   graphFocusStr,
+		Sender: serverStr,
+		Data:   strconv.Itoa(id),
+	}
+}
+
+func GraphFocusReset() Message {
+	return Message{
+		Type:   graphResetFocusStr,
 		Sender: serverStr,
 		Data:   "",
 	}

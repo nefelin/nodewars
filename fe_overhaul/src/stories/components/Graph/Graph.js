@@ -67,6 +67,16 @@ class Graph extends Component {
       this.state.graph.resize(newSize)
   }
 
+  resetFocus = () => {
+    if (this.state.graph)
+      this.state.graph.resetZoom()
+  }
+
+  setFocus = (id) => {
+    if (this.state.graph)
+      this.state.graph.setFocus(id)
+  }
+
   render() {
     if (this.props.debug) {
       return (
