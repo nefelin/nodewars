@@ -13,7 +13,7 @@ type CommandGroup map[string]Command
 
 // Exec either provides command information via the 'help' comands, or tries to process a command
 func (cg CommandGroup) Exec(context receiver.Receiver, m nwmessage.ClientMessage) error {
-	fullCmd := strings.Split(m.Data, " ")
+	fullCmd := strings.Split(strings.TrimSpace(m.Data), " ")
 	cmdString := fullCmd[0]
 	args := fullCmd[1:]
 
