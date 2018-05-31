@@ -77,9 +77,17 @@ class STRMLGrid extends React.Component {
 
   componentDidMount() {
     // Setup for websocket + handlers
-    const inParser = new Parsers.Incoming(this, true)
+    const inParser = new Parsers.Incoming({
+                                    context: this, 
+                                    debug: true,
+                                  })
     const ws = new NWSocket(inParser)
-    this.outgoing = new Parsers.Outgoing(ws, this, true)
+    this.outgoing = new Parsers.Outgoing({
+                                    socket: ws,
+                                    context: this,
+                                    debug: true,
+                                    hijackCommands: ['foc'],
+                                  })
 
     // Set up keyboard shortcuts
     
@@ -333,7 +341,13 @@ class STRMLGrid extends React.Component {
 
           <div key="terminal" >
             <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.Terminal} onSelect={this.handleSelect}>
-              <TinyTerm ref={this.terminal}  onFocus={() => this.toggleFocus('terminal')}  grabFocus={true} onSend={this.handleTermSend}/>
+              <TinyTerm 
+                ref={this.terminal}
+                onFocus={() => this.toggleFocus('terminal')}
+                grabFocus={true}
+                onSend={this.handleTermSend}
+                // hijackCommands={['focus']}
+                />
             </STRMLWindow>
           </div>
 
