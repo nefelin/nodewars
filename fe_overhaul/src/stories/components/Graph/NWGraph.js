@@ -855,7 +855,7 @@ class NWGraph {
 	        	var event = new Event('mousedown', { bubbles: true });
 				self.graphDiv.dispatchEvent(event);
 	        })
-	        .on('click', this.setFocus.bind(this))
+	        .on('click', (clicked) => this.setFocus(clicked.id))
             .call(d3.drag()
 			    .on("start", this.dragstarted.bind(this))
 			    .on("drag", this.dragged.bind(this))
@@ -912,10 +912,10 @@ class NWGraph {
 			// .classed('focused', false)
 	}
 
-	setFocus(clickD, i, group) {
-		// console.log('setFocus', clickD, el, third)
+	setFocus(id) {
+		// console.log('setFocus clickd', clickD, 'i', i, 'group', group)
 
-		if (d3.select(group[i]).classed('focused-primary')) {
+		if (this.nodeLayer.select('#node-'+id).classed('focused-primary')) {
 			this.resetZoom()
 			return
 		}
@@ -923,7 +923,7 @@ class NWGraph {
 		// resets focus
 		this.resetFocus()
 
-		d3.select(group[i]).classed('focused-primary', true)
+		this.nodeLayer.select('#node-'+id).classed('focused-primary', true)
 
 		const focusedIDs = []
 		
@@ -931,7 +931,7 @@ class NWGraph {
 		// focus nodes
 		// console.log('FOCUS nodeGroups size', this.nodeGroups.size())
 		this.nodeGroups.each(function(d) {
-			if (d.connections.indexOf(clickD.id) == -1 && d.id != clickD.id) {
+			if (d.connections.indexOf(id) == -1 && d.id != id) {
 				d3.select(this)
 				  .classed('focused', false)
 				
