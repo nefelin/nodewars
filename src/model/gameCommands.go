@@ -16,6 +16,14 @@ import (
 )
 
 var gameCommands = commands.CommandGroup{
+	"begin": {
+		Name:      "begin",
+		ShortDesc: "Begins the game. This means that points start accumulating and players are allowed to act",
+		ArgsReq:   argument.ArgList{},
+		ArgsOpt:   argument.ArgList{},
+		Handler:   cmdStartGame,
+	},
+
 	// "chat": {
 	// 	Name:      "chat",
 	// 	ShortDesc: "Toggles chat mode (all text entered is broadcast)",
@@ -159,6 +167,20 @@ var gameCommands = commands.CommandGroup{
 		ArgsOpt:   argument.ArgList{},
 		Handler:   cmdLs,
 	},
+}
+
+func cmdStartGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
+	// p := cl.(*player.Player)
+	gm := context.(*GameModel)
+
+	err := gm.startGame()
+
+	if err != nil {
+		return err
+	}
+
+	gm.psBroadcast(nwmessage.PsNeutral("Game has started!"))
+	return nil
 }
 
 func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
@@ -474,7 +496,7 @@ func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}
 	var scoreStrs sort.StringSlice
 
 	for teamName, team := range gm.Teams {
-		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoinCoin Production: %.2f\nCoinCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.VicPoints, gm.PointGoal))
+		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoinCoin Production: %.2f\nCoinCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.CoinCoin, gm.PointGoal))
 	}
 
 	scoreStrs.Sort()

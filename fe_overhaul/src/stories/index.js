@@ -23,6 +23,7 @@ import { SplitGrid } from './components/Graph/SplitGrid'
 import { STRMLGrid } from './components/Layout/STRMLGrid'
 import  STRMLWindow from './components/Layout/STRMLWindow'
 import { STRMLMenu } from './components/Layout/STRMLMenu'
+import ScoreBars from './components/Score/ScoreBars'
 
 import TinyTerm from './components/Terminal/TinyTerm'
 
@@ -48,7 +49,16 @@ storiesOf('ScoreBoard', module)
 		<p>This should be an a pie chart that animates on update, to be used for territory and/or production</p>
 	))
 	.add('Score Bars', () => (
-		<p>These should show overall CoinCoin score clearly</p>
+		<div>
+			<ScoreBars
+				data={[
+			      { team: 'R', color: 'red', cc: 100 },
+			      { team: 'B', color: 'blue', cc: 67 },
+			      { team: 'G', color: 'green', cc: 69 },
+			    ]}
+    		/>
+			<p>These should show overall CoinCoin score clearly</p>
+		</div>
 	))
 	.add('Score Board', () => (
 		<p>This should combine Pie and Bar charts with text readout to display the game sitch clearly</p>

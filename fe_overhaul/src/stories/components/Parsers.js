@@ -21,6 +21,7 @@ class Incoming {
 		const data = JSON.parse(m.data)
 	    // if (this.debug)
 	    // 	if (data.type != "scoreState") console.log('<Parsers.Incoming> received message,', data)
+	    // if (data.type == "scoreState") console.log('<Parsers.Incoming> received message,', data)
 
 	    switch (data.sender) {
 	      case 'pseudoServer':
@@ -30,6 +31,11 @@ class Incoming {
 
 	      default:
 	      	switch (data.type){
+	      		case 'scoreState':
+		      		// is this re-rendering all the time?
+		      		const score = JSON.parse(data.data)
+	      			this.context.setState({score})
+	      			break
 	      		case 'teamState':
 	      			this.context.setState({team: data.data})
 	      			break

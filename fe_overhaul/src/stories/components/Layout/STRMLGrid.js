@@ -34,6 +34,8 @@ import * as Parsers from '../Parsers'
 import Graph from '../Graph/Graph'
 import * as Maps from '../../maps'
 
+import ScoreBars from '../Score/ScoreBars'
+
 class STRMLGrid extends React.Component {
   constructor(props) {
     super(props)
@@ -359,6 +361,7 @@ class STRMLGrid extends React.Component {
           
           <div key="score">
             <STRMLWindow onMouseDown={this.gatherFocus} menuBar={Menus.Score} onSelect={this.handleSelect}>
+            <ScoreBars data={this.state.score}/>
             </STRMLWindow>
           </div>
 

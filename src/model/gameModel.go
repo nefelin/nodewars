@@ -463,11 +463,11 @@ func (gm *GameModel) tick() {
 
 	for _, team := range gm.Teams {
 		// gm.updateCoinPerTick(team) Don't think we need this if we update coinPerTick on any relevant change, IE machine gain/loss/reset
-		team.VicPoints += team.coinPerTick
-		if team.VicPoints >= gm.PointGoal {
+		team.CoinCoin += team.coinPerTick
+		if team.CoinCoin >= gm.PointGoal {
 			winners = append(winners, team.Name)
 		}
-		// gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s has completed %d calculations", team.Name, team.VicPoints)))
+		// gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s has completed %d calculations", team.Name, team.CoinCoin)))
 	}
 
 	if len(winners) > 0 {
@@ -480,13 +480,16 @@ func (gm *GameModel) tick() {
 	gm.broadcastScore()
 }
 
-func (gm *GameModel) startGame() {
+func (gm *GameModel) startGame() error {
 	if !gm.running {
 		gm.running = true
 		gm.psBroadcast(nwmessage.PsAlert("All teams have POEs. Game is starting!"))
 		// start go routine to handle ticking
 		go gm.tickScheduler()
+		return nil
 	}
+
+	return errors.New("Game already running")
 }
 
 func (gm *GameModel) stopGame() {
@@ -550,7 +553,14 @@ func (gm *GameModel) broadcastGraphReset() {
 }
 
 func (gm *GameModel) packScores() string {
-	scoreMsg, err := json.Marshal(gm.Teams)
+	teamSlice := make([]team, len(gm.Teams))
+	i := 0
+	for _, t := range gm.Teams {
+		teamSlice[i] = *t
+		i++
+	}
+
+	scoreMsg, err := json.Marshal(teamSlice)
 	if err != nil {
 		log.Println(err)
 	}

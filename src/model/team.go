@@ -13,7 +13,7 @@ type teamName = string
 
 type team struct {
 	Name        string  `json:"name"` // Names are only colors for now
-	VicPoints   float32 `json:"vicPoints"`
+	CoinCoin    float32 `json:"cc"`
 	players     map[*player.Player]bool
 	maxSize     int                 //`json:"maxSize"`
 	poes        map[*node.Node]bool // point of entry, the place where all team.players connect to the map through

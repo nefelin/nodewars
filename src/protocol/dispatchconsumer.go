@@ -31,14 +31,12 @@ func dispatchConsumer(d *Dispatcher) {
 						err := d.Recv(m)
 						if err != nil {
 							m.Sender.Outgoing(nwmessage.PsError(err))
-
 						}
 					}
 				} else {
 					err := d.Recv(m)
 					if err != nil {
 						m.Sender.Outgoing(nwmessage.PsError(err))
-
 					}
 				}
 				p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
