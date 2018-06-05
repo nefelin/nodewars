@@ -463,7 +463,7 @@ func (gm *GameModel) startGame(when int) error {
 }
 
 func (gm *GameModel) stopGame() error {
-	if gm.running {
+	if !gm.running {
 		return errors.New("Game is not running")
 	}
 
