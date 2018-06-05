@@ -18,10 +18,12 @@ import (
 var gameCommands = commands.CommandGroup{
 	"begin": {
 		Name:      "begin",
-		ShortDesc: "Begins the game. This means that points start accumulating and players are allowed to act",
+		ShortDesc: "Begins the game. Immediately or in n seconds",
 		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdStartGame,
+		ArgsOpt: argument.ArgList{
+			{Name: "n_seconds", Type: argument.Int},
+		},
+		Handler: cmdStartGame,
 	},
 
 	// "chat": {
@@ -173,13 +175,21 @@ func cmdStartGame(cl nwmessage.Client, context receiver.Receiver, args []interfa
 	// p := cl.(*player.Player)
 	gm := context.(*GameModel)
 
-	err := gm.startGame()
+	var err error
+
+	if len(args) > 0 {
+		count := args[0].(int)
+		err = gm.startGame(count)
+		gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Game will start in %d seconds!\n", count)))
+	} else {
+		gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Game has started!")))
+		err = gm.startGame(0)
+	}
 
 	if err != nil {
 		return err
 	}
 
-	gm.psBroadcast(nwmessage.PsNeutral("Game has started!"))
 	return nil
 }
 

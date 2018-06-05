@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"timer"
 )
 
 type playerSet = map[*player.Player]bool
@@ -38,7 +39,11 @@ type GameModel struct {
 	routes      map[*player.Player]*node.Route
 
 	// timelimit should be able to set a timelimit and count points at the end
+	jobTimer *timer.Timer
+	clock    int
 }
+
+type tickFunc func(elapsed time.Duration)
 
 // tries to set initial language to one of these defaults before picking first available
 var langDefaults = []string{
@@ -63,8 +68,7 @@ func NewDefaultModel(name string) *GameModel {
 		Map:     m,
 		Teams:   make(map[string]*team),
 		Players: p,
-		// Routes:  r,
-		// POEs:          poes,
+
 		languages:     challenges.GetLanguages(),
 		aChan:         aChan,
 		PointGoal:     1000,
@@ -72,19 +76,16 @@ func NewDefaultModel(name string) *GameModel {
 
 		attachments: make(map[*machines.Machine]playerSet),
 		routes:      make(map[*player.Player]*node.Route),
+		jobTimer:    timer.NewTimer().Start(),
 	}
 
-	// fmt.Println("Supported Languages:")
-	// for key := range gm.languages {
-	// 	fmt.Println(key)
-	// }
+	gm.jobTimer.AddScheduledJob("score", gm.scoreTick, 1*time.Second)
+	gm.jobTimer.AddScheduledJob("clock", gm.gameClock, 1*time.Second)
 
 	err := gm.addTeams(makeDummyTeams())
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	// go actionConsumer(gm)
 
 	return gm
 }
@@ -447,55 +448,27 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *mac
 
 }
 
-func (gm *GameModel) tickScheduler() {
-	for gm.running == true {
-		<-time.After(1 * time.Second)
-		gm.tick()
-	}
-}
-
-// this is a naive approach, would be more performant to deal in deltas and only use tick to increment total, not recalculate rate
-// TODO approach should be that on any module gain or loss that teams procPow is recalculated
-// this entails making a pool of all nodes connected to POE and running the below logic
-func (gm *GameModel) tick() {
-
-	winners := make([]string, 0)
-
-	for _, team := range gm.Teams {
-		// gm.updateCoinPerTick(team) Don't think we need this if we update coinPerTick on any relevant change, IE machine gain/loss/reset
-		team.CoinCoin += team.coinPerTick
-		if team.CoinCoin >= gm.PointGoal {
-			winners = append(winners, team.Name)
-		}
-		// gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s has completed %d calculations", team.Name, team.CoinCoin)))
+func (gm *GameModel) startGame(when int) error {
+	if gm.running {
+		return errors.New("Game already running")
 	}
 
-	if len(winners) > 0 {
-		for _, name := range winners {
-			gm.psBroadcast(nwmessage.PsAlert(fmt.Sprintf("Team %s wins!", name)))
-		}
-		gm.stopGame()
-	}
-
-	gm.broadcastScore()
-}
-
-func (gm *GameModel) startGame() error {
-	if !gm.running {
+	if when == 0 {
 		gm.running = true
-		gm.psBroadcast(nwmessage.PsAlert("All teams have POEs. Game is starting!"))
-		// start go routine to handle ticking
-		go gm.tickScheduler()
-		return nil
+	} else {
+		gm.clock = when * -1
 	}
 
-	return errors.New("Game already running")
+	return nil
 }
 
-func (gm *GameModel) stopGame() {
-	gm.running = false
+func (gm *GameModel) stopGame() error {
+	if gm.running {
+		return errors.New("Game is not running")
+	}
 
-	// ticking goroutine should auto collapse when running is false
+	gm.running = false
+	return nil
 }
 
 func (gm *GameModel) resetMap(m *node.Map) {
