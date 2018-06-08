@@ -1,4 +1,4 @@
-package commands
+package command
 
 import (
 	"argument"
@@ -13,7 +13,7 @@ func typeMismatch(need argument.Arg, got string) error {
 }
 
 // ValidateArgs tarkes the command info and a slice of strings and checks to ensure that arguement requirements are not violated
-func (c Command) ValidateArgs(args []string) ([]interface{}, error) {
+func (c Info) Validate(args []string) ([]interface{}, error) {
 
 	if len(args) < len(c.ArgsReq) {
 		return nil, errors.New("too few arguments")

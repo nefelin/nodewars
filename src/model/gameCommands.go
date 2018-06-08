@@ -3,177 +3,245 @@ package model
 import (
 	"argument"
 	"challenges"
-	"commands"
+	"command"
 	"errors"
 	"feature"
 	"fmt"
 	"model/node"
 	"model/player"
 	"nwmessage"
-	"receiver"
+	"room"
 	"sort"
 	"strings"
 )
 
-var gameCommands = commands.CommandGroup{
-	"begin": {
-		Name:      "begin",
-		ShortDesc: "Begins the game. Immediately or in n seconds",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt: argument.ArgList{
-			{Name: "n_seconds", Type: argument.Int},
-		},
-		Handler: cmdStartGame,
-	},
-
-	// "chat": {
-	// 	Name:      "chat",
-	// 	ShortDesc: "Toggles chat mode (all text entered is broadcast)",
-	// 	ArgsReq:   argument.ArgList{},
-	// 	ArgsOpt:   argument.ArgList{},
-	// 	Handler:   cmdToggleChat,
-	// },
-
-	"yell": {
-		Name:      "yell",
-		ShortDesc: "Sends a message to all player (in the same game/lobby)",
-		ArgsReq: argument.ArgList{
-			{Name: "msg", Type: argument.GreedyString},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdYell,
-	},
-
-	"tc": {
-		Name:      "tc",
-		ShortDesc: "Sends a message to all teammates",
-		ArgsReq: argument.ArgList{
-			{Name: "msg", Type: argument.GreedyString},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdYell,
-	},
-
-	// "say": {
-	// 	Name:      "say",
-	// 	ShortDesc: "Sends all players at the same node",
-	// 	ArgsReq: argument.ArgList{
-	// 		{Name: "msg", Type: argument.GreedyString},
-	// 	},
-	// 	ArgsOpt: argument.ArgList{},
-	// 	Handler: cmdSay,
-	// },
-
-	"join": {
-		Name:      "join",
-		ShortDesc: "Joins a team",
-		LongDesc:  "Joins either a specified team is one is provided or, if no argument is given, a team is selected automatically",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt: argument.ArgList{
-			{Name: "team_name", Type: argument.String},
-		},
-		Handler: cmdJoinTeam,
-	},
-
-	"con": {
-		Name:      "con",
-		ShortDesc: "Connect to the specified node",
-		ArgsReq: argument.ArgList{
-			{Name: "node_id", Type: argument.Int},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdConnect,
-	},
-
-	"foc": {
-		Name:      "foc",
-		ShortDesc: "Controls map focus",
-		LongDesc:  "Focuses on the specified node or resets focus to include all nodes",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt: argument.ArgList{
-			{Name: "node_id", Type: argument.Int},
-		},
-		Handler: cmdGraphFocus,
-	},
-
-	"lang": {
-		Name:      "lang",
-		ShortDesc: "Select a programming language",
-		ArgsReq: argument.ArgList{
-			{Name: "lang_name", Type: argument.String},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdLang,
-	},
-
-	"langs": {
-		Name:      "langs",
-		ShortDesc: "List languages allowed in this game",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdListLanguages,
-	},
-
-	"make": {
-		Name:      "make",
-		ShortDesc: "Submits code to claim or steal machine",
-		LongDesc:  "An argument must be provided if the current machine is a Feature. The argument is the type of Feature player would like to install",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt: argument.ArgList{
-			{Name: "feature", Type: argument.String},
-		},
-		Handler: cmdMake,
-	},
-
-	"test": {
-		Name:      "test",
-		ShortDesc: "Runs code using custom stdin instead of challenge",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdTestCode,
-	},
-
-	"res": {
-		Name:      "res",
-		ShortDesc: "Submist code to reset machine",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdResetMachine,
-	},
-
-	"at": {
-		Name:      "at",
-		ShortDesc: "Attach to a machine in the current node",
-		LongDesc:  "An optional second argument can be provided, if that argument is 'n' or 'no', then no boilerplate will be loaded, thus preserving the current editor state.",
-		ArgsReq: argument.ArgList{
-			{Name: "addr", Type: argument.String},
-		},
-		ArgsOpt: argument.ArgList{
-			{Name: "bp_flag", Type: argument.String},
-		},
-		Handler: cmdAttach,
-	},
-
-	"who": {
-		Name:      "who",
-		ShortDesc: "Prints who's in the current game",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdWho,
-	},
-
-	"ls": {
-		Name:      "ls",
-		ShortDesc: "Prints details about current node",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdLs,
-	},
+type gameCommand struct {
+	command.Info
+	handler func(p *player.Player, gm *GameModel, args []interface{}) error
 }
 
-func cmdStartGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	// p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func (c gameCommand) Exec(cli nwmessage.Client, context room.Room, args []interface{}) error {
+	p, ok := cli.(*player.Player)
+	if !ok {
+		panic("Error asserting Player in exec")
+	}
+
+	gm, ok := context.(*GameModel)
+	if !ok {
+		panic("Error asserting GameModel in exec")
+	}
+
+	return c.handler(p, gm, args)
+}
+
+func RegisterCommands(r *command.Registry) {
+	gameCommands := []gameCommand{
+		{
+			command.Info{
+				CmdName:   "begin",
+				ShortDesc: "Begins the game. Immediately or in n seconds",
+				ArgsReq:   argument.ArgList{},
+				ArgsOpt: argument.ArgList{
+					{Name: "n_seconds", Type: argument.Int},
+				},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdStartGame,
+		},
+
+		// "chat": {
+		// 	CmdName:   "chat",
+		// 	ShortDesc: "Toggles chat mode (all text entered is broadcast)",
+		// 	ArgsReq:   argument.ArgList{},
+		// 	ArgsOpt:   argument.ArgList{},
+		// 	Handler:   cmdToggleChat,
+		// },
+
+		{
+			command.Info{
+				CmdName:   "yell",
+				ShortDesc: "Sends a message to all player (in the same game/lobby)",
+				ArgsReq: argument.ArgList{
+					{Name: "msg", Type: argument.GreedyString},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdYell,
+		},
+
+		{
+			command.Info{
+				CmdName:   "tc",
+				ShortDesc: "Sends a message to all teammates",
+				ArgsReq: argument.ArgList{
+					{Name: "msg", Type: argument.GreedyString},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdYell,
+		},
+
+		// "say": {
+		// 	CmdName:   "say",
+		// 	ShortDesc: "Sends all players at the same node",
+		// 	ArgsReq: argument.ArgList{
+		// 		{Name: "msg", Type: argument.GreedyString},
+		// 	},
+		// 	ArgsOpt: argument.ArgList{},
+		// 	Handler: cmdSay,
+		// },
+
+		{
+			command.Info{
+				CmdName:   "join",
+				ShortDesc: "Joins a team",
+				LongDesc:  "Joins either a specified team is one is provided or, if no argument is given, a team is selected automatically",
+				ArgsReq:   argument.ArgList{},
+				ArgsOpt: argument.ArgList{
+					{Name: "team_name", Type: argument.String},
+				},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdJoinTeam,
+		},
+
+		{
+			command.Info{
+				CmdName:   "con",
+				ShortDesc: "Connect to the specified node",
+				ArgsReq: argument.ArgList{
+					{Name: "node_id", Type: argument.Int},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdConnect,
+		},
+
+		{
+			command.Info{
+				CmdName:   "foc",
+				ShortDesc: "Controls map focus",
+				LongDesc:  "Focuses on the specified node or resets focus to include all nodes",
+				ArgsReq:   argument.ArgList{},
+				ArgsOpt: argument.ArgList{
+					{Name: "node_id", Type: argument.Int},
+				},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdGraphFocus,
+		},
+
+		{
+			command.Info{
+				CmdName:   "lang",
+				ShortDesc: "Select a programming language",
+				ArgsReq: argument.ArgList{
+					{Name: "lang_name", Type: argument.String},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdLang,
+		},
+
+		{
+			command.Info{
+				CmdName:     "langs",
+				ShortDesc:   "List languages allowed in this game",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdListLanguages,
+		},
+
+		{
+			command.Info{
+				CmdName:   "make",
+				ShortDesc: "Submits code to claim or steal machine",
+				LongDesc:  "An argument must be provided if the current machine is a Feature. The argument is the type of Feature player would like to install",
+				ArgsReq:   argument.ArgList{},
+				ArgsOpt: argument.ArgList{
+					{Name: "feature", Type: argument.String},
+				},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdMake,
+		},
+
+		{
+			command.Info{
+				CmdName:     "test",
+				ShortDesc:   "Runs code using custom stdin instead of challenge",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdTestCode,
+		},
+
+		{
+			command.Info{
+				CmdName:     "res",
+				ShortDesc:   "Submist code to reset machine",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdResetMachine,
+		},
+
+		{
+			command.Info{
+				CmdName:   "at",
+				ShortDesc: "Attach to a machine in the current node",
+				LongDesc:  "An optional second argument can be provided, if that argument is 'n' or 'no', then no boilerplate will be loaded, thus preserving the current editor state.",
+				ArgsReq: argument.ArgList{
+					{Name: "addr", Type: argument.String},
+				},
+				ArgsOpt: argument.ArgList{
+					{Name: "bp_flag", Type: argument.String},
+				},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdAttach,
+		},
+
+		{
+			command.Info{
+				CmdName:     "who",
+				ShortDesc:   "Prints who's in the current game",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdWho,
+		},
+
+		{
+			command.Info{
+				CmdName:     "ls",
+				ShortDesc:   "Prints details about current node",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Game},
+			},
+			cmdLs,
+		},
+	}
+
+	for _, c := range gameCommands {
+		err := r.AddEntry(c)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+func cmdStartGame(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	var err error
 
@@ -193,9 +261,7 @@ func cmdStartGame(cl nwmessage.Client, context receiver.Receiver, args []interfa
 	return nil
 }
 
-func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdYell(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	chatMsg := args[0].(string)
 
@@ -203,9 +269,7 @@ func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdTell(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	recipName := args[0].(string)
 	msgText := args[1].(string)
@@ -227,9 +291,7 @@ func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdTeamChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdTeamChat(p *player.Player, gm *GameModel, args []interface{}) error {
 	chatMsg := args[0].(string)
 
 	if p.TeamName == "" {
@@ -242,9 +304,7 @@ func cmdTeamChat(cl nwmessage.Client, context receiver.Receiver, args []interfac
 
 }
 
-func cmdSay(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdSay(p *player.Player, gm *GameModel, args []interface{}) error {
 	chatMsg := args[0].(string)
 
 	node := gm.PlayerLocation(p)
@@ -262,9 +322,7 @@ func cmdSay(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 	return nil
 }
 
-func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdJoinTeam(p *player.Player, gm *GameModel, args []interface{}) error {
 	var t teamName
 
 	if len(args) == 0 || args[0] == "" {
@@ -297,7 +355,7 @@ func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interfac
 			// log.Printf("player joined team, trying to log into %v", tp.ID)
 			var i []interface{} = make([]interface{}, 1)
 			i[0] = tp.ID
-			err = cmdConnect(cl, context, i)
+			err = cmdConnect(p, gm, i)
 			if err != nil {
 				panic(err)
 			}
@@ -310,9 +368,7 @@ func cmdJoinTeam(cl nwmessage.Client, context receiver.Receiver, args []interfac
 	return nil
 }
 
-func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdLang(p *player.Player, gm *GameModel, args []interface{}) error {
 	lang := args[0].(string)
 
 	err := gm.setLanguage(p, lang)
@@ -339,9 +395,7 @@ func cmdLang(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdListLanguages(p *player.Player, gm *GameModel, args []interface{}) error {
 	var langs sort.StringSlice
 
 	for l := range gm.languages {
@@ -354,9 +408,7 @@ func cmdListLanguages(cl nwmessage.Client, context receiver.Receiver, args []int
 	return nil
 }
 
-func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdConnect(p *player.Player, gm *GameModel, args []interface{}) error {
 	target := args[0].(int)
 	if p.TeamName == "" {
 		return errors.New("Join a team first")
@@ -374,9 +426,7 @@ func cmdConnect(cl nwmessage.Client, context receiver.Receiver, args []interface
 	return cmdLs(p, gm, args)
 }
 
-func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdWho(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	// Sort team names
 	whoStr := ""
@@ -401,9 +451,7 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 	return nil
 }
 
-func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdLs(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	if gm.routes[p] == nil {
 		return nwmessage.ErrorNoConnection()
@@ -433,7 +481,7 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 	return nil
 }
 
-// func cmdSetPOE(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
+// func cmdSetPOE(p *player.Player, gm *GameModel, args []interface{}) error {
 // p := cl.(*player.Player)
 // gm := context.(*GameModel)
 // 	if p.TeamName == "" {
@@ -478,9 +526,7 @@ func cmdLs(cl nwmessage.Client, context receiver.Receiver, args []interface{}) e
 // return nil
 // }
 
-func cmdTestCode(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	// gm := context.(*GameModel)
+func cmdTestCode(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	if p.Editor() == "" {
 		return errors.New("No code submitted")
@@ -500,9 +546,7 @@ func cmdTestCode(cl nwmessage.Client, context receiver.Receiver, args []interfac
 	return nil
 }
 
-func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdScore(p *player.Player, gm *GameModel, args []interface{}) error {
 	var scoreStrs sort.StringSlice
 
 	for teamName, team := range gm.Teams {
@@ -515,9 +559,7 @@ func cmdScore(cl nwmessage.Client, context receiver.Receiver, args []interface{}
 	return nil
 }
 
-func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 	macAddress := args[0].(string)
 
 	if gm.routes[p] == nil {
@@ -589,9 +631,7 @@ func cmdAttach(cl nwmessage.Client, context receiver.Receiver, args []interface{
 	return nil
 }
 
-func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdMake(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	err := gm.CanSubmit(p)
 	if err != nil {
@@ -644,9 +684,7 @@ func cmdMake(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdResetMachine(p *player.Player, gm *GameModel, args []interface{}) error {
 	node := gm.PlayerLocation(p)
 	mac := gm.CurrentMachine(p)
 
@@ -675,9 +713,7 @@ func cmdResetMachine(cl nwmessage.Client, context receiver.Receiver, args []inte
 	return nil
 }
 
-func cmdGraphFocus(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
-	gm := context.(*GameModel)
+func cmdGraphFocus(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	if len(args) < 1 {
 		// send resetfocus message

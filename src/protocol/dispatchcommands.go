@@ -2,116 +2,268 @@ package protocol
 
 import (
 	"argument"
-	"commands"
+	"command"
 	"errors"
 	"fmt"
 	"math/rand"
 	"model"
 	"model/player"
 	"nwmessage"
-	"receiver"
+	"room"
 	"sort"
 	"strconv"
 	"strings"
 )
 
-var dispatchCommands = commands.CommandGroup{
-	"chat": {
-		Name:      "chat",
-		ShortDesc: "Toggles chat mode (all text entered is broadcast)",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdToggleChat,
-	},
-
-	"join": {
-		Name:      "join",
-		ShortDesc: "Joins the specified game",
-		ArgsReq: argument.ArgList{
-			{Name: "game_name", Type: argument.String},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdJoinGame,
-	},
-
-	"leave": {
-		Name:      "leave",
-		ShortDesc: "Leaves the current game",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdLeaveGame,
-	},
-
-	"ls": {
-		Name:      "ls",
-		ShortDesc: "List the games that are currently running",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdListGames,
-	},
-
-	"name": {
-		Name:      "name",
-		ShortDesc: "Sets the player's name",
-		ArgsReq: argument.ArgList{
-			{Name: "new_name", Type: argument.String},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdSetName,
-	},
-
-	"ng": {
-		Name:      "ng",
-		ShortDesc: "Creates a new game",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt: argument.ArgList{
-			{Name: "game_name", Type: argument.String},
-		},
-		Handler: cmdNewGame,
-	},
-
-	"kill": {
-		Name:      "kill",
-		ShortDesc: "Removes a game (must be empty)",
-		ArgsReq: argument.ArgList{
-			{Name: "game_name", Type: argument.String},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdKillGame,
-	},
-
-	"tell": {
-		Name:      "tell",
-		ShortDesc: "Sends a private message to another player",
-		ArgsReq: argument.ArgList{
-			{Name: "recip", Type: argument.String},
-			{Name: "msg", Type: argument.GreedyString},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdTell,
-	},
-
-	"who": {
-		Name:      "who",
-		ShortDesc: "Shows who's in the lobby",
-		ArgsReq:   argument.ArgList{},
-		ArgsOpt:   argument.ArgList{},
-		Handler:   cmdWho,
-	},
-
-	"yell": {
-		Name:      "yell",
-		ShortDesc: "Sends a message to all player (in the same game/lobby)",
-		ArgsReq: argument.ArgList{
-			{Name: "msg", Type: argument.GreedyString},
-		},
-		ArgsOpt: argument.ArgList{},
-		Handler: cmdYell,
-	},
+type dispatchCommand struct {
+	command.Info
+	handler func(p *player.Player, d *Dispatcher, args []interface{}) error
 }
 
-func cmdToggleChat(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	p := cl.(*player.Player)
+func (c dispatchCommand) Exec(cli nwmessage.Client, context room.Room, args []interface{}) error {
+	p, ok := cli.(*player.Player)
+	if !ok {
+		panic("Error asserting Player in exec")
+	}
+
+	d, ok := context.(*Dispatcher)
+	if !ok {
+		panic("Error asserting Dispatcher in exec")
+	}
+
+	return c.handler(p, d, args)
+}
+
+func RegisterCommands(r *command.Registry) {
+	dispatchCommands := []dispatchCommand{
+		{
+			command.Info{
+				CmdName:     "chat",
+				ShortDesc:   "Toggles chat mode (all text entered is broadcast)",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdToggleChat,
+		},
+
+		{
+			command.Info{
+				CmdName:   "join",
+				ShortDesc: "Joins the specified game",
+				ArgsReq: argument.ArgList{
+					{Name: "game_name", Type: argument.String},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdJoinGame,
+		},
+
+		{
+			command.Info{
+				CmdName:     "leave",
+				ShortDesc:   "Leaves the current game",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdLeaveGame,
+		},
+
+		{
+			command.Info{
+				CmdName:     "ls",
+				ShortDesc:   "List the games that are currently running",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdListGames,
+		},
+
+		{
+			command.Info{
+				CmdName:   "name",
+				ShortDesc: "Sets the player's name",
+				ArgsReq: argument.ArgList{
+					{Name: "new_name", Type: argument.String},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdSetName,
+		},
+
+		{
+			command.Info{
+				CmdName:   "ng",
+				ShortDesc: "Creates a new game",
+				ArgsReq:   argument.ArgList{},
+				ArgsOpt: argument.ArgList{
+					{Name: "game_name", Type: argument.String},
+				},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdNewGame,
+		},
+
+		{
+			command.Info{
+				CmdName:   "kill",
+				ShortDesc: "Removes a game (must be empty)",
+				ArgsReq: argument.ArgList{
+					{Name: "game_name", Type: argument.String},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdKillGame,
+		},
+
+		{
+			command.Info{
+				CmdName:   "tell",
+				ShortDesc: "Sends a private message to another player",
+				ArgsReq: argument.ArgList{
+					{Name: "recip", Type: argument.String},
+					{Name: "msg", Type: argument.GreedyString},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdTell,
+		},
+
+		{
+			command.Info{
+				CmdName:     "who",
+				ShortDesc:   "Shows who's in the lobby",
+				ArgsReq:     argument.ArgList{},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdWho,
+		},
+
+		{
+			command.Info{
+				CmdName:   "yell",
+				ShortDesc: "Sends a message to all player (in the same game/lobby)",
+				ArgsReq: argument.ArgList{
+					{Name: "msg", Type: argument.GreedyString},
+				},
+				ArgsOpt:     argument.ArgList{},
+				CmdContexts: []room.Type{room.Lobby},
+			},
+			cmdYell,
+		},
+	}
+
+	for _, c := range dispatchCommands {
+		err := r.AddEntry(c)
+		if err != nil {
+			panic(err)
+		}
+	}
+}
+
+// var dispatchCommands = commands.CommandGroup{
+// 	"chat": {
+// 		CmdName:   "chat",
+// 		ShortDesc: "Toggles chat mode (all text entered is broadcast)",
+// 		ArgsReq:   argument.ArgList{},
+// 		ArgsOpt:   argument.ArgList{},
+// 		Handler:   cmdToggleChat,
+// 	},
+
+// 	"join": {
+// 		CmdName:   "join",
+// 		ShortDesc: "Joins the specified game",
+// 		ArgsReq: argument.ArgList{
+// 			{Name: "game_name", Type: argument.String},
+// 		},
+// 		ArgsOpt: argument.ArgList{},
+// 		Handler: cmdJoinGame,
+// 	},
+
+// 	"leave": {
+// 		CmdName:   "leave",
+// 		ShortDesc: "Leaves the current game",
+// 		ArgsReq:   argument.ArgList{},
+// 		ArgsOpt:   argument.ArgList{},
+// 		Handler:   cmdLeaveGame,
+// 	},
+
+// 	"ls": {
+// 		CmdName:   "ls",
+// 		ShortDesc: "List the games that are currently running",
+// 		ArgsReq:   argument.ArgList{},
+// 		ArgsOpt:   argument.ArgList{},
+// 		Handler:   cmdListGames,
+// 	},
+
+// 	"name": {
+// 		CmdName:   "name",
+// 		ShortDesc: "Sets the player's name",
+// 		ArgsReq: argument.ArgList{
+// 			{Name: "new_name", Type: argument.String},
+// 		},
+// 		ArgsOpt: argument.ArgList{},
+// 		Handler: cmdSetName,
+// 	},
+
+// 	"ng": {
+// 		CmdName:   "ng",
+// 		ShortDesc: "Creates a new game",
+// 		ArgsReq:   argument.ArgList{},
+// 		ArgsOpt: argument.ArgList{
+// 			{Name: "game_name", Type: argument.String},
+// 		},
+// 		Handler: cmdNewGame,
+// 	},
+
+// 	"kill": {
+// 		CmdName:   "kill",
+// 		ShortDesc: "Removes a game (must be empty)",
+// 		ArgsReq: argument.ArgList{
+// 			{Name: "game_name", Type: argument.String},
+// 		},
+// 		ArgsOpt: argument.ArgList{},
+// 		Handler: cmdKillGame,
+// 	},
+
+// 	"tell": {
+// 		CmdName:   "tell",
+// 		ShortDesc: "Sends a private message to another player",
+// 		ArgsReq: argument.ArgList{
+// 			{Name: "recip", Type: argument.String},
+// 			{Name: "msg", Type: argument.GreedyString},
+// 		},
+// 		ArgsOpt: argument.ArgList{},
+// 		Handler: cmdTell,
+// 	},
+
+// 	"who": {
+// 		CmdName:   "who",
+// 		ShortDesc: "Shows who's in the lobby",
+// 		ArgsReq:   argument.ArgList{},
+// 		ArgsOpt:   argument.ArgList{},
+// 		Handler:   cmdWho,
+// 	},
+
+// 	"yell": {
+// 		CmdName:   "yell",
+// 		ShortDesc: "Sends a message to all player (in the same game/lobby)",
+// 		ArgsReq: argument.ArgList{
+// 			{Name: "msg", Type: argument.GreedyString},
+// 		},
+// 		ArgsOpt: argument.ArgList{},
+// 		Handler: cmdYell,
+// 	},
+// }
+
+func cmdToggleChat(p *player.Player, d *Dispatcher, args []interface{}) error {
 	p.ToggleChat()
 
 	var flag string
@@ -126,9 +278,8 @@ func cmdToggleChat(cl nwmessage.Client, context receiver.Receiver, args []interf
 	return nil
 }
 
-func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdYell(p *player.Player, d *Dispatcher, args []interface{}) error {
+
 	msg := args[0].(string)
 
 	for _, player := range d.GetPlayers() {
@@ -138,9 +289,8 @@ func cmdYell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdSetName(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdSetName(p *player.Player, d *Dispatcher, args []interface{}) error {
+
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
 	}
@@ -161,9 +311,7 @@ func cmdSetName(cl nwmessage.Client, context receiver.Receiver, args []interface
 	return nil
 }
 
-func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdNewGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 
 	if _, ok := d.locations[p]; ok {
 		return fmt.Errorf("You can't create a game. You're already in a game")
@@ -198,9 +346,7 @@ func cmdNewGame(cl nwmessage.Client, context receiver.Receiver, args []interface
 	return nil
 }
 
-func cmdKillGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdKillGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 
 	gameName := args[0].(string)
 
@@ -224,9 +370,8 @@ func cmdKillGame(cl nwmessage.Client, context receiver.Receiver, args []interfac
 	return nil
 }
 
-func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdWho(p *player.Player, d *Dispatcher, args []interface{}) error {
+
 	// var location Room
 	// location, ok := d.games[d.locations[p.ID]]
 
@@ -258,9 +403,8 @@ func cmdWho(cl nwmessage.Client, context receiver.Receiver, args []interface{}) 
 	return nil
 }
 
-func cmdJoinGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdJoinGame(p *player.Player, d *Dispatcher, args []interface{}) error {
+
 	gameName := args[0].(string)
 
 	_, ok := d.games[gameName]
@@ -278,9 +422,7 @@ func cmdJoinGame(cl nwmessage.Client, context receiver.Receiver, args []interfac
 	return nil
 }
 
-func cmdLeaveGame(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdLeaveGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 
 	err := d.leaveRoom(p)
 
@@ -293,9 +435,7 @@ func cmdLeaveGame(cl nwmessage.Client, context receiver.Receiver, args []interfa
 	return nil
 }
 
-func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdTell(p *player.Player, d *Dispatcher, args []interface{}) error {
 
 	name := args[0].(string)
 	msg := args[1].(string)
@@ -319,9 +459,8 @@ func cmdTell(cl nwmessage.Client, context receiver.Receiver, args []interface{})
 	return nil
 }
 
-func cmdListGames(cl nwmessage.Client, context receiver.Receiver, args []interface{}) error {
-	d := context.(*Dispatcher)
-	p := cl.(*player.Player)
+func cmdListGames(p *player.Player, d *Dispatcher, args []interface{}) error {
+
 	gameList := ""
 
 	if len(d.games) == 0 {

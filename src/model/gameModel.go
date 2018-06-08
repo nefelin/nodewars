@@ -13,6 +13,7 @@ import (
 	"model/player"
 	"model/statemessage"
 	"nwmessage"
+	"room"
 	"sort"
 	"strings"
 	"time"
@@ -110,18 +111,18 @@ func (gm *GameModel) GetPlayers() []*player.Player {
 	return list
 }
 
-func (gm *GameModel) Recv(msg nwmessage.ClientMessage) error {
-	return gameCommands.Exec(gm, msg)
-}
+// func (gm *GameModel) Recv(msg nwmessage.ClientMessage) error {
+// 	// return gameCommands.Exec(gm, msg)
+// }
 
 func (gm *GameModel) Name() string {
 	// gm.aChan <- msg
 	return gm.name
 }
 
-func (gm *GameModel) Type() string {
+func (gm *GameModel) Type() room.Type {
 	// gm.aChan <- msg
-	return ""
+	return room.Game
 }
 
 // Addteams can only be called once. After addteams is called unused poes are removed

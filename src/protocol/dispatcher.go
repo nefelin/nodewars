@@ -1,8 +1,10 @@
 package protocol
 
 import (
+	"command"
 	"errors"
 	"fmt"
+	"model"
 	"model/player"
 	"nwmessage"
 	"regrequest"
@@ -21,6 +23,7 @@ type Dispatcher struct {
 	games             map[roomID]room.Room
 	registrationQueue chan regrequest.Request
 	clientMessages    chan nwmessage.ClientMessage
+	cmdRegistry       *command.Registry
 }
 
 func NewDispatcher() *Dispatcher {
@@ -30,7 +33,11 @@ func NewDispatcher() *Dispatcher {
 		games:             make(map[roomID]room.Room),
 		registrationQueue: make(chan regrequest.Request),
 		clientMessages:    make(chan nwmessage.ClientMessage),
+		cmdRegistry:       command.NewRegistry(),
 	}
+
+	RegisterCommands(d.cmdRegistry)
+	model.RegisterCommands(d.cmdRegistry)
 
 	go dispatchConsumer(d)
 	return d
@@ -40,8 +47,8 @@ func (d *Dispatcher) Name() string {
 	return "Main Lobby"
 }
 
-func (d *Dispatcher) Type() string {
-	return "Lobby"
+func (d *Dispatcher) Type() room.Type {
+	return room.Lobby
 }
 
 func (d *Dispatcher) GetPlayers() []*player.Player {

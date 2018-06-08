@@ -2,13 +2,12 @@ package room
 
 import (
 	"model/player"
-	"nwmessage"
 )
 
 type Room interface {
 	Name() string
-	Type() string // TODO switch this to a roomtype definition
-	Recv(msg nwmessage.ClientMessage) error
+	Type() Type // TODO switch this to a roomtype definition
+	//	Recv(msg nwmessage.ClientMessage) error
 	AddPlayer(p *player.Player) error
 	RemovePlayer(p *player.Player) error
 	GetPlayers() []*player.Player
@@ -19,3 +18,16 @@ type RoomManager interface {
 	RemovePlayer(p *player.Player, r Room)
 	PlacePlayer(p *player.Player, r Room)
 }
+
+type Type interface {
+	implementsType()
+}
+
+type roomType string
+
+func (r roomType) implementsType() {}
+
+const (
+	Game  roomType = "Game"
+	Lobby roomType = "Lobby"
+)

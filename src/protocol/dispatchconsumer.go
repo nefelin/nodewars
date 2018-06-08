@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"model/player"
 	"nwmessage"
+	"room"
 )
 
 func dispatchConsumer(d *Dispatcher) {
@@ -25,20 +26,21 @@ func dispatchConsumer(d *Dispatcher) {
 			case "stdinState":
 				p.SetStdin(m.Data, false)
 			case "playerCmd":
-				if room, ok := d.locations[p]; ok {
-					err := room.Recv(m)
-					if err != nil {
-						err := d.Recv(m)
-						if err != nil {
-							m.Sender.Outgoing(nwmessage.PsError(err))
-						}
-					}
-				} else {
-					err := d.Recv(m)
-					if err != nil {
-						m.Sender.Outgoing(nwmessage.PsError(err))
-					}
+				var room room.Room
+				var ok bool
+
+				// if player isn't in a room, use dispatcher as their room
+				if room, ok = d.locations[p]; !ok {
+					room = d
 				}
+
+				// try and execute command
+				err := d.cmdRegistry.Exec(room, m)
+				if err != nil {
+					m.Sender.Outgoing(nwmessage.PsError(err))
+				}
+
+				// send prompt
 				p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 			default:
 				errStr := fmt.Sprintf("Unknown message type, '%s'", m.Type)
@@ -50,10 +52,10 @@ func dispatchConsumer(d *Dispatcher) {
 	}
 }
 
-func (d *Dispatcher) Recv(m nwmessage.ClientMessage) error {
-	if m.Data == "" {
-		return nil
-	}
+// func (d *Dispatcher) Recv(m nwmessage.ClientMessage) error {
+// 	if m.Data == "" {
+// 		return nil
+// 	}
 
-	return dispatchCommands.Exec(d, m)
-}
+// 	return dispatchCommands.Exec(d, m)
+// }
