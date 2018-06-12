@@ -68,6 +68,7 @@ func NewPlayer(ws *websocket.Conn) *Player {
 		outgoing:    make(chan nwmessage.Message),
 		editorState: "",
 		stdinState:  "",
+		// language:    "python",
 	}
 
 	go outgoingRelay(ret)
@@ -161,7 +162,10 @@ func (p *Player) Prompt() string {
 	if p.macAddress != "" {
 		prompt += fmt.Sprintf(":%s", p.macAddress)
 	}
-	prompt += fmt.Sprintf("[%s]", p.language)
+
+	if p.language != "" {
+		prompt += fmt.Sprintf("[%s]", p.language)
+	}
 
 	if p.ChatMode() {
 		prompt += "[CHATMODE]"
