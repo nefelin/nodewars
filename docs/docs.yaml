@@ -1,5 +1,4 @@
-- topics: 
-  name: about
+- name: about
   desc: >
     NodeWars is a team competitive multiplayer programming and territory control game. The game consists
     of players battling for control of Machines inside of Nodes by solving various programming
@@ -8,10 +7,23 @@
     goal wins.
   seeAlso: [nodes, machines, challenges, coincoin, victory, gameplay]
 
-- topics: 
-  name: nodes
+- name: nodes
   desc: >
     Nodes are the unit of territory in NodeWars. Each node contains a number of Machines which players may
     gain control of by completing programming challenges. In order to connect to a node a players team must
     control at least one machine in an adjacent node. 
   seeAlso: [machines, challenges, routing]
+
+- name: machines
+  desc: >
+    Machines are where all the action takes place in NodeWars. There are two basic machine types: Rings and Gateways.
+    Regardless of type, all machines begin neutral and players must pass programming challenges to take control.
+    Players may also attempt to steal or reset enemy machines by passing the challenges on those machines.
+  seeAlso: [ring, gateway, challenges]
+
+- name: ring
+  desc: >
+    Ring machines are workhorses for your team. By default they are tasked to mine CoinCoin for your team, bringing
+    you closes to victory. They may also have encrpytion installed on them which can be useful, but prevents them
+    for mining that sweet CoinCoin.
+  seeAlso: [encrpytion, gateway, features, victory, mining]

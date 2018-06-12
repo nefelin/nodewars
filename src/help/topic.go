@@ -13,16 +13,6 @@ type Topic struct {
 	SeeAlso   []string `yaml:"seeAlso"`
 }
 
-// func NewTopic(name, desc string, seeAlso ...string) Topic {
-// 	t := Topic{
-// 		TopicName: name,
-// 		Desc:      desc,
-// 		SeeAlso:   seeAlso,
-// 	}
-// 	sort.StringSlice(t.SeeAlso).Sort()
-// 	return t
-// }
-
 func (t Topic) Name() string {
 	return t.TopicName
 }
