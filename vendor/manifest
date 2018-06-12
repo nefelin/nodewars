@@ -69,6 +69,12 @@
 			"branch": "master"
 		},
 		{
+			"importpath": "github.com/go-yaml/yaml",
+			"repository": "https://github.com/go-yaml/yaml",
+			"revision": "5420a8b6744d3b0345ab293f6fcba19c978f1183",
+			"branch": "v2"
+		},
+		{
 			"importpath": "github.com/gobuffalo/buffalo",
 			"repository": "https://github.com/gobuffalo/buffalo",
 			"revision": "662cf7a5d6583cccaa9cd25f6f0f26a214d3e649",

@@ -1,0 +1,17 @@
+- topics: 
+  name: about
+  desc: >
+    NodeWars is a team competitive multiplayer programming and territory control game. The game consists
+    of players battling for control of Machines inside of Nodes by solving various programming
+    Challenges more effectively than their opponents. In this universe, teams are using the machines
+    they control to mine the next big cryptocurrency, CoinCoin. The first team to reach the CoinCoin
+    goal wins.
+  seeAlso: [nodes, machines, challenges, coincoin, victory, gameplay]
+
+- topics: 
+  name: nodes
+  desc: >
+    Nodes are the unit of territory in NodeWars. Each node contains a number of Machines which players may
+    gain control of by completing programming challenges. In order to connect to a node a players team must
+    control at least one machine in an adjacent node. 
+  seeAlso: [machines, challenges, routing]

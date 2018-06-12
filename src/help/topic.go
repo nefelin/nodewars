@@ -3,27 +3,28 @@ package help
 import (
 	"fmt"
 	"room"
+	"sort"
 	"strings"
 )
 
-type topicName = string
-
 type Topic struct {
-	name    topicName
-	desc    string
-	seeAlso []topicName
+	TopicName string   `yaml:"name"`
+	Desc      string   `yaml:"desc"`
+	SeeAlso   []string `yaml:"seeAlso"`
 }
 
-func NewTopic(name, desc string, seeAlso ...string) Topic {
-	return Topic{
-		name:    name,
-		desc:    desc,
-		seeAlso: seeAlso,
-	}
-}
+// func NewTopic(name, desc string, seeAlso ...string) Topic {
+// 	t := Topic{
+// 		TopicName: name,
+// 		Desc:      desc,
+// 		SeeAlso:   seeAlso,
+// 	}
+// 	sort.StringSlice(t.SeeAlso).Sort()
+// 	return t
+// }
 
 func (t Topic) Name() string {
-	return t.name
+	return t.TopicName
 }
 
 func (t Topic) Type() Type {
@@ -31,11 +32,11 @@ func (t Topic) Type() Type {
 }
 
 func (t Topic) ShortHelp() string {
-	return t.name
+	return t.TopicName
 }
 
 func (t Topic) LongHelp() string {
-	return fmt.Sprintf("-%s-\n%s\nSee also:%s", t.name, t.desc, strings.Join(t.seeAlso, ", "))
+	return fmt.Sprintf("-%s-\n%s\nSee also: %s", t.TopicName, strings.Replace(t.Desc, "\n", "", -1), strings.Join(t.SeeAlso, ", "))
 }
 
 func (t Topic) Contexts() []room.Type {
@@ -45,4 +46,8 @@ func (t Topic) Contexts() []room.Type {
 
 func (t Topic) SupportsContext(r room.Type) bool {
 	return true
+}
+
+func (t *Topic) Clean() {
+	sort.StringSlice(t.SeeAlso).Sort()
 }

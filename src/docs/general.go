@@ -1,21 +1,35 @@
 package docs
 
-import "help"
+import (
+	"fmt"
+	"help"
+	"io/ioutil"
+
+	"gopkg.in/yaml.v2"
+)
 
 func RegisterTopics(r *help.Registry) {
-	helpTopics := []help.Topic{
-		help.NewTopic(
-			"doctest",
-			"blah blah blah",
-			"help", "topics", "other shit",
-		),
-	}
+
+	helpTopics := loadDocs()
 
 	for _, t := range helpTopics {
+		t.Clean() // order seeAlso
 		err := r.AddEntry(t)
 		if err != nil {
 			panic(err)
 		}
 	}
-	// r.AddEntry(help.NewTopic("doctest", "a test of the topical help system", "help", "system", "topical"))
+}
+
+func loadDocs() []help.Topic {
+	raw, err := ioutil.ReadFile("./docs/docs.yaml")
+	if err != nil {
+		panic(err)
+	}
+
+	var h []help.Topic
+	yaml.Unmarshal(raw, &h)
+	fmt.Printf("Unmasrhalled %v\n", h)
+
+	return h
 }
