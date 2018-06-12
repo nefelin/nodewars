@@ -26,18 +26,20 @@ func dispatchConsumer(d *Dispatcher) {
 			case "stdinState":
 				p.SetStdin(m.Data, false)
 			case "playerCmd":
-				var room room.Room
-				var ok bool
+				if m.Data != "" {
+					var room room.Room
+					var ok bool
 
-				// if player isn't in a room, use dispatcher as their room
-				if room, ok = d.locations[p]; !ok {
-					room = d
-				}
+					// if player isn't in a room, use dispatcher as their room
+					if room, ok = d.locations[p]; !ok {
+						room = d
+					}
 
-				// try and execute command
-				err := d.cmdRegistry.Exec(room, m)
-				if err != nil {
-					m.Sender.Outgoing(nwmessage.PsError(err))
+					// try and execute command
+					err := d.cmdRegistry.Exec(room, m)
+					if err != nil {
+						m.Sender.Outgoing(nwmessage.PsError(err))
+					}
 				}
 
 				// send prompt

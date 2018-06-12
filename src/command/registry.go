@@ -56,15 +56,11 @@ func (r Registry) Exec(context room.Room, m nwmessage.ClientMessage) error {
 	cmdString := fullCmd[0]
 	strArgs := fullCmd[1:]
 
-	// if players in chatmode and context supports yelling
-	// cmd, yellingEnabled := cg["yell"]
-	// if cmdString != "chat" && yellingEnabled && m.Sender.ChatMode() {
-	// 	err := cmd.Exec(m.Sender, context, fullCmd)
-	// 	if err != nil {
-	// 		m.Sender.Outgoing(nwmessage.PsError(err))
-	// 	}
-	// 	return nil
-	// }
+	// if we're in chatmode treat whole command as a yell
+	if m.Sender.ChatMode() && cmdString != "chat" {
+		cmdString = "yell"
+		strArgs = fullCmd
+	}
 
 	// handle help // TODO register this as a command
 	if cmdString == "help" {

@@ -72,11 +72,11 @@ func (t *team) addPoe(n *node.Node) error {
 		return errors.New("Team can only route to poes where it controls the feature")
 	}
 
-	fmt.Printf("%s team adding poe\n", t.Name)
+	// fmt.Printf("%s team adding poe\n", t.Name)
 
 	// set the teams poe
 	t.poes[n] = true
-	fmt.Printf("%s's poes: %v\n", t.Name, t.poes)
+	// fmt.Printf("%s's poes: %v\n", t.Name, t.poes)
 	return nil
 }
 
@@ -84,10 +84,10 @@ func (t *team) remPoe(n *node.Node) error {
 	if _, ok := t.poes[n]; !ok {
 		return fmt.Errorf("%s team's poes do not include node %d", t.Name, n.ID)
 	}
-
-	fmt.Printf("%s team removing poe\n", t.Name)
-
+	//
+	// fmt.Printf("%s team removing poe\n", t.Name)
+	//
 	delete(t.poes, n)
-	fmt.Printf("%s's poes: %v\n", t.Name, t.poes)
+	// fmt.Printf("%s's poes: %v\n", t.Name, t.poes)
 	return nil
 }
