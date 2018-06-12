@@ -1,7 +1,6 @@
 package docs
 
 import (
-	"fmt"
 	"help"
 	"io/ioutil"
 
@@ -29,7 +28,7 @@ func loadDocs() []help.Topic {
 
 	var h []help.Topic
 	yaml.Unmarshal(raw, &h)
-	fmt.Printf("Unmasrhalled %v\n", h)
+	// fmt.Printf("Unmasrhalled %v\n", h)
 
 	return h
 }

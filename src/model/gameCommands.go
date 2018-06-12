@@ -57,18 +57,18 @@ func RegisterCommands(r *command.Registry) {
 		// 	Handler:   cmdToggleChat,
 		// },
 
-		{
-			command.Info{
-				CmdName:   "yell",
-				ShortDesc: "Sends a message to all player (in the same game/lobby)",
-				ArgsReq: argument.ArgList{
-					{Name: "msg", Type: argument.GreedyString},
-				},
-				ArgsOpt:     argument.ArgList{},
-				CmdContexts: []room.Type{room.Game},
-			},
-			cmdYell,
-		},
+		// {
+		// 	command.Info{
+		// 		CmdName:   "yell",
+		// 		ShortDesc: "Sends a message to all player (in the same game/lobby)",
+		// 		ArgsReq: argument.ArgList{
+		// 			{Name: "msg", Type: argument.GreedyString},
+		// 		},
+		// 		ArgsOpt:     argument.ArgList{},
+		// 		CmdContexts: []room.Type{room.Game},
+		// 	},
+		// 	cmdYell,
+		// },
 
 		{
 			command.Info{
@@ -80,7 +80,7 @@ func RegisterCommands(r *command.Registry) {
 				ArgsOpt:     argument.ArgList{},
 				CmdContexts: []room.Type{room.Game},
 			},
-			cmdYell,
+			cmdTeamChat,
 		},
 
 		// "say": {
@@ -261,13 +261,13 @@ func cmdStartGame(p *player.Player, gm *GameModel, args []interface{}) error {
 	return nil
 }
 
-func cmdYell(p *player.Player, gm *GameModel, args []interface{}) error {
+// func cmdYell(p *player.Player, gm *GameModel, args []interface{}) error {
 
-	chatMsg := args[0].(string)
+// 	chatMsg := args[0].(string)
 
-	gm.psBroadcast(nwmessage.PsChat(p.Name(), "global", chatMsg))
-	return nil
-}
+// 	gm.psBroadcast(nwmessage.PsChat(p.Name(), "global", chatMsg))
+// 	return nil
+// }
 
 func cmdTell(p *player.Player, gm *GameModel, args []interface{}) error {
 
@@ -643,10 +643,10 @@ func cmdMake(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	// Abstract this TODO
 	var feaType feature.Type
-	if mac.IsFeature() {
+	if mac.IsGateway() {
 		if mac.Type == feature.None {
 			if len(args) < 1 {
-				return errors.New("Make requires one argument when attached to an untyped feature")
+				return errors.New("Must provide feature argument when attached to gateway, see 'help features'")
 			}
 
 			var err error

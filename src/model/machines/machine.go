@@ -62,7 +62,7 @@ func (m *Machine) IsNeutral() bool {
 	return false
 }
 
-func (m *Machine) IsFeature() bool {
+func (m *Machine) IsGateway() bool {
 	// fmt.Printf("Machine Type: %v", m.Type)
 	// fmt.Printf("Feature NA: %v", feature.NA)
 	// fmt.Printf("Equal: %v", m.Type == feature.NA)

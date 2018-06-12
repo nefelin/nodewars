@@ -886,18 +886,18 @@ func node2Str(n *node.Node, p *player.Player) string {
 
 func mac2Str(m *machines.Machine, p *player.Player) string {
 	// p is the player observing the machine. Unused atm but allows us to show/hide info from different players
-	var feature string
+	var gateway string
 
-	if m.IsFeature() {
-		feature = " (feature)"
+	if m.IsGateway() {
+		gateway = " (gateway)"
 	}
 
 	details := fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.Builder, m.Language, m.Health, m.MaxHealth)
 
 	switch {
 	case m.TeamName != "":
-		return "(" + details + ")" + feature
+		return "(" + details + ")" + gateway
 	default:
-		return "( -neutral- )" + feature
+		return "( -neutral- )" + gateway
 	}
 }

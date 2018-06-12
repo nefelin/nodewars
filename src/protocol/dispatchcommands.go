@@ -17,7 +17,7 @@ import (
 
 type dispatchCommand struct {
 	command.Info
-	handler func(p *player.Player, d *Dispatcher, args []interface{}) error
+	handler func(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error
 }
 
 func (c dispatchCommand) Exec(cli nwmessage.Client, context room.Room, args []interface{}) error {
@@ -26,12 +26,7 @@ func (c dispatchCommand) Exec(cli nwmessage.Client, context room.Room, args []in
 		panic("Error asserting Player in exec")
 	}
 
-	// d, ok := context.(*Dispatcher)
-	// if !ok {
-	// 	panic("Error asserting Dispatcher in exec")
-	// }
-
-	return c.handler(p, globalD, args)
+	return c.handler(p, globalD, context, args)
 }
 
 var globalD *Dispatcher
@@ -46,7 +41,7 @@ func RegisterCommands(r *command.Registry, d *Dispatcher) {
 				ShortDesc:   "Toggles chat mode (all text entered is broadcast)",
 				ArgsReq:     argument.ArgList{},
 				ArgsOpt:     argument.ArgList{},
-				CmdContexts: []room.Type{room.Lobby},
+				CmdContexts: []room.Type{room.Lobby, room.Game},
 			},
 			cmdToggleChat,
 		},
@@ -158,7 +153,7 @@ func RegisterCommands(r *command.Registry, d *Dispatcher) {
 					{Name: "msg", Type: argument.GreedyString},
 				},
 				ArgsOpt:     argument.ArgList{},
-				CmdContexts: []room.Type{room.Lobby},
+				CmdContexts: []room.Type{room.Lobby, room.Game},
 			},
 			cmdYell,
 		},
@@ -172,7 +167,7 @@ func RegisterCommands(r *command.Registry, d *Dispatcher) {
 	}
 }
 
-func cmdToggleChat(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdToggleChat(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 	p.ToggleChat()
 
 	var flag string
@@ -187,18 +182,17 @@ func cmdToggleChat(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdYell(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdYell(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	msg := args[0].(string)
 
-	for _, player := range d.GetPlayers() {
+	for _, player := range r.GetPlayers() {
 		player.Outgoing(nwmessage.PsChat(p.Name(), "global", msg))
-
 	}
 	return nil
 }
 
-func cmdSetName(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdSetName(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	if d.locations[p] != nil {
 		return errors.New("Can only change name while in Lobby")
@@ -220,7 +214,7 @@ func cmdSetName(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdNewGame(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdNewGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	if _, ok := d.locations[p]; ok {
 		return fmt.Errorf("You can't create a game. You're already in a game")
@@ -255,7 +249,7 @@ func cmdNewGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdKillGame(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdKillGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	gameName := args[0].(string)
 
@@ -279,7 +273,7 @@ func cmdKillGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdWho(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdWho(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	// var location Room
 	// location, ok := d.games[d.locations[p.ID]]
@@ -312,7 +306,7 @@ func cmdWho(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdJoinGame(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdJoinGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	gameName := args[0].(string)
 
@@ -331,7 +325,7 @@ func cmdJoinGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdLeaveGame(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdLeaveGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	err := d.leaveRoom(p)
 
@@ -344,7 +338,7 @@ func cmdLeaveGame(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdTell(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdTell(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	name := args[0].(string)
 	msg := args[1].(string)
@@ -368,7 +362,7 @@ func cmdTell(p *player.Player, d *Dispatcher, args []interface{}) error {
 	return nil
 }
 
-func cmdListGames(p *player.Player, d *Dispatcher, args []interface{}) error {
+func cmdListGames(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) error {
 
 	gameList := ""
 
