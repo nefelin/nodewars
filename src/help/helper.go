@@ -1,12 +1,29 @@
 package help
 
-import "room"
+import (
+	"room"
+)
 
 type Helper interface {
 	Name() string
-	LongHelp() string
+	Type() Type
 	ShortHelp() string
-	Usage() string
-	SupportsContext(room.Type) bool
-	Contexts() []room.Type
+	LongHelp() string
+	room.Contextual
 }
+
+type Type interface {
+	implementsType() helpType
+}
+
+type helpType string
+
+func (r helpType) implementsType() helpType {
+	var h helpType
+	return h
+}
+
+const (
+	CommandType helpType = "Command"
+	TopicType   helpType = "Topic"
+)

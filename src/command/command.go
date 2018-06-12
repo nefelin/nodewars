@@ -7,6 +7,7 @@ import (
 )
 
 type Command interface {
+	Usage() string
 	help.Helper
 	Executer
 	Validator

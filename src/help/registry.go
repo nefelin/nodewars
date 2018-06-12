@@ -3,12 +3,15 @@ package help
 import (
 	"fmt"
 	"room"
+	"sort"
+	"strings"
 )
 
 type Registry map[string][]Helper
 
-func NewRegistry() Registry {
-	return make(Registry)
+func NewRegistry() *Registry {
+	r := make(Registry)
+	return &r
 }
 
 func (r Registry) AddEntry(h Helper) error {
@@ -22,7 +25,8 @@ func (r Registry) AddEntry(h Helper) error {
 				return fmt.Errorf("error registering help, multiple helps named, '%s', cannot overlap contexts", hName)
 			}
 		}
-		helpBucket = append(helpBucket, h)
+		// helpBucket = append(helpBucket, h)
+		r[hName] = append(helpBucket, h)
 		return nil
 	}
 
@@ -32,26 +36,38 @@ func (r Registry) AddEntry(h Helper) error {
 }
 
 func (r Registry) allHelp(c room.Type) string {
-	str := ""
+	commandHelps := make([]string, 0)
+	topicHelps := make([]string, 0)
 	for _, bucket := range r {
 		for _, h := range bucket {
 			if h.SupportsContext(c) {
-				str += h.ShortHelp()
+				switch h.Type() {
+				case CommandType:
+					commandHelps = append(commandHelps, h.ShortHelp())
+				case TopicType:
+					topicHelps = append(topicHelps, h.ShortHelp())
+				default:
+					fmt.Printf("error, unhandled help type, '%s'\n", h.Type())
+				}
 			}
 		}
 	}
-	return str
+
+	sort.StringSlice(commandHelps).Sort()
+	sort.StringSlice(topicHelps).Sort()
+
+	return fmt.Sprintf("Available Commands:\n%s\nOther Topics:\n%s", strings.Join(commandHelps, "\n"), strings.Join(topicHelps, ", "))
 }
 
-func (r Registry) Help(c room.Type, subj string) string {
-	if subj == "" {
+func (r Registry) Help(c room.Type, args []string) string {
+	if len(args) == 0 {
 		return r.allHelp(c)
 	}
 
-	bucket, ok := r[subj]
+	bucket, ok := r[args[0]]
 
 	if !ok {
-		return fmt.Sprintf("No help found for query, '%s'", subj)
+		return fmt.Sprintf("No help found for query, '%s'", args[0])
 	}
 
 	for _, h := range bucket {

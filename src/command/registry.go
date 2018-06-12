@@ -10,13 +10,13 @@ import (
 
 type Registry struct {
 	commands map[string][]Command
-	helpReg  help.Registry
+	helpReg  *help.Registry
 }
 
-func NewRegistry() *Registry {
+func NewRegistry(helpReg *help.Registry) *Registry {
 	return &Registry{
 		commands: make(map[string][]Command),
-		helpReg:  help.NewRegistry(),
+		helpReg:  helpReg,
 	}
 }
 
@@ -32,44 +32,20 @@ func (r *Registry) AddEntry(c Command) error {
 
 	// If that names in use, confirm it's in a different context
 	if cmdBucket, exists := r.commands[cmdName]; exists {
+
 		for _, bc := range cmdBucket {
 			if contextOverlap(bc.Contexts(), c.Contexts()) {
 				return fmt.Errorf("error registering command, multiple commands named, '%s', cannot overlap contexts", cmdName)
 			}
 		}
-		cmdBucket = append(cmdBucket, c)
+
+		r.commands[cmdName] = append(cmdBucket, c)
 		return nil
 	}
 
 	// if name not in use, create a new slot and add this command to it
 	r.commands[cmdName] = []Command{c}
 	return nil
-}
-
-// func (r *Registry) AddEntries(cs ...Command) error {
-// 	for _, c := range cs {
-// 		// try to register in help
-// 		err := r.helpReg.AddEntry(c)
-// 		if err != nil {
-// 			return err
-// 		}
-
-// 		// register actual command
-// 		cmdName := c.Name()
-// 		if cmdBucket, exists := r.commands[cmdName]; exists {
-// 			for c := range cmdBucket {
-// 				if contextOverlap(c.Contexts(), )
-// 			}
-// 			return fmt.Errorf("error registering command, '%s', name in use", cmdName)
-// 		}
-// 		r.commands[cmdName] = c
-
-// 	}
-// 	return nil
-// }
-
-func (r *Registry) safeRegister(c Command) {
-
 }
 
 func (r Registry) Exec(context room.Room, m nwmessage.ClientMessage) error {
@@ -92,15 +68,16 @@ func (r Registry) Exec(context room.Room, m nwmessage.ClientMessage) error {
 
 	// handle help // TODO register this as a command
 	if cmdString == "help" {
-		m.Sender.Outgoing(nwmessage.PsNeutral(r.helpReg.Help(context.Type(), strArgs[0])))
+		m.Sender.Outgoing(nwmessage.PsNeutral(r.helpReg.Help(context.Type(), strArgs)))
 		return nil
 	}
 
 	// does this command exist?
 	if bucket, ok := r.commands[cmdString]; ok {
-
+		// fmt.Printf("Found Bucket, has %d entries\n", len(bucket))
 		// find version of command suited to this context
 		for _, cmd := range bucket {
+			// fmt.Printf("Evaluating cmd, '%s', supports contexts %v\n", cmd.Name(), cmd.Contexts())
 			if cmd.SupportsContext(context.Type()) {
 				// are the args valid?
 				args, err := cmd.Validate(strArgs)

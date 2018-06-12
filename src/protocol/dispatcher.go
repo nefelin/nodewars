@@ -2,8 +2,10 @@ package protocol
 
 import (
 	"command"
+	"docs"
 	"errors"
 	"fmt"
+	"help"
 	"model"
 	"model/player"
 	"nwmessage"
@@ -23,6 +25,7 @@ type Dispatcher struct {
 	games             map[roomID]room.Room
 	registrationQueue chan regrequest.Request
 	clientMessages    chan nwmessage.ClientMessage
+	helpRegistry      *help.Registry
 	cmdRegistry       *command.Registry
 }
 
@@ -33,10 +36,13 @@ func NewDispatcher() *Dispatcher {
 		games:             make(map[roomID]room.Room),
 		registrationQueue: make(chan regrequest.Request),
 		clientMessages:    make(chan nwmessage.ClientMessage),
-		cmdRegistry:       command.NewRegistry(),
 	}
 
-	RegisterCommands(d.cmdRegistry)
+	d.helpRegistry = help.NewRegistry()                 // make new help
+	d.cmdRegistry = command.NewRegistry(d.helpRegistry) // make new command collection (all commands added will have their help info added to d.helpRegistry)
+	docs.RegisterTopics(d.helpRegistry)                 // register general topics with this helpRegistry
+
+	RegisterCommands(d.cmdRegistry, d)
 	model.RegisterCommands(d.cmdRegistry)
 
 	go dispatchConsumer(d)

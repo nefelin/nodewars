@@ -26,15 +26,19 @@ func (c dispatchCommand) Exec(cli nwmessage.Client, context room.Room, args []in
 		panic("Error asserting Player in exec")
 	}
 
-	d, ok := context.(*Dispatcher)
-	if !ok {
-		panic("Error asserting Dispatcher in exec")
-	}
+	// d, ok := context.(*Dispatcher)
+	// if !ok {
+	// 	panic("Error asserting Dispatcher in exec")
+	// }
 
-	return c.handler(p, d, args)
+	return c.handler(p, globalD, args)
 }
 
-func RegisterCommands(r *command.Registry) {
+var globalD *Dispatcher
+
+func RegisterCommands(r *command.Registry, d *Dispatcher) {
+	globalD = d
+
 	dispatchCommands := []dispatchCommand{
 		{
 			command.Info{
@@ -66,7 +70,7 @@ func RegisterCommands(r *command.Registry) {
 				ShortDesc:   "Leaves the current game",
 				ArgsReq:     argument.ArgList{},
 				ArgsOpt:     argument.ArgList{},
-				CmdContexts: []room.Type{room.Lobby},
+				CmdContexts: []room.Type{room.Game},
 			},
 			cmdLeaveGame,
 		},
@@ -130,7 +134,7 @@ func RegisterCommands(r *command.Registry) {
 					{Name: "msg", Type: argument.GreedyString},
 				},
 				ArgsOpt:     argument.ArgList{},
-				CmdContexts: []room.Type{room.Lobby},
+				CmdContexts: []room.Type{room.Lobby, room.Game},
 			},
 			cmdTell,
 		},
@@ -167,101 +171,6 @@ func RegisterCommands(r *command.Registry) {
 		}
 	}
 }
-
-// var dispatchCommands = commands.CommandGroup{
-// 	"chat": {
-// 		CmdName:   "chat",
-// 		ShortDesc: "Toggles chat mode (all text entered is broadcast)",
-// 		ArgsReq:   argument.ArgList{},
-// 		ArgsOpt:   argument.ArgList{},
-// 		Handler:   cmdToggleChat,
-// 	},
-
-// 	"join": {
-// 		CmdName:   "join",
-// 		ShortDesc: "Joins the specified game",
-// 		ArgsReq: argument.ArgList{
-// 			{Name: "game_name", Type: argument.String},
-// 		},
-// 		ArgsOpt: argument.ArgList{},
-// 		Handler: cmdJoinGame,
-// 	},
-
-// 	"leave": {
-// 		CmdName:   "leave",
-// 		ShortDesc: "Leaves the current game",
-// 		ArgsReq:   argument.ArgList{},
-// 		ArgsOpt:   argument.ArgList{},
-// 		Handler:   cmdLeaveGame,
-// 	},
-
-// 	"ls": {
-// 		CmdName:   "ls",
-// 		ShortDesc: "List the games that are currently running",
-// 		ArgsReq:   argument.ArgList{},
-// 		ArgsOpt:   argument.ArgList{},
-// 		Handler:   cmdListGames,
-// 	},
-
-// 	"name": {
-// 		CmdName:   "name",
-// 		ShortDesc: "Sets the player's name",
-// 		ArgsReq: argument.ArgList{
-// 			{Name: "new_name", Type: argument.String},
-// 		},
-// 		ArgsOpt: argument.ArgList{},
-// 		Handler: cmdSetName,
-// 	},
-
-// 	"ng": {
-// 		CmdName:   "ng",
-// 		ShortDesc: "Creates a new game",
-// 		ArgsReq:   argument.ArgList{},
-// 		ArgsOpt: argument.ArgList{
-// 			{Name: "game_name", Type: argument.String},
-// 		},
-// 		Handler: cmdNewGame,
-// 	},
-
-// 	"kill": {
-// 		CmdName:   "kill",
-// 		ShortDesc: "Removes a game (must be empty)",
-// 		ArgsReq: argument.ArgList{
-// 			{Name: "game_name", Type: argument.String},
-// 		},
-// 		ArgsOpt: argument.ArgList{},
-// 		Handler: cmdKillGame,
-// 	},
-
-// 	"tell": {
-// 		CmdName:   "tell",
-// 		ShortDesc: "Sends a private message to another player",
-// 		ArgsReq: argument.ArgList{
-// 			{Name: "recip", Type: argument.String},
-// 			{Name: "msg", Type: argument.GreedyString},
-// 		},
-// 		ArgsOpt: argument.ArgList{},
-// 		Handler: cmdTell,
-// 	},
-
-// 	"who": {
-// 		CmdName:   "who",
-// 		ShortDesc: "Shows who's in the lobby",
-// 		ArgsReq:   argument.ArgList{},
-// 		ArgsOpt:   argument.ArgList{},
-// 		Handler:   cmdWho,
-// 	},
-
-// 	"yell": {
-// 		CmdName:   "yell",
-// 		ShortDesc: "Sends a message to all player (in the same game/lobby)",
-// 		ArgsReq: argument.ArgList{
-// 			{Name: "msg", Type: argument.GreedyString},
-// 		},
-// 		ArgsOpt: argument.ArgList{},
-// 		Handler: cmdYell,
-// 	},
-// }
 
 func cmdToggleChat(p *player.Player, d *Dispatcher, args []interface{}) error {
 	p.ToggleChat()

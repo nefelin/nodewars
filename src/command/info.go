@@ -3,6 +3,7 @@ package command
 import (
 	"argument"
 	"fmt"
+	"help"
 	"room"
 	"strings"
 )
@@ -22,6 +23,10 @@ type Info struct {
 
 func (i Info) Name() string {
 	return i.CmdName
+}
+
+func (i Info) Type() help.Type {
+	return help.CommandType
 }
 
 func (i Info) Contexts() []room.Type {
@@ -46,7 +51,7 @@ func (i Info) ShortHelp() string {
 	// padding := strings.Repeat(" ", longest-len(i.Name))
 	padding := 7
 
-	return fmt.Sprintf("%-*s - %s", padding, i.Name, i.ShortDesc)
+	return fmt.Sprintf("%-*s - %s", padding, i.CmdName, i.ShortDesc)
 }
 
 func (i Info) LongHelp() string {
