@@ -101,12 +101,17 @@ func (d *Dispatcher) RemovePlayer(p *player.Player) error {
 	return nil
 }
 
-func (d *Dispatcher) createGame(r room.Room) error {
-	if _, ok := d.games[r.Name()]; ok {
-		return fmt.Errorf("A game named '%s' already exists", r.Name())
+func (d *Dispatcher) createGame(name string, r func() (*model.GameModel, error)) error {
+	if _, ok := d.games[name]; ok {
+		return fmt.Errorf("A game named '%s' already exists", name)
 	}
 
-	d.games[r.Name()] = r
+	game, err := r()
+	if err != nil {
+		return err
+	}
+
+	d.games[name] = game
 	return nil
 }
 

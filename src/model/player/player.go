@@ -68,7 +68,6 @@ func NewPlayer(ws *websocket.Conn) *Player {
 		outgoing:    make(chan nwmessage.Message),
 		editorState: "",
 		stdinState:  "",
-		// language:    "python",
 	}
 
 	go outgoingRelay(ret)

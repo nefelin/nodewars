@@ -1,4 +1,4 @@
-package model
+package modes
 
 type Mode interface {
 	implementsType()

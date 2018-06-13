@@ -232,7 +232,14 @@ func cmdNewGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}
 	}
 
 	// create the game
-	err := d.createGame(model.NewDefaultModel(gameName))
+	err := d.createGame(gameName, func() (*model.GameModel, error) {
+		m, err := model.NewModel(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		return m, nil
+	})
 
 	if err != nil {
 		return err

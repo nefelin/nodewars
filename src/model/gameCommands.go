@@ -49,27 +49,6 @@ func RegisterCommands(r *command.Registry) {
 			cmdStartGame,
 		},
 
-		// "chat": {
-		// 	CmdName:   "chat",
-		// 	ShortDesc: "Toggles chat mode (all text entered is broadcast)",
-		// 	ArgsReq:   argument.ArgList{},
-		// 	ArgsOpt:   argument.ArgList{},
-		// 	Handler:   cmdToggleChat,
-		// },
-
-		// {
-		// 	command.Info{
-		// 		CmdName:   "yell",
-		// 		ShortDesc: "Sends a message to all player (in the same game/lobby)",
-		// 		ArgsReq: argument.ArgList{
-		// 			{Name: "msg", Type: argument.GreedyString},
-		// 		},
-		// 		ArgsOpt:     argument.ArgList{},
-		// 		CmdContexts: []room.Type{room.Game},
-		// 	},
-		// 	cmdYell,
-		// },
-
 		{
 			command.Info{
 				CmdName:   "tc",
@@ -261,14 +240,6 @@ func cmdStartGame(p *player.Player, gm *GameModel, args []interface{}) error {
 	return nil
 }
 
-// func cmdYell(p *player.Player, gm *GameModel, args []interface{}) error {
-
-// 	chatMsg := args[0].(string)
-
-// 	gm.psBroadcast(nwmessage.PsChat(p.Name(), "global", chatMsg))
-// 	return nil
-// }
-
 func cmdTell(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	recipName := args[0].(string)
@@ -380,7 +351,7 @@ func cmdLang(p *player.Player, gm *GameModel, args []interface{}) error {
 	mac := gm.CurrentMachine(p)
 	if mac != nil {
 		// TODO syntax
-		langDetails := gm.languages[p.Language()]
+		langDetails := gm.options.languages[p.Language()]
 		boilerplate := langDetails.Boilerplate
 		comment := langDetails.CommentPrefix
 		sampleIO := mac.Challenge.SampleIO
@@ -398,7 +369,7 @@ func cmdLang(p *player.Player, gm *GameModel, args []interface{}) error {
 func cmdListLanguages(p *player.Player, gm *GameModel, args []interface{}) error {
 	var langs sort.StringSlice
 
-	for l := range gm.languages {
+	for l := range gm.options.languages {
 		langs = append(langs, l)
 	}
 
@@ -546,18 +517,18 @@ func cmdTestCode(p *player.Player, gm *GameModel, args []interface{}) error {
 	return nil
 }
 
-func cmdScore(p *player.Player, gm *GameModel, args []interface{}) error {
-	var scoreStrs sort.StringSlice
+// func cmdScore(p *player.Player, gm *GameModel, args []interface{}) error {
+// 	var scoreStrs sort.StringSlice
 
-	for teamName, team := range gm.Teams {
-		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoinCoin Production: %.2f\nCoinCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.CoinCoin, gm.PointGoal))
-	}
+// 	for teamName, team := range gm.Teams {
+// 		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoinCoin Production: %.2f\nCoinCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.CoinCoin, gm.PointGoal))
+// 	}
 
-	scoreStrs.Sort()
+// 	scoreStrs.Sort()
 
-	p.Outgoing(nwmessage.PsNeutral(strings.Join(scoreStrs, "\n")))
-	return nil
-}
+// 	p.Outgoing(nwmessage.PsNeutral(strings.Join(scoreStrs, "\n")))
+// 	return nil
+// }
 
 func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 	macAddress := args[0].(string)
@@ -590,9 +561,9 @@ func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 		p.Outgoing(nwmessage.LangSupportState([]string{mac.Language}))
 
 	} else {
-		supportedLangs := make([]string, len(gm.languages))
+		supportedLangs := make([]string, len(gm.options.languages))
 		var i int
-		for lang := range gm.languages {
+		for lang := range gm.options.languages {
 			supportedLangs[i] = lang
 			i++
 		}
@@ -602,7 +573,7 @@ func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 	}
 
 	// get language details
-	langDetails := gm.languages[p.Language()]
+	langDetails := gm.options.languages[p.Language()]
 	boilerplate := langDetails.Boilerplate
 	comment := langDetails.CommentPrefix
 

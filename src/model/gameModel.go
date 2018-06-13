@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"model/machines"
+	"model/modes"
 	"model/node"
 	"model/player"
 	"model/statemessage"
@@ -24,27 +25,26 @@ type playerSet = map[*player.Player]bool
 
 // GameModel holds all state information
 type GameModel struct {
-	name    string
-	Map     *node.Map                          `json:"map"`
-	Teams   map[teamName]*team                 `json:"teams"`
-	Players map[player.PlayerID]*player.Player `json:"players"`
-	// POEs          map[playerID]*node   `json:"poes"`
-	PointGoal     float32 `json:"pointGoal"`
-	languages     map[string]challenges.Language
-	aChan         chan nwmessage.Message
-	running       bool //running should replace mapLocked
+	name          string
+	Map           *node.Map                          `json:"map"`
+	Teams         map[teamName]*team                 `json:"teams"`
+	Players       map[player.PlayerID]*player.Player `json:"players"`
 	pendingAlerts map[player.PlayerID][]statemessage.Alert
+	// PointGoal     float32 `json:"pointGoal"`
+	// languages     map[string]challenges.Language
 
 	// Interactions
 	attachments map[*machines.Machine]playerSet
 	routes      map[*player.Player]*node.Route
 
 	// timelimit should be able to set a timelimit and count points at the end
+	options gameOptions
+	mode    modes.Mode
+	aChan   chan nwmessage.Message
+	// timer
 	jobTimer *timer.Timer
 	clock    int
 }
-
-type tickFunc func(elapsed time.Duration)
 
 // tries to set initial language to one of these defaults before picking first available
 var langDefaults = []string{
@@ -56,39 +56,42 @@ var langDefaults = []string{
 
 // init methods:
 
-// NewDefaultModel Generic game model
-func NewDefaultModel(name string) *GameModel {
-	m := node.NewRandMap(10)
-	p := make(map[player.PlayerID]*player.Player)
-	// poes := make(map[playerID]*node)
-
-	aChan := make(chan nwmessage.Message, 100)
-
+func NewModel(options *gameOptions) (*GameModel, error) {
 	gm := &GameModel{
-		name:    name,
-		Map:     m,
-		Teams:   make(map[string]*team),
-		Players: p,
-
-		languages:     challenges.GetLanguages(),
-		aChan:         aChan,
-		PointGoal:     1000,
+		Teams:         make(map[string]*team),
+		Players:       make(map[player.PlayerID]*player.Player),
+		aChan:         make(chan nwmessage.Message, 100), // why is this buffered? TODO
 		pendingAlerts: make(map[player.PlayerID][]statemessage.Alert),
-
-		attachments: make(map[*machines.Machine]playerSet),
-		routes:      make(map[*player.Player]*node.Route),
-		jobTimer:    timer.NewTimer().Start(),
+		attachments:   make(map[*machines.Machine]playerSet),
+		routes:        make(map[*player.Player]*node.Route),
+		jobTimer:      timer.NewTimer().Start(),
 	}
 
 	gm.jobTimer.AddScheduledJob("score", gm.scoreTick, 1*time.Second)
 	gm.jobTimer.AddScheduledJob("clock", gm.gameClock, 1*time.Second)
 
+	if options == nil {
+		gm.options = newDefaultOptions()
+	} else {
+		gm.options = *options
+	}
+
+	// initialize
+	gm.init()
+
+	// return
+	return gm, nil
+}
+
+func (gm *GameModel) init() {
+	// generate map
+	gm.Map = gm.options.mapGen(gm.options.mapSize)
+
+	// add teams TODO (should be dynamic based on options)
 	err := gm.addTeams(makeDummyTeams())
 	if err != nil {
 		fmt.Println(err)
 	}
-
-	return gm
 }
 
 func makeDummyTeams() []*team {
@@ -255,7 +258,7 @@ func (gm *GameModel) playersAt(n *node.Node) []*player.Player {
 
 // 	for _, player := range gm.playersAt(gm.routes[p].Endpoint()) {
 // 		if player != p {
-// 			comment := gm.languages[player.Language()].CommentPrefix
+// 			comment := gm.options.languages[player.Language()].CommentPrefix
 
 // 			editMsg := fmt.Sprintf("%s %s", comment, msg)
 
@@ -450,25 +453,30 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *mac
 }
 
 func (gm *GameModel) startGame(when int) error {
-	if gm.running {
+	if gm.mode == modes.Running {
 		return errors.New("Game already running")
 	}
 
+	if gm.mode == modes.Over {
+		return errors.New("Game already over")
+	}
+
 	if when == 0 {
-		gm.running = true
+		gm.mode = modes.Running
 	} else {
 		gm.clock = when * -1
+		gm.mode = modes.Countdown
 	}
 
 	return nil
 }
 
 func (gm *GameModel) stopGame() error {
-	if !gm.running {
+	if gm.mode != modes.Running {
 		return errors.New("Game is not running")
 	}
 
-	gm.running = false
+	gm.mode = modes.Over
 	return nil
 }
 
@@ -637,9 +645,9 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 	gm.Players[p.ID] = p
 	gm.pendingAlerts[p.ID] = make([]statemessage.Alert, 0) // make alerts slot for new player
 
-	supportedLangs := make([]string, len(gm.languages))
+	supportedLangs := make([]string, len(gm.options.languages))
 	var i int
-	for lang := range gm.languages {
+	for lang := range gm.options.languages {
 		supportedLangs[i] = lang
 		i++
 	}
@@ -812,7 +820,7 @@ func (gm *GameModel) evalTrafficForTeam(n *node.Node, t *team) {
 }
 
 func (gm *GameModel) setLanguage(p *player.Player, l string) error {
-	_, ok := gm.languages[l]
+	_, ok := gm.options.languages[l]
 
 	if !ok {
 		return fmt.Errorf("'%v' is not a supported in this match. Use 'langs' to list available languages")

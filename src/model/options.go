@@ -1,25 +1,69 @@
 package model
 
+import (
+	"challenges"
+	"model/node"
+)
+
+type gameOptions struct {
+	name       string
+	timelimit  int
+	languages  map[string]challenges.Language
+	minPlayers int
+	maxPlayers int
+	langLock   bool   // do players need to use same language as enemy module to solve
+	autoAssign bool   // assign players to a team automatically
+	password   string // none means game is open
+	mapSize    int
+	mapGen     func(int) *node.Map
+	coinGoal   float32
+	// teamCount int // how many teams
+	// FFA bool // each player is their own team, deal with colors :/
+}
+
+func newDefaultOptions() gameOptions {
+	return gameOptions{
+		name:       "",
+		timelimit:  0,
+		languages:  challenges.GetLanguages(),
+		minPlayers: 0,
+		maxPlayers: 0,
+		langLock:   true,
+		autoAssign: false,
+		password:   "",
+		mapSize:    7,
+		mapGen:     node.NewRandMap,
+		coinGoal:   10000,
+	}
+}
+
 // new model options
 
-func CoinGoal(goal int) func(*GameModel) error {
-	return func(m *GameModel) error {
-		return m.SetCoinGoal(goal)
-	}
-}
+// func CoinGoal(goal int) func(*GameModel) error {
+// 	return func(m *GameModel) error {
+// 		return m.setCoinGoal(goal)
+// 	}
+// }
 
-func Languages(langs ...Language) func(*GameModel) error {
-	return func(m *GameModel) error {
-		return m.SetLanguages(langs)
-	}
-}
+// func Languages(langs ...challenge.Language) func(*GameModel) error {
+// 	return func(m *GameModel) error {
+// 		return m.setLanguages(langs)
+// 	}
+// }
 
-func TimeLimit(limit int) func(*GameModel) error {
-	return func(m *GameModel) error {
-		return m.SetTimeLimit(limit)
-	}
-}
+// func TimeLimit(limit int) func(*GameModel) error {
+// 	return func(m *GameModel) error {
+// 		return m.setTimeLimit(limit)
+// 	}
+// }
 
-func MapMode(m *GameModel) error {
-	return m.SetMode(modes.Map)
-}
+// func Name(name string) func(*GameModel) error {
+// 	return func(m *GameModel) error {
+// 		m.options.name = name
+// 		return nil
+// 	}
+// }
+
+// func MapMode(m *GameModel) error {
+// 	return m.setMode(modes.Map)
+// }
