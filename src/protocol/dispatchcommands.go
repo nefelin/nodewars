@@ -96,7 +96,7 @@ func RegisterCommands(r *command.Registry, d *Dispatcher) {
 
 		{
 			command.Info{
-				CmdName:   "ng",
+				CmdName:   "new",
 				ShortDesc: "Creates a new game",
 				ArgsReq:   argument.ArgList{},
 				ArgsOpt: argument.ArgList{
@@ -222,10 +222,10 @@ func cmdNewGame(p *player.Player, d *Dispatcher, r room.Room, args []interface{}
 
 	var gameName string
 	if len(args) == 0 {
-		gameName = "Game_" + strconv.Itoa(rand.Intn(100000))
+		gameName = "g" + strconv.Itoa(rand.Intn(100))
 		_, exists := d.games[gameName]
 		for exists {
-			gameName = "Game_" + strconv.Itoa(rand.Intn(100000))
+			gameName = "g" + strconv.Itoa(rand.Intn(100))
 		}
 	} else {
 		gameName = args[0].(string)
