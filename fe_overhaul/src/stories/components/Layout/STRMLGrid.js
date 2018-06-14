@@ -36,6 +36,20 @@ import * as Maps from '../../maps'
 
 import ScoreBars from '../Score/ScoreBars'
 
+
+import * as d3 from 'd3'
+const TEAMCOLORS = {
+  red: d3.hsl(360, 1, .75),
+  red_light: d3.hsl(360, 1, .9),
+  red_unpowered: d3.hsl(360, .6, .8),
+  blue: d3.hsl(230, 1, .75),
+  blue_light: d3.hsl(230, 1, .9),
+  blue_unpowered: d3.hsl(230, .25, .8),
+  // none: "white",
+  // none_light: "white", // fix this with || selection TODO
+}
+
+
 class STRMLGrid extends React.Component {
   constructor(props) {
     super(props)
@@ -338,7 +352,7 @@ class STRMLGrid extends React.Component {
       // <GridLayout style={strmlWindow} onLayoutChange={this.handleChange} className="layout" draggableCancel="input,textarea" layout={layout} cols={12} rowHeight={30} width={1260}>
       <div  style={{height: 1500}}>
 
-      <STRMLWindow onMouseDown={this.gatherFocus}  bgOverride={this.state.team ? this.state.team : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
+      <STRMLWindow onMouseDown={this.gatherFocus}  bgOverride={this.state.team ? TEAMCOLORS[this.state.team + "_light"] : 'white'} className="full-screen" menuBar={[{ name: 'NodeWars' }, {name: 'Layout', items: ['Load', 'Save', 'Reset']}]} onSelect={this.handleSelect}>
         <GridLayout {...layoutProps}>
 
           <div key="terminal" >
