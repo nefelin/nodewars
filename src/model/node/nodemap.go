@@ -16,8 +16,8 @@ type Map struct {
 }
 
 // initializer:
-func NewMap() Map {
-	return Map{
+func NewMap() *Map {
+	return &Map{
 		Nodes:    make([]*Node, 0),
 		diameter: 0,
 		radius:   1000,
