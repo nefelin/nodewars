@@ -8,6 +8,26 @@ import (
 
 // map generators should return errors TODO
 
+func MainMap(n int) (*Map, error) {
+
+	m := NewMap()
+
+	ring := m.addNodes(8)
+	ringConnect(m, ring)
+
+	center := m.addNodes(1)
+	m.connectNodes(ring[2].ID, center[0].ID)
+	m.connectNodes(ring[6].ID, center[0].ID)
+
+	poes := m.addNodes(2)
+	m.connectNodes(ring[0].ID, poes[0].ID)
+	m.connectNodes(ring[4].ID, poes[1].ID)
+
+	m.initAllNodes()
+	m.addPoes(poes[0].ID, poes[1].ID)
+	return m, nil
+}
+
 func GridMap(n int) (*Map, error) {
 	m := NewMap()
 
