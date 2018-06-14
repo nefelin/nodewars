@@ -8,6 +8,28 @@ import (
 
 // map generators should return errors TODO
 
+func GridMap(n int) (*Map, error) {
+	m := NewMap()
+
+	rows := 3
+	cols := 4
+
+	total := rows * cols
+	m.addNodes(total)
+	for i := 0; i < total; i++ {
+		if i != 0 && i%cols != 0 {
+			m.connectNodes(i, i-1)
+		}
+		if i < total-4 {
+			m.connectNodes(i, i+4)
+		}
+	}
+	m.initAllNodes()
+
+	m.addPoes(0, total-1)
+	return m, nil
+}
+
 func ClusterMap(n int) (*Map, error) {
 	clusterCount := 4
 	minNode := 12
@@ -22,7 +44,7 @@ func ClusterMap(n int) (*Map, error) {
 	m := NewMap()
 	for i := range clusters {
 		clusters[i] = m.addNodes(clusterSize)
-		ringConnect(&m, clusters[i])
+		ringConnect(m, clusters[i])
 		poeLoc := 1
 
 		m.addPoes(clusters[i][poeLoc].ID)
@@ -35,8 +57,8 @@ func ClusterMap(n int) (*Map, error) {
 			m.connectNodes(clusters[i][0].ID, clusters[0][0].ID)
 		}
 	}
-
-	return &m, nil
+	m.initAllNodes()
+	return m, nil
 }
 
 // func RingMap(n int) (*Map, error) {
@@ -97,7 +119,7 @@ func NewRandMap(n int) (*Map, error) {
 	// for len(newMap.POEs) < 2 {
 	// 	newMap.addPoes(rand.Intn(nodeCount))
 	// }
-	return &newMap, nil
+	return newMap, nil
 }
 
 func newDefaultMap(n int) (*Map, error) {
@@ -140,7 +162,7 @@ func newDefaultMap(n int) (*Map, error) {
 
 	newMap.addPoes(1, 10)
 
-	return &newMap, nil
+	return newMap, nil
 }
 
 func ringConnect(m *Map, nodes []*Node) {
