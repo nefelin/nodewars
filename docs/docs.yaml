@@ -33,5 +33,4 @@
     When you successfully take control of a machine, you have the option of installing a special feature. Features
     add special behaviors to that machine or node that lend your team some gameplay advantage. The features available
     depend on whether you were attached to a ring machine or a gateway.
-
   seeAlso: [ring, gateway, feature_types]

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"feature"
 	"log"
+	"math"
 	"model/machines"
 	"sort"
 )
@@ -26,33 +27,45 @@ func NewMap() *Map {
 
 // Map methods -----------------------------------------------------------------------------
 
-func (m *Map) initAllNodes() {
-	m.initAllMachines()
-	m.initAllRemoteness()
-}
+func (m *Map) initNodes(options ...func(*Map)) {
+	m.initRemoteness()
 
-func (m *Map) initAllMachines() {
-	// initialize each Node's machines
-	for _, Node := range m.Nodes {
-		Node.initMachines()
+	for _, o := range options {
+		o(m)
 	}
 }
 
-func (m *Map) initAllRemoteness() {
+func macInitByEdge(m *Map) {
+	for _, n := range m.Nodes {
+		n.createMachinePerEdge()
+		n.initMachines()
+	}
+}
+
+func macInitByRemoteness(m *Map) {
+	macCap := 5
+	for _, n := range m.Nodes {
+		macCount := int(math.Floor(n.Remoteness * float64(macCap)))
+		n.createMachines(macCount)
+		n.initMachines()
+	}
+}
+
+func (m *Map) initRemoteness() {
 	// initialize each Nodes remoteness.
-	for _, Node := range m.Nodes {
-		Node.Remoteness = float64(m.findNodeEccentricity(Node))
-		if Node.Remoteness > m.diameter {
-			m.diameter = Node.Remoteness
+	for _, n := range m.Nodes {
+		n.Remoteness = float64(m.findNodeEccentricity(n))
+		if n.Remoteness > m.diameter {
+			m.diameter = n.Remoteness
 		}
-		if Node.Remoteness < m.radius {
-			m.radius = Node.Remoteness
+		if n.Remoteness < m.radius {
+			m.radius = n.Remoteness
 		}
-		// log.Printf("Node %d, eccentricity: %d", Node.ID, Node.Remoteness)
+		// log.Printf("n %d, eccentricity: %d", n.ID, n.Remoteness)
 	}
 
-	for _, Node := range m.Nodes {
-		Node.Remoteness = Node.Remoteness / m.diameter
+	for _, n := range m.Nodes {
+		n.Remoteness = n.Remoteness / m.diameter
 		// log.Printf("Node %d, remoteness: %d", Node.ID, Node.Remoteness)
 	}
 }

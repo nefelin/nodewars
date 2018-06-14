@@ -23,7 +23,7 @@ func MainMap(n int) (*Map, error) {
 	m.connectNodes(ring[0].ID, poes[0].ID)
 	m.connectNodes(ring[4].ID, poes[1].ID)
 
-	m.initAllNodes()
+	m.initNodes(macInitByRemoteness)
 	m.addPoes(poes[0].ID, poes[1].ID)
 	return m, nil
 }
@@ -44,7 +44,7 @@ func GridMap(n int) (*Map, error) {
 			m.connectNodes(i, i+4)
 		}
 	}
-	m.initAllNodes()
+	m.initNodes(macInitByEdge)
 
 	m.addPoes(0, total-1)
 	return m, nil
@@ -77,7 +77,7 @@ func ClusterMap(n int) (*Map, error) {
 			m.connectNodes(clusters[i][0].ID, clusters[0][0].ID)
 		}
 	}
-	m.initAllNodes()
+	m.initNodes(macInitByEdge)
 	return m, nil
 }
 
@@ -133,7 +133,7 @@ func NewRandMap(n int) (*Map, error) {
 
 	}
 
-	newMap.initAllNodes()
+	newMap.initNodes(macInitByEdge)
 
 	newMap.initPoes(2)
 	// for len(newMap.POEs) < 2 {
@@ -175,10 +175,7 @@ func newDefaultMap(n int) (*Map, error) {
 		}
 	}
 
-	// create module slots based on connectivity of node
-	for _, node := range newMap.Nodes {
-		node.initMachines()
-	}
+	newMap.initNodes(macInitByEdge)
 
 	newMap.addPoes(1, 10)
 

@@ -63,16 +63,27 @@ func (n *Node) CoinProduction(t teamName) float32 {
 	return total
 }
 
-func (n *Node) initMachines() {
+func (n *Node) createMachinePerEdge() {
 	n.Machines = make([]*machines.Machine, len(n.Connections))
 	for i := range n.Connections {
 		n.Machines[i] = machines.NewMachine()
-		n.Machines[i].ResetChallenge()
+	}
+}
+
+func (n *Node) createMachines(count int) {
+	n.Machines = make([]*machines.Machine, count)
+	for i := range n.Machines {
+		n.Machines[i] = machines.NewMachine()
+	}
+}
+
+func (n *Node) initMachines() {
+	for _, m := range n.Machines {
+		m.ResetChallenge()
 	}
 
 	// n.Feature = newFeature(n.Feature.Type) // Preserve type in case map contains feature type info
 	n.Feature.ResetChallenge()
-
 	n.initAddressMap()
 }
 

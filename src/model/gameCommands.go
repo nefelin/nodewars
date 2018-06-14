@@ -517,19 +517,6 @@ func cmdTestCode(p *player.Player, gm *GameModel, args []interface{}) error {
 	return nil
 }
 
-// func cmdScore(p *player.Player, gm *GameModel, args []interface{}) error {
-// 	var scoreStrs sort.StringSlice
-
-// 	for teamName, team := range gm.Teams {
-// 		scoreStrs = append(scoreStrs, fmt.Sprintf("%s:\nCoinCoin Production: %.2f\nCoinCoin Stockpiled: %.2f/%.0f", teamName, team.coinPerTick, team.CoinCoin, gm.PointGoal))
-// 	}
-
-// 	scoreStrs.Sort()
-
-// 	p.Outgoing(nwmessage.PsNeutral(strings.Join(scoreStrs, "\n")))
-// 	return nil
-// }
-
 func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 	macAddress := args[0].(string)
 
