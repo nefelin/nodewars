@@ -6,34 +6,36 @@ import (
 )
 
 type gameOptions struct {
-	name       string
-	timelimit  int
-	languages  map[string]challenges.Language
-	minPlayers int
-	maxPlayers int
-	langLock   bool   // do players need to use same language as enemy module to solve
-	autoAssign bool   // assign players to a team automatically
-	password   string // none means game is open
-	mapSize    int
-	mapGen     func(int) (*node.Map, error)
-	coinGoal   float32
+	name        string
+	timelimit   int
+	languages   map[string]challenges.Language
+	minPlayers  int
+	maxPlayers  int
+	langLock    bool   // do players need to use same language as enemy module to solve
+	autoAssign  bool   // assign players to a team automatically
+	password    string // none means game is open
+	mapSize     int
+	mapGen      func(int) (*node.Map, error)
+	coinGoal    float32
+	defaultLang string
 	// teamCount int // how many teams
 	// FFA bool // each player is their own team, deal with colors :/
 }
 
 func newDefaultOptions() gameOptions {
 	return gameOptions{
-		name:       "",
-		timelimit:  0,
-		languages:  challenges.GetLanguages(),
-		minPlayers: 0,
-		maxPlayers: 0,
-		langLock:   true,
-		autoAssign: false,
-		password:   "",
-		mapSize:    12,
-		mapGen:     node.ClusterMap,
-		coinGoal:   10000,
+		name:        "",
+		timelimit:   0,
+		languages:   challenges.GetLanguages(),
+		minPlayers:  0,
+		maxPlayers:  0,
+		langLock:    true,
+		autoAssign:  false,
+		password:    "",
+		mapSize:     12,
+		mapGen:      node.GridMap,
+		coinGoal:    10000,
+		defaultLang: "",
 	}
 }
 

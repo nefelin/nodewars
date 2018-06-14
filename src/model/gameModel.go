@@ -46,14 +46,6 @@ type GameModel struct {
 	clock    int
 }
 
-// tries to set initial language to one of these defaults before picking first available
-var langDefaults = []string{
-	"python",
-	"javascript",
-	"golang",
-	"c++",
-}
-
 // init methods:
 
 func NewModel(options *gameOptions) (*GameModel, error) {
@@ -99,6 +91,8 @@ func (gm *GameModel) init() error {
 	if err != nil {
 		return err
 	}
+
+	gm.setDefaultLanguage()
 
 	return nil
 }
@@ -174,6 +168,32 @@ func (gm *GameModel) addTeams(teams []*team) error {
 	}
 
 	return nil
+}
+
+func (gm *GameModel) setDefaultLanguage() {
+	// tries to set initial language to one of these defaults before picking first available
+	var langDefaults = []string{
+		"python",
+		"javascript",
+		"golang",
+		"c++",
+	}
+
+	// try to use a common language as default
+	for _, langName := range langDefaults {
+		if _, ok := gm.options.languages[langName]; ok {
+			gm.options.defaultLang = langName
+			return
+		}
+	}
+
+	// assign semi randomly
+	if gm.options.defaultLang == "" {
+		for langName := range gm.options.languages {
+			gm.options.defaultLang = langName
+			break
+		}
+	}
 }
 
 // trailingTeam should hand back either smallest team or currently losing team, depending on game settings TODO
@@ -663,23 +683,7 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 
 	p.Outgoing(nwmessage.LangSupportState(supportedLangs))
 
-	var defaultLanguage string
-	for _, lang1 := range langDefaults {
-		if defaultLanguage != "" {
-			break
-		}
-		for _, lang2 := range supportedLangs {
-			// fmt.Printf("comparing %s to %s\n", lang1, lang2)
-			if lang1 == lang2 {
-				defaultLanguage = lang1
-			}
-		}
-	}
-	if defaultLanguage == "" {
-		defaultLanguage = supportedLangs[0]
-	}
-
-	gm.setLanguage(p, defaultLanguage)
+	gm.setLanguage(p, gm.options.defaultLang)
 
 	// send initiall map state
 
