@@ -4,6 +4,7 @@ import (
 	"challenges"
 	"feature"
 	"math/rand"
+	"model/player"
 	"sync"
 )
 
@@ -19,12 +20,11 @@ type Machine struct {
 
 	Address string // mac address in node where Machine resides
 
-	// solution string // store solution used to pass. could be useful for later mechanics
 	Type feature.Type `json:"type"` // NA for non-features, none or other feature.Type for features
 
-	Language  string // `json:"languageId"`
-	Health    int    `json:"health"`
-	MaxHealth int    `json:"maxHealth"`
+	Solution challenges.Solution
+	// Health    int `json:"health"`
+	MaxHealth int `json:"maxHealth"`
 }
 
 type challengeCriteria struct {
@@ -48,6 +48,13 @@ func NewFeature() *Machine {
 }
 
 // Machine methods -------------------------------------------------------------------------
+func (m *Machine) Health() int {
+	if !m.Powered {
+		return 1
+	}
+
+	return m.Solution.Strength
+}
 
 // resetChallenge should use m.accepts to get a challenge matching criteria TODO
 func (m *Machine) ResetChallenge() {
@@ -80,43 +87,50 @@ func (m *Machine) BelongsTo(teamName string) bool {
 }
 
 func (m *Machine) Reset() {
-	m.Builder = ""
 	m.TeamName = ""
-	m.Language = ""
 	m.Powered = true
+
+	m.Solution = challenges.Solution{}
 
 	// if m.Type != nil { // reset feature type?
 	// 	m.Type = feature.None
 	// }
 
-	m.Health = 0
 	m.ResetChallenge()
 }
 
-func (m *Machine) Claim(lang, Builder, team string, r challenges.GradedResult) {
-	m.Language = lang
-	m.Builder = Builder
+func (m *Machine) Claim(team string, s challenges.Solution) {
 	m.TeamName = team
-
-	// m.Powered = true
-
-	m.Health = r.Passed()
-	// m.MaxHealth = len(r.Graded)
+	m.Solution = s
 }
 
 // dummyClaim is used to claim a Machine for a player without an execution result
 func (m *Machine) DummyClaim(teamName string, str string) {
 	// m.Builder = p.name
 	m.TeamName = teamName
-	m.Language = "python" // TODO find ore elegent solution for this
-	// m.Powered = true
 
 	switch str {
 	case "FULL":
-		m.Health = m.MaxHealth
+		m.Solution.Strength = m.MaxHealth
 	case "RAND":
-		m.Health = rand.Intn(m.MaxHealth) + 1
+		m.Solution.Strength = rand.Intn(m.MaxHealth) + 1
 	case "MIN":
-		m.Health = 1
+		m.Solution.Strength = 1
 	}
+}
+
+func (m *Machine) AcceptsLanguageFrom(p *player.Player, lang string) bool {
+	if m.IsNeutral() {
+		return true
+	}
+	if m.BelongsTo(p.TeamName) {
+		return true
+	}
+	if m.Solution.IsDummy {
+		return true
+	}
+	if m.Solution.Language == lang {
+		return true
+	}
+	return false
 }

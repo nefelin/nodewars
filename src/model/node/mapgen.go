@@ -8,7 +8,19 @@ import (
 
 // map generators should return errors TODO
 
-func MainMap(n int) (*Map, error) {
+func CutTestMap(n int) (*Map, error) {
+	m := NewMap()
+
+	ringConnect(m, m.addNodes(4))
+
+	m.addNodes(1)
+	m.connectNodes(4, 1)
+	m.initNodes(macInitByEdge)
+	m.addPoes(0, 4)
+	return m, nil
+}
+
+func DemoMap(n int) (*Map, error) {
 
 	m := NewMap()
 

@@ -175,20 +175,29 @@ func (p *Player) Prompt() string {
 	return prompt
 }
 
-func (p *Player) SubmitCode(id challenges.ChallengeID) (challenges.GradedResult, error) {
+func (p *Player) SubmitCode(id challenges.ChallengeID) (challenges.Solution, error) {
+	// important we bind solution values before submit, otherwise they can change during execution
+	solution := challenges.Solution{
+		Author:   p.Name(),
+		Code:     p.editorState,
+		Language: p.language,
+	}
+
 	response := challenges.SubmitTest(id, p.language, p.Editor())
+
+	solution.Strength = response.Passed()
 
 	p.Outgoing(nwmessage.ResultState(response))
 
 	if response.Message.Type == "error" {
-		return response, fmt.Errorf("Compiled failed")
+		return solution, fmt.Errorf("Compiled failed")
 	}
 
-	if response.Passed() == 0 {
-		return response, fmt.Errorf("Solution failed all tests")
+	if solution.Strength == 0 {
+		return solution, fmt.Errorf("Solution failed all tests")
 	}
 
-	return response, nil
+	return solution, nil
 }
 
 // GetName returns the players name if they have one, assigns one if they don't

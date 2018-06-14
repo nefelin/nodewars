@@ -164,7 +164,7 @@ func RegisterCommands(r *command.Registry) {
 
 		{
 			command.Info{
-				CmdName:     "res",
+				CmdName:     "reset",
 				ShortDesc:   "Submist code to reset machine",
 				ArgsReq:     argument.ArgList{},
 				ArgsOpt:     argument.ArgList{},
@@ -542,10 +542,10 @@ func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	// if the mac has an enemy module, player's language is set to that module's
 	langLock := false
-	if !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) {
+	if !mac.AcceptsLanguageFrom(p, p.Language()) {
 		langLock = true
-		gm.setLanguage(p, mac.Language)
-		p.Outgoing(nwmessage.LangSupportState([]string{mac.Language}))
+		gm.setLanguage(p, mac.Solution.Language)
+		p.Outgoing(nwmessage.LangSupportState([]string{mac.Solution.Language}))
 
 	} else {
 		supportedLangs := make([]string, len(gm.options.languages))
@@ -569,7 +569,7 @@ func cmdAttach(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	var lockStr string
 	if langLock {
-		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(gm.CurrentMachine(p).Language))
+		lockStr = fmt.Sprintf("\n\n%sHOSTILE MACHINE, SOLUTION MUST BE IN [%s]", comment, strings.ToUpper(gm.CurrentMachine(p).Solution.Language))
 	}
 
 	var flag string
@@ -653,7 +653,7 @@ func cmdResetMachine(p *player.Player, gm *GameModel, args []interface{}) error 
 
 	go func() {
 
-		response, err := p.SubmitCode(mac.Challenge.ID)
+		solution, err := p.SubmitCode(mac.Challenge.ID)
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))
@@ -661,7 +661,7 @@ func cmdResetMachine(p *player.Player, gm *GameModel, args []interface{}) error 
 		}
 
 		mac.Lock()
-		gm.tryResetMachine(p, node, mac, response)
+		gm.tryResetMachine(p, node, mac, solution)
 		mac.Unlock()
 
 		p.SendPrompt()

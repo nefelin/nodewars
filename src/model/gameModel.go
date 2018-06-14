@@ -301,9 +301,7 @@ func (gm *GameModel) playersAt(n *node.Node) []*player.Player {
 // 	}
 // }
 
-func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *machines.Machine, response challenges.GradedResult, fType feature.Type) {
-	// node := gm.routes[p].Endpoint()
-	solutionStrength := response.Passed()
+func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *machines.Machine, solution challenges.Solution, fType feature.Type) {
 
 	var hostile bool
 	var friendly bool
@@ -318,18 +316,18 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *mac
 
 	if hostile {
 		switch {
-		case mac.Health == mac.MaxHealth:
-			p.Outgoing(nwmessage.PsError(fmt.Errorf("Current solution of %d/%d is the best possible so you cannot steal this machine,\nuse 'reset' instead of 'make' to remove opponent's solution.", mac.Health, mac.MaxHealth)))
+		case mac.Health() == mac.MaxHealth:
+			p.Outgoing(nwmessage.PsError(fmt.Errorf("Current solution of %d/%d is the best possible so you cannot steal this machine,\nuse 'reset' instead of 'make' to remove opponent's solution.", mac.Health(), mac.MaxHealth)))
 
 			return
 
-		case solutionStrength < mac.Health:
-			p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", response.Passed(), len(response.Grades), mac.Health+1, mac.MaxHealth)))
+		case solution.Strength < mac.Health():
+			p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution (%d/%d) too weak to install, need at least %d/%d to steal", solution.Strength, mac.MaxHealth, mac.Health()+1, mac.MaxHealth)))
 
 			return
 
-		case solutionStrength == mac.Health:
-			p.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to reset this machine.\nKeep trying if you think you can do\nbetter or type 'reset' to proceed", solutionStrength, mac.MaxHealth)))
+		case solution.Strength == mac.Health():
+			p.Outgoing(nwmessage.PsAlert(fmt.Sprintf("You need to pass one more test to steal,\nbut your %d/%d is enough to reset this machine.\nKeep trying if you think you can do\nbetter or type 'reset' to proceed", solution.Strength, mac.MaxHealth)))
 
 			return
 		}
@@ -354,9 +352,7 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *mac
 	// TODO I think we need to do same for old team, but test first
 
 	// refactor module to new owner and health
-	mac.TeamName = p.TeamName
-	mac.Language = p.Language()
-	mac.Health = solutionStrength
+	mac.Claim(p.TeamName, solution)
 
 	if mac.Type == feature.None {
 		mac.Type = fType
@@ -405,15 +401,15 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *mac
 	// do terminal messaging
 	if hostile {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) stole a (%s) machine in node %d", p.Name(), p.TeamName, oldTeam.Name, node.ID)))
-		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health, mac.MaxHealth)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("You stole (%v)'s machine, new machine health: %d/%d", oldTeam.Name, mac.Health(), mac.MaxHealth)))
 
 	} else if friendly {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) refactored a friendly machine in node %d", p.Name(), p.TeamName, node.ID)))
-		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", mac.Health, mac.MaxHealth, mac.Language)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Refactored friendly machine to %d/%d [%s]", solution.Strength, mac.MaxHealth, mac.Solution.Language)))
 
 	} else {
 		gm.psBroadcastExcept(p, nwmessage.PsAlert(fmt.Sprintf("%s of (%s) constructed a machine in node %d", p.Name(), p.TeamName, node.ID)))
-		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", mac.Language, mac.Health, mac.MaxHealth)))
+		p.Outgoing(nwmessage.PsSuccess(fmt.Sprintf("Solution installed in [%s], Health: %d/%d", solution.Language, mac.Health(), mac.MaxHealth)))
 	}
 
 	if node.DominatedBy(p.TeamName) {
@@ -422,9 +418,7 @@ func (gm *GameModel) tryClaimMachine(p *player.Player, node *node.Node, mac *mac
 	}
 }
 
-func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *machines.Machine, r challenges.GradedResult) {
-	// node := gm.routes[p].Endpoint()
-	solutionStrength := r.Passed()
+func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *machines.Machine, solution challenges.Solution) {
 
 	if mac.IsNeutral() {
 		p.Outgoing(nwmessage.PsError(errors.New("Machine is already neutral")))
@@ -432,8 +426,8 @@ func (gm *GameModel) tryResetMachine(p *player.Player, node *node.Node, mac *mac
 		return
 	}
 
-	if solutionStrength < mac.Health {
-		p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution too weak: %d/%d, need %d/%d to remove", r.Passed(), len(r.Grades), mac.Health, mac.MaxHealth)))
+	if solution.Strength < mac.Health() {
+		p.Outgoing(nwmessage.PsError(fmt.Errorf("Solution too weak: %d/%d, need %d/%d to remove", solution.Strength, mac.MaxHealth, mac.Health(), mac.MaxHealth)))
 		return
 	}
 
@@ -840,7 +834,7 @@ func (gm *GameModel) setLanguage(p *player.Player, l string) error {
 	}
 
 	mac := gm.CurrentMachine(p)
-	if mac != nil && !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) && mac.Language != l {
+	if mac != nil && !mac.AcceptsLanguageFrom(p, l) {
 		return errors.New("Can't change language while attached to a hostile machine")
 	}
 
@@ -913,7 +907,7 @@ func mac2Str(m *machines.Machine, p *player.Player) string {
 		gateway = " (gateway)"
 	}
 
-	details := fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.Builder, m.Language, m.Health, m.MaxHealth)
+	details := fmt.Sprintf("[%s] [%s] [%s] [%d/%d]", m.TeamName, m.Solution.Author, m.Solution.Language, m.Health(), m.MaxHealth)
 
 	switch {
 	case m.TeamName != "":

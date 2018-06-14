@@ -62,21 +62,11 @@ func (s CodeSubmission) String() string {
 	return fmt.Sprintf("( <CodeSubmission> {ChallengeID: %s, Language: %s, Code: Hidden, Stdin: %v} )", s.ChallengeID, s.Language, s.Stdins)
 }
 
-// type grade struct {
-// 	Case   TestCase `json:"case"`
-// 	Actual string   `json:"actual"`
-// 	Grade  string   `json:"grade"`
-// }
-
 type tbAPIResponse struct {
 	ErrorMessage string `json:"error,omitempty"`
 	ID           int64  `json:"id,omitempty"`
 	Result       string `json:"result,omitempty"`
 }
-
-// func (g grade) String() string {
-// 	return fmt.Sprintf("<grade>\nCase: %s\n Actual: %s\nGrade: %s\n", g.Case, g.Actual, g.Grade)
-// }
 
 // GradedResult hold the graded response from testbox
 type GradedResult struct {
@@ -84,6 +74,14 @@ type GradedResult struct {
 	Grades  []string          `json:"grades,omitempty"`
 	Hints   []string          `json:"hints"`
 	Message nwmessage.Message `json:"message"`
+}
+
+type Solution struct {
+	Author   string
+	Code     string
+	Language string
+	Strength int
+	IsDummy  bool
 }
 
 // SimpleResult holds an unopinionated output from execution

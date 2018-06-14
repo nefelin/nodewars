@@ -33,7 +33,7 @@ func newDefaultOptions() gameOptions {
 		autoAssign:  false,
 		password:    "",
 		mapSize:     12,
-		mapGen:      node.MainMap,
+		mapGen:      node.CutTestMap,
 		coinGoal:    10000,
 		defaultLang: "",
 	}

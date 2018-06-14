@@ -25,8 +25,8 @@ func (gm *GameModel) CanSubmit(p *player.Player) error {
 		return errors.New("No code to submit")
 	case mac == nil:
 		return errors.New("Not attached to a machine")
-	case !mac.IsNeutral() && !mac.BelongsTo(p.TeamName) && mac.Language != p.Language():
-		return fmt.Errorf("This machine is written in %s, your code must also be written in %s", mac.Language, mac.Language)
+	case !mac.AcceptsLanguageFrom(p, p.Language()):
+		return fmt.Errorf("Machine solutions is written in %s, your solution must also be written in %[1]s", mac.Solution.Language)
 	}
 	return nil
 
