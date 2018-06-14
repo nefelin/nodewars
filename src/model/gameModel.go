@@ -77,21 +77,30 @@ func NewModel(options *gameOptions) (*GameModel, error) {
 	}
 
 	// initialize
-	gm.init()
+	err := gm.init()
+	if err != nil {
+		return nil, err
+	}
 
 	// return
 	return gm, nil
 }
 
-func (gm *GameModel) init() {
+func (gm *GameModel) init() error {
 	// generate map
-	gm.Map = gm.options.mapGen(gm.options.mapSize)
+	var err error
+	gm.Map, err = gm.options.mapGen(gm.options.mapSize)
+	if err != nil {
+		return err
+	}
 
 	// add teams TODO (should be dynamic based on options)
-	err := gm.addTeams(makeDummyTeams())
+	err = gm.addTeams(makeDummyTeams())
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
+
+	return nil
 }
 
 func makeDummyTeams() []*team {

@@ -1,11 +1,76 @@
 package node
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 )
 
-func NewRandMap(n int) *Map {
+// map generators should return errors TODO
+
+func ClusterMap(n int) (*Map, error) {
+	clusterCount := 4
+	minNode := 12
+	if n < minNode {
+		return nil, fmt.Errorf("Ring map requires at least %d nodes, only got %d", minNode, n)
+	}
+	rand.Seed(time.Now().UTC().UnixNano())
+
+	clusterSize := n / clusterCount
+	clusters := make([][]*Node, clusterCount)
+
+	m := NewMap()
+	for i := range clusters {
+		clusters[i] = m.addNodes(clusterSize)
+		ringConnect(&m, clusters[i])
+		poeLoc := 1
+
+		m.addPoes(clusters[i][poeLoc].ID)
+
+		if i != 0 {
+			m.connectNodes(clusters[i][0].ID, clusters[i-1][0].ID)
+		}
+
+		if i == len(clusters)-1 {
+			m.connectNodes(clusters[i][0].ID, clusters[0][0].ID)
+		}
+	}
+
+	return &m, nil
+}
+
+// func RingMap(n int) (*Map, error) {
+// 	n = 10
+// 	minNode := 10
+
+// 	if n < minNode {
+// 		return nil, fmt.Errorf("Ring map requires at least %d nodes, only got %d", minNode, n)
+// 	}
+// 	rand.Seed(time.Now().UTC().UnixNano())
+
+// 	m := NewMap()
+
+// 	outer := m.addNodes(math.Floor(n*2/3))
+// 	center :=
+// 	inner := n - outer - inner
+
+// 	i := 0
+// 	for outer > 0 {
+// 		outer--
+// 		m.connectNodes(i, i+1)
+// 		i++
+// 	}
+
+// 	for inner >0 {
+// 		inner --
+// 		m.connectNodes(i, i+1)
+// 		i++
+// 	}
+
+// 	return &m, nil
+// }
+
+func NewRandMap(n int) (*Map, error) {
 	rand.Seed(time.Now().UTC().UnixNano())
 	nodeCount := n
 	newMap := NewMap()
@@ -32,13 +97,13 @@ func NewRandMap(n int) *Map {
 	// for len(newMap.POEs) < 2 {
 	// 	newMap.addPoes(rand.Intn(nodeCount))
 	// }
-	return &newMap
+	return &newMap, nil
 }
 
-func newDefaultMap() *Map {
+func newDefaultMap(n int) (*Map, error) {
 	newMap := NewMap()
 
-	nodecount := 12
+	nodecount := n
 
 	// for i := 0; i < nodecount; i++ {
 	// 	//Make new nodes
@@ -75,5 +140,15 @@ func newDefaultMap() *Map {
 
 	newMap.addPoes(1, 10)
 
-	return &newMap
+	return &newMap, nil
+}
+
+func ringConnect(m *Map, nodes []*Node) {
+	for i, n := range nodes {
+		if i < len(nodes)-1 {
+			m.connectNodes(n.ID, nodes[i+1].ID)
+		} else {
+			m.connectNodes(n.ID, nodes[0].ID)
+		}
+	}
 }

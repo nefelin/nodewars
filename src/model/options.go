@@ -15,7 +15,7 @@ type gameOptions struct {
 	autoAssign bool   // assign players to a team automatically
 	password   string // none means game is open
 	mapSize    int
-	mapGen     func(int) *node.Map
+	mapGen     func(int) (*node.Map, error)
 	coinGoal   float32
 	// teamCount int // how many teams
 	// FFA bool // each player is their own team, deal with colors :/
@@ -31,8 +31,8 @@ func newDefaultOptions() gameOptions {
 		langLock:   true,
 		autoAssign: false,
 		password:   "",
-		mapSize:    7,
-		mapGen:     node.NewRandMap,
+		mapSize:    12,
+		mapGen:     node.ClusterMap,
 		coinGoal:   10000,
 	}
 }
