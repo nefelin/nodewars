@@ -1,3 +1,4 @@
+.vscode/
 bin/
 lab/
 old/
@@ -10,3 +11,5 @@ resources/
 *.txt
 *.swp
 *.DS_Store
+*.code-workspace
+.gitignore
