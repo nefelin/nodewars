@@ -148,7 +148,7 @@ func RegisterCommands(r *command.Registry, d *Dispatcher) {
 		{
 			command.Info{
 				CmdName:   "yell",
-				ShortDesc: "Sends a message to all player (in the same game/lobby)",
+				ShortDesc: "Sends a message to all players in the game",
 				ArgsReq: argument.ArgList{
 					{Name: "msg", Type: argument.GreedyString},
 				},
