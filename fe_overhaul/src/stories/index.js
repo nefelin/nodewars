@@ -202,3 +202,18 @@ storiesOf('Sandbox', module)
 		return <PiePower />
 	})
 
+storiesOf('Lobby', module)
+	.add('Game List', () => {
+		return "Should list all games with most pertinent details, providing a 'details' for each as well as a single create game button"
+	})
+	.add('Game Details', () => {
+		return (
+			"Display all game details in depth, providing a back, join, and delete button"
+		)
+
+	})
+	.add('New Game', () => {
+		return (
+			"Have a field for all maluable game options, providing a back and create button. A drop down at the top for game defaults would be nice"
+		)
+	})
