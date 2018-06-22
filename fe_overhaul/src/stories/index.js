@@ -202,18 +202,26 @@ storiesOf('Sandbox', module)
 		return <PiePower />
 	})
 
+import GameList from './components/Lobby/GameList'
+import GameDetails from './components/Lobby/GameDetails'
+import LobbyView from './components/Lobby/LobbyView'
 storiesOf('Lobby', module)
 	.add('Game List', () => {
-		return "Should list all games with most pertinent details, providing a 'details' for each as well as a single create game button"
+		// return "Should list all games with most pertinent details, providing a 'details' for each as well as a single create game button"
+		return <GameList />
 	})
 	.add('Game Details', () => {
-		return (
-			"Display all game details in depth, providing a back, join, and delete button"
-		)
+		// return (
+		// 	"Display all game details in depth, providing a back, join, and delete button"
+		// )
+		return <GameDetails />
 
 	})
 	.add('New Game', () => {
 		return (
 			"Have a field for all maluable game options, providing a back and create button. A drop down at the top for game defaults would be nice"
 		)
+	})
+	.add('Lobby View', () => {
+		return <LobbyView/>
 	})
