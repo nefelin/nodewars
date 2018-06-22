@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-var games = [
+var globgames = [
     {
         name: "Main",
         players: '2',
@@ -31,7 +31,9 @@ var games = [
         private: 'true'
     }
 ]
-function GameList() {
+function GameList(props) {
+    console.log(props)
+    const games = props.games || globgames
     const tableHead = <tr>
         <th>Name</th>
         <th>Players</th>
@@ -46,8 +48,9 @@ function GameList() {
             <td>{g.nodes}</td>
             <td>{g.map}</td>
             {/* <td>{g.private}</td> */}
-            <td style={{backgroundColor: "white", border: "none"}}><a href="http://donothing">Join</a></td>
-            <td style={{ backgroundColor: "white", border: "none" }}><a href="http://donothing">Details</a></td>
+            
+            <td style={{backgroundColor: "white", border: "none", width:"1%"}}><a onClick={()=>props.onSelect(g)}>Details</a></td>
+            <td style={{ backgroundColor: "white", border: "none", width: "1%" }}><a onClick={props.onJoin}>Join</a></td>
         </tr>
     ))
 
