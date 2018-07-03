@@ -1,4 +1,4 @@
-console.log('Importing Brace modes/themes...')
+// console.log('Importing Brace modes/themes...')
 // editor modes
 import 'brace/mode/c_cpp';
 import 'brace/mode/csharp';

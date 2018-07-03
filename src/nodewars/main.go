@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -85,6 +86,7 @@ func main() {
 
 // Redirect all HTTP requests to HTTPS
 func redirect(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("Redirecting connection to https")
 	target := "https://" + req.Host + req.URL.Path
 	if len(req.URL.RawQuery) > 0 {
 		target += "?" + req.URL.RawQuery

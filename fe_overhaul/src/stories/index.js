@@ -23,7 +23,7 @@ import { SplitGrid } from './components/Graph/SplitGrid'
 import { STRMLGrid } from './components/Layout/STRMLGrid'
 import  STRMLWindow from './components/Layout/STRMLWindow'
 import { STRMLMenu } from './components/Layout/STRMLMenu'
-import ScoreBars from './components/Score/ScoreBars'
+import ScoreBars from './components/Presenters/ScoreBars'
 
 import TinyTerm from './components/Terminal/TinyTerm'
 

@@ -21,20 +21,20 @@ import '../../../../node_modules/react-resizable/css/styles.css'
 
 import TinyTerm from '../Terminal/TinyTerm'
 
-import TestResults from '../TestResults'
-import ChallengeDetails from '../ChallengeDetails'
+import TestResults from '../Presenters/TestResults'
+import ChallengeDetails from '../Presenters/ChallengeDetails'
 
 import { defaultLayout } from './Layouts'
 
 import STRMLWindow from './STRMLWindow'
 
-import NWSocket from '../NWSocket'
-import * as Parsers from '../Parsers'
+import NWSocket from '../Protocol/NWSocket'
+import * as Parsers from '../Protocol/Parsers'
 // map stuff
 import Graph from '../Graph/Graph'
 import * as Maps from '../../maps'
 
-import ScoreBars from '../Score/ScoreBars'
+import ScoreBars from '../Presenters/ScoreBars'
 
 
 import * as d3 from 'd3'

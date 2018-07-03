@@ -32,6 +32,13 @@ var globgames = [
     }
 ]
 function GameList(props) {
+    const buttonstyle = {
+        backgroundColor: "white",
+        border: "none",
+        width: "1%",
+        cursor: "pointer",
+    }
+
     console.log(props)
     const games = props.games || globgames
     const tableHead = <tr>
@@ -49,8 +56,8 @@ function GameList(props) {
             <td>{g.map}</td>
             {/* <td>{g.private}</td> */}
             
-            <td style={{backgroundColor: "white", border: "none", width:"1%"}}><a onClick={()=>props.onSelect(g)}>Details</a></td>
-            <td style={{ backgroundColor: "white", border: "none", width: "1%" }}><a onClick={props.onJoin}>Join</a></td>
+            <td style={buttonstyle}><a onClick={()=>props.onSelect(g)}>Details</a></td>
+            <td style={buttonstyle}><a onClick={props.onJoin}>Join</a></td>
         </tr>
     ))
 

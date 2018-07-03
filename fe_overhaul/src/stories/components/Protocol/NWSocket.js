@@ -8,7 +8,7 @@ class NWSocket {
 	constructor(parser, debug) {
 		this.debug = debug || false
 		let ws_protocol = 'ws://'
-		if (location.protocol == 'https:')
+		if (window.location.protocol == 'https:')
 			ws_protocol = 'wss://'
 
 		// const ws = new WebSocket(ws_protocol + window.location.host + '/ws');
