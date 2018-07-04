@@ -19,13 +19,12 @@ const versionNumber = "1.0.0"
 const VersionTag = "NodeWars:" + versionNumber
 
 // var upgrader = websocket.Upgrader{}
-// Allows cross-origin web socket upgrade. Remove for production
 var upgrader = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
-	CheckOrigin: func(r *http.Request) bool {
-		return true
-	},
+	//	CheckOrigin: func(r *http.Request) bool { // Allows cross-origin web socket upgrade. Remove for production
+	//		return true
+	//	},
 }
 
 // Ask about reduntant error messaging...
