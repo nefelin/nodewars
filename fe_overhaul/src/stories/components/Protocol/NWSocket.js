@@ -13,7 +13,7 @@ class NWSocket {
 
 		// const ws = new WebSocket(ws_protocol + window.location.host + '/ws');
 		parser.open()
-		this.ws = new WebSocket(ws_protocol + 'localhost:8080' + '/ws');
+		this.ws = new WebSocket(ws_protocol + window.location + '/ws');
 
 		this.ws.onerror = (e) => parser.error()
 
