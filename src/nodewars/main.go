@@ -99,12 +99,12 @@ func redirect(w http.ResponseWriter, req *http.Request) {
 // Reject requests that don't have the correct referer header unless they are for the root.
 func index(w http.ResponseWriter, req *http.Request) {
 	log.Println("Received index request")
-	if req.Header.Get("Referer") != host &&
-		req.URL.Path != "/" {
-		log.Printf("404: %s", req.URL.String())
-		http.NotFound(w, req)
-		return
-	}
+	//		if req.Header.Get("Referer") != host &&
+	//		req.URL.Path != "/" {
+	//		log.Printf("404: %s", req.URL.String())
+	//		http.NotFound(w, req)
+	//		return
+	//	}
 
 	http.FileServer(http.Dir("fe_overhaul/build")).ServeHTTP(w, req)
 }
