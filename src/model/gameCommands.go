@@ -504,7 +504,7 @@ func cmdTestCode(p *player.Player, gm *GameModel, args []interface{}) error {
 	}
 
 	go func() {
-		defer p.SendPrompt()
+		defer p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 
 		response, err := challenges.GetOutput(p.Language(), p.Editor(), p.Stdin())
 
@@ -628,6 +628,8 @@ func cmdMake(p *player.Player, gm *GameModel, args []interface{}) error {
 
 	// passed error checks
 	go func() {
+		defer p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
+
 		response, err := p.SubmitCode(mac.Challenge.ID)
 
 		if err != nil {
@@ -639,7 +641,6 @@ func cmdMake(p *player.Player, gm *GameModel, args []interface{}) error {
 		gm.tryClaimMachine(p, node, mac, response, feaType)
 		mac.Unlock()
 
-		p.SendPrompt()
 	}()
 
 	p.Outgoing(nwmessage.PsBegin("Compiling..."))
@@ -656,6 +657,7 @@ func cmdResetMachine(p *player.Player, gm *GameModel, args []interface{}) error 
 	}
 
 	go func() {
+		defer p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 
 		solution, err := p.SubmitCode(mac.Challenge.ID)
 
@@ -668,7 +670,6 @@ func cmdResetMachine(p *player.Player, gm *GameModel, args []interface{}) error 
 		gm.tryResetMachine(p, node, mac, solution)
 		mac.Unlock()
 
-		p.SendPrompt()
 	}()
 
 	p.Outgoing(nwmessage.PsBegin("Resetting machine..."))
