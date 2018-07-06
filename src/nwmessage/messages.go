@@ -66,7 +66,7 @@ func PsError(e error) Message {
 	return Message{
 		Type:   errorStr,
 		Sender: pseudoStr,
-		Data:   preStr + fmt.Sprint(e) + terminatorStr,
+		Data:   preStr + fmt.Sprintf("Error: %s", e.Error()) + terminatorStr,
 	}
 }
 
@@ -117,6 +117,10 @@ func PsChat(sender, context, msg string) Message {
 		Data:   preStr + fmt.Sprintf("%s (%s): %s", sender, context, msg) + terminatorStr,
 		Sender: pseudoStr,
 	}
+}
+
+func ErrorExecUnavail() error {
+	return errors.New("Code execution unavailable")
 }
 
 func ErrorNoTeam() error {
