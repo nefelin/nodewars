@@ -506,9 +506,14 @@ func cmdTestCode(p *player.Player, gm *GameModel, args []interface{}) error {
 	go func() {
 		defer p.SendPrompt()
 
-		response := challenges.GetOutput(p.Language(), p.Editor(), p.Stdin())
-		p.Outgoing(nwmessage.PsSuccess("Finished running (check output box)"))
+		response, err := challenges.GetOutput(p.Language(), p.Editor(), p.Stdin())
 
+		if err != nil {
+			p.Outgoing(nwmessage.PsError(err))
+			return
+		}
+
+		p.Outgoing(nwmessage.PsSuccess("Finished running (check output box)"))
 		p.Outgoing(nwmessage.ResultState(response))
 
 	}()
@@ -627,7 +632,6 @@ func cmdMake(p *player.Player, gm *GameModel, args []interface{}) error {
 
 		if err != nil {
 			p.Outgoing(nwmessage.PsError(err))
-
 			return
 		}
 

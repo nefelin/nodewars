@@ -183,7 +183,11 @@ func (p *Player) SubmitCode(id challenges.ChallengeID) (challenges.Solution, err
 		Language: p.language,
 	}
 
-	response := challenges.SubmitTest(id, p.language, p.Editor())
+	response, err := challenges.SubmitTest(id, p.language, p.Editor())
+
+	if err != nil {
+		return solution, fmt.Errorf("Code execution unavailable")
+	}
 
 	solution.Strength = response.Passed()
 
