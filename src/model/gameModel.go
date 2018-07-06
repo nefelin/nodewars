@@ -686,7 +686,7 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 	p.Outgoing(nwmessage.GraphState(gm.calcState(p)))
 
 	// send initial prompt state
-	p.SendPrompt()
+	p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 	return nil
 }
 
