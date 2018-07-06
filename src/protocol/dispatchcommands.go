@@ -294,11 +294,11 @@ func cmdWho(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) er
 		location = d
 	}
 
-	if len(location.GetPlayers()) == 0 {
-		p.Outgoing(nwmessage.PsNeutral("There are no players here"))
+	// if len(location.GetPlayers()) == 0 {
+	// 	p.Outgoing(nwmessage.PsNeutral("No other players"))
 
-		return nil
-	}
+	// 	return nil
+	// }
 
 	var playerNames sort.StringSlice
 
@@ -308,7 +308,7 @@ func cmdWho(p *player.Player, d *Dispatcher, r room.Room, args []interface{}) er
 
 	playerNames.Sort()
 
-	retMsg := "Players here:\n" + strings.Join(playerNames, ", ")
+	retMsg := strings.Join(playerNames, ", ")
 	p.Outgoing(nwmessage.PsNeutral(retMsg))
 
 	return nil
