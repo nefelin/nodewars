@@ -84,6 +84,9 @@ func (d *Dispatcher) handleRegRequest(r regrequest.Request) {
 
 func (d *Dispatcher) AddPlayer(p *player.Player) error {
 	d.players[p.Socket()] = p
+	status := fmt.Sprintf("%d players online", len(d.players))
+	p.Outgoing(nwmessage.PsNeutral(fmt.Sprintf("%s%s\n%s", logo, welcomeMsg, status)))
+	p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 	return nil
 }
 

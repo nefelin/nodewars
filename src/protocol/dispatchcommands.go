@@ -211,6 +211,7 @@ func cmdSetName(p *player.Player, d *Dispatcher, r room.Room, args []interface{}
 	}
 
 	p.SetName(name)
+	p.Outgoing(nwmessage.PsSuccess("Name set to '" + name + "'"))
 	return nil
 }
 

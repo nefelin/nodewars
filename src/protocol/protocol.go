@@ -91,8 +91,6 @@ func HandleConnections(w http.ResponseWriter, r *http.Request, d *Dispatcher) {
 	// Spin up gorouting to monitor outgoing and send those messages to player.Socket
 	// log.Println("Spinning up outgoing handler for player...")
 
-	p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
-
 	// Handle socket stream
 	for {
 		msg, err := nwmessage.MsgFromClient(p)
