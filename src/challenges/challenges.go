@@ -144,7 +144,7 @@ func GetRandomChallenge() Challenge {
 }
 
 // returns a map of inputs to test pass/fail
-func SubmitTest(id int64, language, code string) GradedResult {
+func SubmitTest(id int64, language, code string) (GradedResult, error) {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -155,16 +155,22 @@ func SubmitTest(id int64, language, code string) GradedResult {
 	// fmt.Printf("Submitting SubReq: %s", submission)
 	r, err := http.Post(address+":"+port+"/submit/", "application/json", buf)
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error submitting: %s\n", err.Error())
+		return GradedResult{}, nwmessage.ErrorExecUnavail()
 	}
 
 	var e GradedResult
-	decodeAPIResponse(r, &e)
+	err = decodeAPIResponse(r, &e)
 
-	return e
+	if err != nil {
+		fmt.Printf("Error decoding tbAPIResponse: %s\n", err.Error())
+		return GradedResult{}, nwmessage.ErrorExecUnavail()
+	}
+
+	return e, nil
 }
 
-func GetOutput(language, code, stdin string) GradedResult {
+func GetOutput(language, code, stdin string) (GradedResult, error) {
 	address := os.Getenv("TESTBOX_ADDRESS")
 	port := os.Getenv("TESTBOX_PORT")
 
@@ -173,14 +179,21 @@ func GetOutput(language, code, stdin string) GradedResult {
 	buf := bytes.NewBuffer(jsonBytes)
 
 	r, err := http.Post(address+":"+port+"/stdout/", "application/json", buf)
+
 	if err != nil {
-		panic(err)
+		fmt.Printf("Error submitting: %s\n", err.Error())
+		return GradedResult{}, nwmessage.ErrorExecUnavail()
 	}
 
 	var e GradedResult
-	decodeAPIResponse(r, &e)
+	err = decodeAPIResponse(r, &e)
 
-	return e
+	if err != nil {
+		fmt.Printf("Error decoding tbAPIResponse: %s\n", err.Error())
+		return GradedResult{}, nwmessage.ErrorExecUnavail()
+	}
+
+	return e, nil
 }
 
 func GetLanguages() map[string]Language {
@@ -201,18 +214,22 @@ func GetLanguages() map[string]Language {
 	return l
 }
 
-func decodeAPIResponse(r *http.Response, i interface{}) {
+func decodeAPIResponse(r *http.Response, i interface{}) error {
 	decoder := json.NewDecoder(r.Body)
 	var resp tbAPIResponse
 	err := decoder.Decode(&resp)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return err
 	}
 	// fmt.Printf("Got apiresponse: %v\n\n\n", resp.Result)
 	defer r.Body.Close()
 
 	err = json.Unmarshal([]byte(resp.Result), &i)
 	if err != nil {
-		panic(err)
+		// panic(err)
+		return err
 	}
+
+	return nil
 }
