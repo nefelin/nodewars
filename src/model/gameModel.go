@@ -775,7 +775,7 @@ func (gm *GameModel) tryConnectPlayerToNode(p *player.Player, n node.NodeID) (*n
 
 	}
 	// log.Println("Cannot Connect")
-	return nil, errors.New("No node.Route exists")
+	return nil, errors.New("No route exists")
 }
 
 // TODO should this have gm as receiver? there's no need but makes sense syntactically

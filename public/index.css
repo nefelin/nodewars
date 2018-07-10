@@ -1,0 +1,20 @@
+.main-col {
+	display: flex;
+	flex-direction: column;
+}
+
+.nav-row {
+	display: flex;
+	flex-direction: row;
+	list-style-type: none;
+	margin-left:auto;
+	margin-right:auto;
+}
+
+ul {
+	list-style-type: decimal;
+}
+
+ul.no-style {
+	list-style-type: none;
+}

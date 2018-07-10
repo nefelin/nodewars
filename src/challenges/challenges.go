@@ -134,6 +134,8 @@ func GetRandomChallenge() Challenge {
 	r, err := http.Get(address + ":" + port + "/challenges/rand/")
 
 	if err != nil {
+		// TODO this is bad, but passing the error back means a lot of error piping to handle responsible
+		// how do we want to handle if testing server goes down mid game?
 		panic(err)
 	}
 
