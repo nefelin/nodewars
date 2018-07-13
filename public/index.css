@@ -1,6 +1,9 @@
-.main-col {
-	display: flex;
-	flex-direction: column;
+body {
+	background-color:black;
+	margin-top:0px;
+	margin-bottom:0px;
+
+	font-family: 'Raleway', sans-serif;
 }
 
 .nav-row {
@@ -11,10 +14,153 @@
 	margin-right:auto;
 }
 
-ul {
-	list-style-type: decimal;
+.simple-border {
+	border: 1px solid black
 }
 
-ul.no-style {
+.half-width {
+	width: 50%
+}
+
+.full-width{
+	width:100%;
+}
+
+.align-right {
+	text-align:right;
+}
+
+.section {
+	display: flex;
+	flex-direction:row
+}
+
+#main-col {
+	background-color: white;
+	display: flex;
+	flex-direction: column;
+	border-left: 1px solid black;
+	border-right: 1px solid black;
+	margin: 0 200px 0 200px;
+	padding:50px
+}
+
+
+ul {
+	/* padding:0 0 0 0; */
+	/* list-style-type: decimal; */
+	list-style-type: inherit;
+}
+
+.no-style {
 	list-style-type: none;
 }
+
+.no-style a, a:visited, a:hover, a:active {
+  color: inherit;
+  text-decoration: none;
+}
+
+li.header {
+	font-size:130%;
+}
+
+.thumb.left {
+	margin: 0px 30px 10px 0px;
+	float: left;
+}
+
+.thumb.right {
+	margin: 0px 0px 0px 30px;
+	float: right;
+}
+.thumb.small {
+	width: 150px;
+}
+.thumb.medium {
+	width: 250px;
+}
+
+.thumb.large {
+	width:400px;
+}
+
+
+.thumb span {
+	font-size:x-small;
+	text-align:center;
+	display: block;
+}
+.float-right {
+	float: right
+}
+
+.float-left {
+	float: left;
+}
+
+.pad-right {
+	padding-right:30px
+}
+
+
+table {
+	border-collapse:collapse;
+}
+
+th {
+	text-align:left
+
+}
+
+tr:nth-child(even) {background-color: #f2f2f2;}
+
+ul {
+  margin: 0;
+}
+ul.dashed {
+  list-style-type: none;
+  padding: 0;
+}
+ul.dashed > li {
+  /* text-indent: -12px; */
+}
+ul.dashed > li:before {
+  content: "- ";
+  /* text-indent: -5px; */
+}
+
+.footer {
+	text-align:center;
+	margin-top:30px;
+}
+
+p.close-spacing {
+	margin:.5em 0 .5em 0;
+}
+
+.content {
+	margin:1em
+}
+
+p {
+	font-family: 'Raleway', sans-serif;
+	margin-top: .2em;
+    margin-bottom: 1.5em;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-family: 'Roboto', sans-serif;
+}
+
+h2, h3, h4, h5, h6 {
+	margin-bottom:.8em;
+}
+
+.logo {
+	font-family: 'Bungee Hairline', cursive;
+	font-size: 7em;
+	text-align:center;
+	width:100%;
+}
+
