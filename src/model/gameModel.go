@@ -685,6 +685,15 @@ func (gm *GameModel) AddPlayer(p *player.Player) error {
 
 	p.Outgoing(nwmessage.GraphState(gm.calcState(p)))
 
+	// TODO remove for production
+	// this is only here to honestly represent gamestate
+	// until it can be handled more gracefully
+	welcomeStr := "Game is in sandbox mode. Use 'begin' to start keeping score"
+	if gm.mode == modes.Running {
+		welcomeStr = "Game has started, get in there!"
+	}
+	p.Outgoing(nwmessage.PsNeutral(welcomeStr))
+
 	// send initial prompt state
 	p.Outgoing(nwmessage.PsPrompt(p.Prompt()))
 	return nil
