@@ -32,8 +32,15 @@ func main() {
 	d := protocol.NewDispatcher()
 
 	//// Start Webserver WO CORS
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", index)
+
+	pagefs := http.FileServer(http.Dir("public"))
+	// gamefs := http.FileServer(http.Dir("fe_overhaul/build"))
+	// mux.HandleFunc("/", play)
+	// mux.Handle("/static/", gamefs)
+	mux.Handle("/", pagefs)
+	// mux.Handle("/play/", http.StripPrefix("/play/", gamefs))
 	mux.HandleFunc("/ws", // wrap the func to pass the dispatcher
 		func(w http.ResponseWriter, req *http.Request) {
 			protocol.HandleConnections(w, req, d)
@@ -99,4 +106,15 @@ func index(w http.ResponseWriter, req *http.Request) {
 	//	}
 
 	http.FileServer(http.Dir("fe_overhaul/build")).ServeHTTP(w, req)
+}
+func play(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("Received play request")
+	//		if req.Header.Get("Referer") != host &&
+	//		req.URL.Path != "/" {
+	//		log.Printf("404: %s", req.URL.String())
+	//		http.NotFound(w, req)
+	//		return
+	//	}
+
+	// http.FileServer(http.Dir("fe_overhaul/build")).ServeHTTP(w, req)
 }
