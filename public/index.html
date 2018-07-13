@@ -30,9 +30,11 @@
 	<div class="half-width">
 		<h1>About</h1>
 		<p>
-			Nodewars is a competitive programming game that blends elements of spacial domination and real time strategy.
+			Nodewars is a competitive programming game that blends elements of spacial domination and real-time strategy.
 			Set in the not-to-distant future, rival teams of hackers compete to control as many machines as possible.
-			In this dark future, the only money that still hold any value is a digital currency known as CoinCoin.
+		</p>
+		<p>
+			In this dark future, the only money that still holds any value is a digital currency known as CoinCoin.
 			Teams use the networks they control to mine as much CoinCoin as possible.
 			The more area a team controls, the more CoinCoin they can generate.
 		</p>
@@ -49,36 +51,34 @@
 					</li>
 				</ul>
 				<li class="header">
-					<a href="">Gameplay</a>
+					<a href="#gameplay">Gameplay</a>
 				</li>
 				<ul>
 					<li>
-						<a href="">overview</a>
+						<a href="#joining">joining</a>
 					</li>
 					<li>
-						<a href="">navigation</a>
+						<a href="#basics">basics</a>
 					</li>
 					<li>
-						<a href="">controlling machines</a>
+						<a href="#connecting">connecting</a>
 					</li>
 					<li>
-						<a href="">features</a>
+						<a href="#coincoin">coincoin</a>
+					</li>
+					<li>
+						<a href="#nodes">nodes</a>
+					</li>
+					<li>
+						<a href="#machines">machines</a>
+					</li>
+					<li>
+						<a href="#features">features</a>
 					</li>
 				</ul>
 				<li class="header">
-					<a href="">Reference</a>
+					<a href="#contribute">Contributing</a>
 				</li>
-				<ul>
-					<li>
-						<a href="">feature types</a>
-					</li>
-					<li>
-						<a href="">keyboard shortcuts</a>
-					</li>
-					<li>
-						<a href="">map toggles</a>
-					</li>
-				</ul>
 			</ul>
 		</div>
 	</div>
@@ -143,10 +143,14 @@
 			<td>test (submit code with custom stdin)</td>
 		</tr>
 	</table>
-	<h1>
-		Gameplay
-	</h1>
-	<h3>Joining a Game</h3>
+	<a name="gameplay">
+		<h1>
+			Gameplay
+		</h1>
+	</a>
+	<a name="joining">
+		<h3>Joining a Game</h3>
+	</a>
 	<div>
 		<a href="./images/nw_game_join.gif" target="_blank" ><img class="thumb right small" src="./images/nw_game_join.gif" alt=""></a>
 		<p>
@@ -155,7 +159,9 @@
 			If you can't find a game, ‘new’ will start a new game and join it. Once in a game use ‘join’ again to join a team.
 		</p>
 	</div>
-	<h3>Basic Gameplay</h3>
+	<a name="basics">
+		<h3>Basic Gameplay</h3>
+	</a>
 	<div>
 		<p>
 			There are a number of subtleties in Nodewars but the main gameplay is fairly straightforward.
@@ -163,7 +169,9 @@
 			trying to solve whatever programming challenge is present at that machine.
 		</p>
 	</div>
-	<h3>Rules of Connection</h3>
+	<a name="connecting">
+		<h3>Rules of Connection</h3>
+	</a>
 	<div>
 		<div class="thumb right medium">
 			<a href="./images/nw_connecting.gif" target="_blank">
@@ -195,7 +203,9 @@
 		Unpowered machines also have their strength reduced to 1 (until power is restored). This reduction makes them extremely vulnerable to takeover.
 		</p>
 	</div>
-	<h3>Mining CoinCoin</h3>
+	<a name="coincoin">
+		<h3>Mining CoinCoin</h3>
+	</a>
 	<div>
 	<p>
 		CoinCoin (CC) is what separates winners from losers in the world of Nodewars. Each team is trying to reach the CC goal first. Each machine the team controls is able to generate CC for the team and bring them closer to victory, although sometimes it is advantageous to forgo the quick coin in favor of a strategic advantage. We’ll get more into machine types in the Node section below.
@@ -209,7 +219,9 @@
 		<li>If all the ring machines in a node are owned by the same team and all are mining, CC generation in that node doubles</li>
 	</ul>
 	</div>
-	<h3>Anatomy of a Node</h3>
+	<a name="nodes">
+		<h3>Anatomy of a Node</h3>
+	</a>
 
 	<div>
 		<a href="./images/nw_node_anatomy.png" target="_blank"><img class="thumb right large" src="./images/nw_node_anatomy.png" alt="Anatomy of a Node"></a>
@@ -222,7 +234,9 @@
 	</p>
 
 	</div>
-	<h3>Machines and Challenges</h3>
+	<a name="machines">
+		<h3>Machines and Challenges</h3>
+	</a>
 	<i>Attaching</i>
 	<p>
 	In order to take control of a machine, you must complete the programming challenge contained therein. When you connect to a node you will be presented with a list of machine addresses. If for some reason you don’t see it or you want it printed again, just type ‘ls’. To attach to a particular machine type ‘at [address]’. Once you connect to a machine challenge details will be loaded automatically into your code environment.
@@ -232,7 +246,9 @@
 	<p>There are a couple of important things to note about the make command; When using make on a ring machine, it will default to creating a mining machine, if you while like to install encryption instead, you must use ‘make encrypt’; When using make on a gateway, you must provide a feature type.</p>
 	<i>Reset</i>
 	<p>Dealing with neutral machines is a little different than deal with machines already controlled by an opponent. While a neutral machine requires only one successful test pass, when taking over an enemy machine, your solution must pass at least as many tests as theirs did. If your solution passes more tests, than the make command will steal control of the machine. If, however, your solution ties your opponent’s, make will not work and you will have to reset the machine. Resetting a machine reverts it to neutral status and installs a brand new challenge.</p>
-	<h3>Features</h3>
+	<a name="features">
+		<h3>Features</h3>
+	</a>
 	<p>
 	Features allow a machine to have special effects. Some features can only be installed in certain types of machines. If a machine loses power, it's feature will no longer operate.
 	</p> 
@@ -270,7 +286,9 @@
 	<p>
 	A firewall hampers the opponents ability to route connections through the node. Normally if a team controls at least one machine in a node, that team can route unlimited connections through the node. If a firewall is installed a team can only route one connection for each machine they control.
 	</p>
-	<h1>Contributing</h1>
+	<a name="contribute">
+		<h1>Contributing</h1>
+	</a>
 	<p class="close-spacing">There's a lot let to fix/improve/explore with this concept and if you're interested I'd love your help.</p>
 	<p class="close-spacing">The front end is written mostly in React with a separate D3 app for all the force-layout graph stuff.</p>
 	<p class="close-spacing">The sandbox compilation and evaluation is all written in Go, as are the game server and pseudo terminal.</p>
