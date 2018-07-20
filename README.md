@@ -1,2 +1,2 @@
 #### See website for details
-[Nodewars](https://nodewars.net)
+[nodewars.net](https://nodewars.net)
